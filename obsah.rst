@@ -34,13 +34,10 @@ Každý na svém, zároveň s demonstrací
     - Dotaz do ruian bez indexů a s indexy (součty ploch drupoz parcely pod 100 m bafrem z úlohy 1) 
     - Doplnit prostorové i jiné indexy
     - Nahrát očíslované body tras a vytvořit z nich linie
+    - Nahrát data z mdb (když budou na servru mdb tools), udělat linie, zaplochovat pomocí topology a propojit s body z úlohy 1
 
 Samostatně
     - Provést součty pod trasami z úkolu 7 (podle r_zpochr) výsledek zobrazit v mapě a v grafu
-
-Každý na svém, zároveň s demonstrací
-    - Nahrát data z mdb (když budou na servru mdb tools), udělat linie, zaplochovat pomocí topology a propojit s body z úlohy 1
-
-Samostatně:
------------
-- Analýza z připravených (nenamigrovaných) datasetů - tady musim vymyslet něco zábavnýho (jak se datař rozhoduje, kam pojede na dovolenou, dalekjo od mokřin, aby tam komáři neštípali, při cestě k babičce...)
+    - Namigrujte data z db dibavod. Vygenerujte padesát náhodných bodů po česku a ke každému zjistěte vzdálenost k nejbližšímu vodnímu toku a k nejbližší vodní ploše.
+    - Vytvořit síť čtverců 5*5 kilometrů po celé republice. Vybrat deset náhodných. Pro náhodné čtverce najít a stáhnout správná data z ruian a vytvořit přehled druhů pozemků v průniku s každým čtvercem. Provést kontrolu, zda souhlasí sumy.
+    - Analýza z připravených (nenamigrovaných) datasetů - tady musim vymyslet něco zábavnýho (jak se datař rozhoduje, kam pojede na dovolenou, dalekjo od mokřin, aby tam komáři neštípali, při cestě k babičce...)

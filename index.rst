@@ -12,3 +12,5 @@
         :maxdepth: 2
 
         obsah
+        kapitoly/1_vytvarime_prostorovou_db
+        kapitoly/2_tvorba_jednoduche_prostorove_tabulky
