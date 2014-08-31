@@ -6,8 +6,8 @@ import os
 # -- General configuration ------------------------------------------------
 
 # General information about the project.
-project = u'PostGIS Workshop'
-copyright = u'2014, GISMentors.eu'
+project = u'Školení GRASS GIS'
+copyright = u'2014, Martin Landa (GISMentors.eu)'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -21,7 +21,7 @@ release = '%s alpha' % version
 # -- Options for HTML output ----------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'postgis-workshop'
+htmlhelp_basename = 'Skoleni-GRASS-GIS'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -59,6 +59,3 @@ texinfo_documents = [
 
 sys.path.append(os.path.join('..', 'sphinx-template'))
 from conf_base import *
-
-# show todos...
-todo_include_todos = True
