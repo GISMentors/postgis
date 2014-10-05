@@ -4,7 +4,7 @@
  *
  * Base GISMentors stylesheet -- derived agogo theme.
  *
- * :copyright: Copyright 2007-2011 by the Sphinx team, see AUTHORS.
+ * :copyright: Copyright 2007-2014 by the Sphinx team, see AUTHORS.
  * :license: BSD, see LICENSE for details.
  *
  */
@@ -28,18 +28,23 @@ div.header, div.content, div.footer {
   width: 70em;
   margin-left: auto;
   margin-right: auto;
-  
 }
 
 div.header-wrapper {
-  background: url(bgtop.png) top left repeat-x;
+    background: /*** #555573 ***/ url(bgtop.png) top left repeat-x;
+  /*** border-bottom: 3px solid #2e3436; ***/
 }
 
 
 /* Default body styles */
+/***
+a {
+  color: #ce5c00;
+}
+***/
 
 div.bodywrapper a, div.footer a {
-  text-decoration: none;
+  text-decoration: none /*** underline ****/;
 }
 
 .clearer {
@@ -67,15 +72,21 @@ div.bodywrapper a, div.footer a {
 }
 
 h1, h2, h3, h4 {
-  font-family: "Verdana", Arial, sans-serif;
+  font-family: "Verdana", Arial, sans-serif; /*** "Georgia", "Times New Roman", serif; ***/
   font-weight: normal;
-  color: #7b7b7b;
+  color: #7b7b7b /*** #3465a4 ***/;
   margin-bottom: .8em;
 }
 
+/***
+h1 {
+  color: #204a87;
+}
+***/
+
 h2 {
-  padding-bottom: .1em;
-  border-bottom: 1px solid #7b7b7b;
+  padding-bottom: .1em; /*** .5em; ***/
+  border-bottom: 1px solid #7b7b7b; /*** #3465a4; ***/
 }
 
 a.headerlink {
@@ -96,12 +107,7 @@ dt:hover > a.headerlink {
 
 img {
   border: 0;
-  width: 480px;
-}
-
-img.middle {
-  border: 0;
-  width:800px;
+  width: 480px; /*** new ***/
 }
 
 div.admonition {
@@ -117,10 +123,10 @@ p.admonition-title {
 }
 
 div.cmd .last {
-    background-color: #eeeeec;
-    font-family: monospace;
-    white-space: pre;
-    font-size: 110%;
+  background-color: #eeeeec;
+  font-family: monospace;
+  white-space: pre;
+  font-size: 110%;
 }
 
 dt:target, .highlighted {
@@ -131,15 +137,16 @@ dt:target, .highlighted {
 
 div.header {
   padding-top: 10px;
+  /*** padding-bottom: 10px; ***/
 }
 
 div.header .headertitle {
-  font-family: "Verdana", Arial, sans-serif;
+  font-family: "Verdana", Arial, sans-serif; /*** "Georgia", "Times New Roman", serif; ***/
   font-weight: normal;
   font-size: 180%;
   letter-spacing: .08em;
   margin-bottom: .8em;
-  margin-left: -5.6em;
+  /*** margin-left: -5.6em; ***/
 }
 
 div.header .headertitle a {
@@ -148,11 +155,11 @@ div.header .headertitle a {
 
 div.header div.rel {
   margin-top: 1em;
-  margin-left: -10em;
+  /*** margin-left: -10em; ***/
 }
 
 div.header div.rel a {
-  color: #000000;
+  color: #000000; /*** #fcaf3e; ***/
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -174,9 +181,9 @@ div.content-wrapper {
 }
 
 div.document {
-  width: 90%;
+  width: 50em; /*** 90% ***/
   float: left;
-  margin-left: -10em;
+  /*** margin-left: -10em; ***/
 }
 
 div.body {
@@ -185,14 +192,15 @@ div.body {
 }
 
 div.document h1 {
-  font-size: 130%;
+  font-size: 130%; /*** new ***/
   line-height: 120%;
 }
 
 div.document ul {
-  margin-left: 1.5em;
-  margin-right: 1.5em;
-  margin-top: 0.5em;
+  /*** margin: 1.5em; ***/
+  margin-left: 1.5em;    /*** new ***/
+  margin-right: 1.5em;   /*** new ***/
+  margin-top: 0.5em;     /*** new ***/
   list-style-type: square;
 }
 
@@ -227,7 +235,7 @@ div.document p {
 }
 
 div.document li.toctree-l1 {
-  margin-bottom: .5em;
+  margin-bottom: .5em; /*** 1em; ***/
 }
 
 div.document .descname {
@@ -259,7 +267,7 @@ div.sidebar {
   width: 20em;
   float: right;
   font-size: .9em;
-  margin-right: -10em;
+  /*** margin-right: -10em; ***/
 }
 
 div.sidebar a, div.header a {
@@ -267,7 +275,7 @@ div.sidebar a, div.header a {
 }
 
 div.sidebar a:hover, div.header a:hover {
-  text-decoration: none;
+  text-decoration: none; /*** underline; ***/
 }
 
 div.sidebar h3 {
@@ -330,24 +338,24 @@ div.sidebar input[type="submit"] {
 
 div.footer-wrapper {
   background: url(bgfooter.png) top left repeat-x;
+  /*** border-top: 4px solid #babdb6; ***/
   padding-top: 10px;
   padding-bottom: 10px;
   min-height: 80px;
-  margin-left: -20em;
+  /*** margin-left: -20em; ***/
 }
 
 div.footer, div.footer a {
-  color: #000000;
+  color: #000000; /*** #888a85; ***/
 }
 
 div.footer .right {
-  text-align: right;
+  text-align: center;
 }
 
 div.footer .left {
   text-transform: uppercase;
 }
-
 
 /* Styles copied from basic theme */
 
@@ -367,11 +375,6 @@ img.align-center, .figure.align-center, object.align-center {
   display: block;
   margin-left: auto;
   margin-right: auto;
-}
-
-div.figure {
-    text-align: center;
-    margin-bottom: .7em;
 }
 
 .align-left {
@@ -480,14 +483,25 @@ div.viewcode-block:target {
     border-bottom: 1px solid #ac9;
 }
 
+/*** new ***/
+div.figure {
+  text-align: center;
+  margin-bottom: .7em;
+}
+
+img.middle {
+  border: 0;
+  width:800px;
+}
+
 span.map {
-    font-family: "Brush Script MT", cursive;font-family: "Brush Script MT", cursive;
+  font-family: "Brush Script MT", cursive;
 }
 
 span.item {
-    font-family: "Lucida Console", "Lucida Sans Typewriter", Monaco, "Bitstream Vera Sans Mono", monospace;
-    background-color: #d4d0c8;
-    padding: 3px;
+  font-family: "Lucida Console", "Lucida Sans Typewriter", Monaco, "Bitstream Vera Sans Mono", monospace;
+  background-color: #d4d0c8;
+  padding: 3px;
 }
 
 .toc, .toc tr, .toc th, .toc td { border: none; } 

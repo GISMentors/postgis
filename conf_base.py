@@ -92,8 +92,8 @@ pygments_style = 'sphinx'
 # so a file named "default.css" will overwrite the builtin "default.css".
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-### html_theme = 'agogo'
-html_theme = 'bootstrap'
+html_theme = 'agogo'
+###html_theme = 'bootstrap'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -101,7 +101,8 @@ html_theme = 'bootstrap'
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ['../sphinx-template/_themes']
+html_theme_path = []
+### html_theme_path = ['../sphinx-template/_themes']
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = 'x'
@@ -223,11 +224,11 @@ latex_elements = {
 # -- Bootstrap Theme options -------------------------------------------
 
 
-html_theme_options = {
-    'navbar_site_name': "Obsah",
-    'navbar_pagenav': False,
-    'globaltoc_depth': 2,
-}
+# html_theme_options = {
+#     'navbar_site_name': "Obsah",
+#     'navbar_pagenav': False,
+#     'globaltoc_depth': 2,
+# }
 
 # -- GISMentors roles -------------------------------------------
 
