@@ -6,8 +6,9 @@ import os
 # -- General configuration ------------------------------------------------
 
 # General information about the project.
-project = u'Školení GRASS GIS'
-copyright = u'2014, Martin Landa (GISMentors.eu)'
+project = u'Školení PostGIS'
+#copyright = u'2014, Martin Landa (GISMentors.eu)'
+copyright = u'2014, Jan JELEN Michálek (GISMentors.eu)'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -21,7 +22,7 @@ release = '%s alpha' % version
 # -- Options for HTML output ----------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Skoleni-GRASS-GIS'
+htmlhelp_basename = 'Skoleni-PostGIS'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
