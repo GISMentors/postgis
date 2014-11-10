@@ -99,10 +99,16 @@ Sloupců s geometrií můžeme k tabulce přidat prakticky libovolné množství
 Tabulka
 ^^^^^^^
 
+Nejdříve si vytvoříme pracovní schéma.
+::
+
+   CREATE SCHEMA ukol_1;
+
+
 Tabulku vytvoříme klasicky, příkazem *CREATE TABLE*.
 ::
 
-   CREATE TABLE vesmirne_zrudice( id int PRIMARY KEY, x float, y float);
+   CREATE TABLE ukol_1.vesmirne_zrudice( id int PRIMARY KEY, x float, y float);
 
 Je vhodné, když tabulka má primární klíč v datovém typu *INTEGER*, pokud je primární klíč v jiném datovém typu, nebo, pokud dokonce chybí úplně, některé software nemusí s tabulkou pracovat korektně. 
 
@@ -111,13 +117,13 @@ Je vhodné, když tabulka má primární klíč v datovém typu *INTEGER*, pokud
 K tabulce přidáme sloupec s geometrií, v tomto případě použijeme geometrický typ *POINT*.
 ::
 
-   SELECT AddGeometryColumn ('moje_schema','vesmirne_zrudice','geom_p',5514,'POINT',2); 
+   SELECT AddGeometryColumn ('ukol_1','vesmirne_zrudice','geom_p',5514,'POINT',2); 
 
-Přidáváme tedy k tabulce *vesmirne_zrudice* ve schématu *moje_schema* sloupec s jednoduchými body v souřadném systému se SRID *5514* a 2D nazvaný *geom_p*.
+Přidáváme tedy k tabulce *vesmirne_zrudice* ve schématu *ukol_1* sloupec s jednoduchými body v souřadném systému se SRID *5514* a 2D nazvaný *geom_p*.
 
 Do vytvořené tabulky nasypeme data jedním z dříve uvedených způsobů.
 
-.. tip:: Vytvořte si tabulku a naplňte ji daty. Vyzkoušejte více způsobů. Data jsou dostupná `zde <https://raw.githubusercontent.com/GISMentors/postgis/master/data/body.csv>`_ .
+.. tip:: Vytvořte si tabulku a naplňte ji `daty <https://raw.githubusercontent.com/GISMentors/postgis/master/data/body.csv>`_. Vyzkoušejte více způsobů. 
 
 Tvoříme geometrii
 -----------------
@@ -130,14 +136,19 @@ ST_Point(x,y)
 Nejobvyklejším způsobem je použití funkce *ST_POINT(x,y)*, která vytvoří z páru souřadnic geometrický prvek typu bod.
 ::
 
-   SELECT ST_Point(x,y) FROM vesmirne_zrudice;
+   SELECT ST_Point(x,y) FROM ukol_1.vesmirne_zrudice;
 
 ST_GeomFrom*
 ^^^^^^^^^^^^
 
 Další možností je sestavit si geometrii ve `WKT <http://en.wikipedia.org/wiki/Well-known_text>`_, a použijeme funkci ST_GeomFromText. WKT je textový dle `standardu OGC <http://www.opengeospatial.org/standards>`_ zápis vektorové geometrie.
 
-.. note:: Podobným způsobem můžeme využít také binární zápis geometrie *WKB*, a funkci *ST_GeomFromWKB*, což se může hodit například při migraci dat pomocí knihovny *GDAL*. Stejně se může hodit *ST_GeomFromGML*, případně *ST_GeomFromGeoJSON* atd. Další možnosti nabízí *ST_GeomFromEWKT* a *ST_GeomFromEWKV*. EWKT a EWKB je rozšíření OGC WKT/WKB o třetí rozměr a zápis souřadného systému.
+.. note:: Podobným způsobem můžeme využít také binární zápis geometrie *WKB*, a funkci *ST_GeomFromWKB*, což se může hodit například při migraci dat pomocí knihovny *GDAL*. Stejně se může hodit *ST_GeomFromGML*, případně *ST_GeomFromGeoJSON* atd. Další možnosti nabízí *ST_GeomFromEWKT* a *ST_GeomFromEWKV*. EWKT a EWKB je rozšíření OGC WKT/WKB o třetí rozměr a zápis souřadného systému. Je také třeba upozornit na fakt, žefunkce ST_GeomFromGML neumí, na rozdíl například od gnihovny GDAL všechny typy hran, které se mohou v GML vyskytnout, problematický je například kruh a také některé typy oblouků.
+
+Abychom nemuseli nadále vypisovat název schématu, přidáme si ho do **SEARCH_PATH**
+::
+
+   SET SEARCH_PATH = ukol_1, public;
 
 Geometrický prvek vytvoříme tedy například takto.
 ::
@@ -205,9 +216,20 @@ Při migraci do položky s geometrií se CAST provede automaticky.
 
    UPDATE vesmirne_zrudice SET geom_p = 'SRID=5514;POINT('||x::text||' '||y::text||')';
 
-.. tip:: Zkuste si přidat geometrii do tabulky všemi výše uvedenými způsoby
+.. tip:: Zkuste si přidat data do sloupce s geometrií všemi výše uvedenými způsoby.
 
 .. tip:: Zobrazte si tabulku ve svém oblíbeném GIS desktopu.
+
+
+.. figure:: ../grafika/fig_001.svg
+    :align: center
+    :alt: alternate text
+
+    Jako podklad jsou použité pražské ulice
+
+
+
+
 
 Trigger
 ^^^^^^^
