@@ -110,6 +110,42 @@ Samozřejmě *ESRI shapefile* není jediný formát, se kterým ogr2ogr pracuje.
 
    ogr2ogr -f PGDump /dev/stdout -a_srs 'EPSG:5514' adres_mista.gml -nln ukol_1.adresy_1 | psql pokusnik 2> err
 
+V ogr2ogr je možné pracovat i s webovými službami, například můžeme načíst katastrální území z `WFS ČUZAKu <http://services.cuzk.cz/doc/inspire-cp-view.pdf>`_.
+::
+
+   ogr2ogr -f "PostgreSQL" PG:"dbname=pokusnik" \
+   "http://services.cuzk.cz/wfs/inspire-cp-wfs.asp?\
+   service=WFS\
+   &request=GetFeature&version=2.0.0\
+   &srsName=urn:ogc:def:crs:EPSG::5514\
+   &typeNames=CP:CadastralZoning\
+   &featureid=CZ.605999" \
+   -nln ukol_1.katatest
+
+Ve WFS bývá zhusta limit na maximální počet prvků, není tedy, v praxi, možné obvykle stáhnout větší objem dat. Můžeme však stahovat prvky po jednom. Z `číselníku katastrálních území <http://www.cuzk.cz/CUZK/media/CiselnikyISKN/SC_SEZNAMKUKRA_DOTAZ/SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip>`_ vybereme katastry Prahy.
+::
+
+   wget http://www.cuzk.cz/CUZK/media/CiselnikyISKN/SC_SEZNAMKUKRA_DOTAZ/SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip
+   unzip SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip
+   psql -c "truncate table ukol_1.katatest" pokusnik;
+
+   cut -d ';' -f 7,8 SC_SEZNAMKUKRA_DOTAZ.csv | \
+      tail -n +2 | \
+      cut -d ';' -f 2 | while read kodku; do
+         echo $kodku;
+         ogr2ogr -append \
+         -f "PostgreSQL" PG:"dbname=pokusnik" \
+         "http://services.cuzk.cz/wfs/inspire-cp-wfs.asp?\
+   service=WFS\
+   &request=GetFeature&version=2.0.0\
+   &srsName=urn:ogc:def:crs:EPSG::5514\
+   &typeNames=CP:CadastralZoning&\
+   featureid=CZ.$kodku" \
+         -nln ukol_1.katatest
+      done;
+
+.. note:: Bagrování WFS ovšem není ideální způsob jak plnit daty databázi (limit na bbox a po4et prvk; tam nen9 jen tak pro nic za nic). Tato data je možné získat i pohodlněji a šetrněji k infrastruktuře ČUZAKu.
+
 Na závěr si naše data zobrazíme v **SVG**.
 ::
 
