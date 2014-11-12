@@ -153,7 +153,7 @@ Případně můžeme použít `anonymní blok kódu <file:///usr/share/doc/postg
 
    ROLLBACK;
 
-.. note:: Srovnejte *EXPLAIN ANALYZE**
+.. note:: Srovnejte *EXPLAIN ANALYZE*
 
 Řešení
 ^^^^^^
