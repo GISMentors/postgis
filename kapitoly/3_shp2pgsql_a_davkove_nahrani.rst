@@ -8,7 +8,7 @@ shp2pgsql
 
 **shp2pgsql** Je utilitka distribuovaná spolu s PostGISem. `Velice pěkně zpracovaný cheatsheet <http://www.bostongis.com/pgsql2shp_shp2pgsql_quickguide.bqg>`_. shp2pgsql vrací data v dump formátu a umí je poslat na standartní výstup. Je tedy možné, v případě potřeby prohnat výstup z této utility například přes sed, případně uložit do souboru a ručně zeditovat.
 
-shp2pgsql umí jak data přidat do již existující tabulky, tak potřebnou tabulku vytvořit. Umí také pouze vytvořit tabulku podle souboru, aniž by do ní přidal data. Více v `manuálu <http://postgis.net/docs/manual-2.0/using_postgis_dbmanagement.html#shp2pgsql_usage>`_.
+shp2pgsql umí jak data přidat do již existující tabulky, tak potřebnou tabulku vytvořit. Umí také pouze vytvořit tabulku podle souboru, aniž by do ní přidal data. Více v `manuálu <http://postgis.net/docs/manual-2.1/using_postgis_dbmanagement.html#shp2pgsql_usage>`_.
 
 .. note:: Hlavním limitem pro použití shp2pgsql jsou samotné limity ESRI shapefile, které je zastaralé. Jda například o zakracování názvů sloupců. Také může bát problém s delšími celými čísly. Například numeric bude surově zakrácen na int, což může způsobit problémy mimo jiné u dat z ČUZAKu, které používají primární klíče numeric(30).
 
@@ -108,7 +108,7 @@ Parametry na dalším řádku již známe. Jedná se o formát, následuje náze
 Samozřejmě *ESRI shapefile* není jediný formát, se kterým ogr2ogr pracuje. Předvedeme si, jak snadno nahrát soubor v **GML**.
 ::
 
-   ogr2ogr -f PGDump /dev/stdout -a_srs 'EPSG:5514' adres_mista.gml -nln ukol_1.adresy_1 | psql pokusnik 2> err
+   ogr2ogr -f PGDump /dev/stdout -a_srs 'EPSG:5514' adres_mista.gml -nln ukol_1.adresy | psql pokusnik 2> err
 
 V ogr2ogr je možné pracovat i s webovými službami, například můžeme načíst katastrální území z `WFS ČUZAKu <http://services.cuzk.cz/doc/inspire-cp-view.pdf>`_.
 ::
@@ -131,7 +131,9 @@ Ve WFS bývá zhusta limit na maximální počet prvků, není tedy, v praxi, mo
 
    cut -d ';' -f 7,8 SC_SEZNAMKUKRA_DOTAZ.csv | \
       tail -n +2 | \
-      cut -d ';' -f 2 | while read kodku; do
+      grep Praha |
+      cut -d ';' -f 2 |
+      while read kodku; do
          echo $kodku;
          ogr2ogr -append \
          -f "PostgreSQL" PG:"dbname=pokusnik" \
@@ -144,7 +146,8 @@ Ve WFS bývá zhusta limit na maximální počet prvků, není tedy, v praxi, mo
          -nln ukol_1.katatest
       done;
 
-.. note:: Bagrování WFS ovšem není ideální způsob jak plnit daty databázi (limit na bbox a po4et prvk; tam nen9 jen tak pro nic za nic). Tato data je možné získat i pohodlněji a šetrněji k infrastruktuře ČUZAKu.
+
+.. note:: Bagrování WFS ovšem není ideální způsob jak plnit daty databázi (limit na bbox a počet prvků tam není jen tak pro nic za nic). Tato data je možné získat i pohodlněji a šetrněji k infrastruktuře ČUZAKu.
 
 Na závěr si naše data zobrazíme v **SVG**.
 ::

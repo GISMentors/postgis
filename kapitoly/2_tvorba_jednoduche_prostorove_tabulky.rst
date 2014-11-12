@@ -225,7 +225,7 @@ Při migraci do položky s geometrií se CAST provede automaticky.
     :align: center
     :alt: alternate text
 
-    Jako podklad jsou použité pražské ulice
+    Obr. 1: Jako podklad jsou použité pražské ulice
 
 
 

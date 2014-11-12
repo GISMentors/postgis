@@ -9,8 +9,10 @@
     Workshop zaměřený na Open Source nástroj PostGIS
 **Obsah:**
     .. toctree::
-        :maxdepth: 2
+        :maxdepth: 3
 
-        obsah
+        obsah_hackaton
         kapitoly/1_vytvarime_prostorovou_db
         kapitoly/2_tvorba_jednoduche_prostorove_tabulky
+        kapitoly/3_shp2pgsql_a_davkove_nahrani
+        kapitoly/4_prostorove_operatory.rst
