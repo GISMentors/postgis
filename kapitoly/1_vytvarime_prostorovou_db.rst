@@ -36,7 +36,7 @@ Tvorba pomocí skriptů
 
 `Kompletní postup pro postgis 2.1 <http://postgis.net/docs/manual-2.1/postgis_installation.html#create_new_db>`_
 
-V některých případech není možné použít výše zmíněný postup kvůli staršímu postgrei, nastavení práv, nebo problémům s balíčky. Pak je možné provést tvorbu databáze `po staru` pomocí skriptů. Umístění skriptů se může lůišit podle distribuce a verze postgisu.
+V některých případech není možné použít výše zmíněný postup kvůli staršímu postgrei, nastavení práv, nebo problémům s balíčky. Pak je možné provést tvorbu databáze `po staru` pomocí skriptů. Umístění skriptů se může lišit podle distribuce a verze postgisu.
 
 .. notecmd:: dohledání instalačních skriptů PostGIS
 
