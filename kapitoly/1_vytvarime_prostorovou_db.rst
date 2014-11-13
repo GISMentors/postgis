@@ -1,6 +1,6 @@
 Vytváříme prostorovou databázi
 ==============================
-*Postgis rozšiřuje možnosti relační databáze* **PostgreSQL** *o ukládání, správu a dotazování prostorové informace. Po instalaci postgisu do databáze se objeví nové oprátory, funkce, typy a některé nové relace. Postgisem je možné zpracovávat jak vektorová, tak rastrová data. Nad vektorovými daty lze vybudovat topologii a tu posléze dotazovat. Nejobvyklejším využitím je ovšem práce s jednoduchými prvky* **simple features.**
+*Postgis rozšiřuje možnosti relační databáze* **PostgreSQL** *o ukládání, správu a dotazování prostorové informace. Po instalaci postgisu do databáze se objeví nové operátory, funkce, typy a některé nové relace. Postgisem je možné zpracovávat jak vektorová, tak rastrová data. Nad vektorovými daty lze vybudovat topologii a tu posléze dotazovat. Nejobvyklejším využitím je ovšem práce s jednoduchými prvky* **simple features.**
 
 Tvorba prostorové databáze
 --------------------------

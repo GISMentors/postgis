@@ -85,7 +85,7 @@ Tyto dva operátory vrací vzdálenost. **<->** vrací vzdálenost centroidů, *
 
 .. warning:: Je zjevné, že u některých typů prvků předvýběr pomocí boundingboxu nemusí být zase taková výhra (například dlouhé multilinie a obecně hodně členité prvky).
 
-Předvedeme si, jak vyřešit úlohu s body v určité vzdálenosti od bodu pomocí tohoto oprátoru. Je jedno, zdali použijeme *<->*, nebo *<#>*, protože se jedná o body.
+Předvedeme si, jak vyřešit úlohu s body v určité vzdálenosti od bodu pomocí tohoto operátoru. Je jedno, zdali použijeme *<->*, nebo *<#>*, protože se jedná o body.
 ::
 
    SET SEARCH_PATH = ukol_1, public;
