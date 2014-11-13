@@ -15,8 +15,8 @@ Výstupní dovednost:
 * Uživatel tuší jak postupovat, když chce dostat z dat v postgisu informaci související s umístěním
 * Uživatel zvládá samostatně řešit jednoduché analýzy v postgis
 
-Potřebosti:
------------
+Potřebnosti:
+------------
 * Buď mašina s linuxem, postgre, qgisem a připojení na internet, nezaškodí pgadmin, libreoffice, rko
 * Nebo přístupy na server přes ssh, na servru běží postgre, na klientu by se hodilo psql a data stačí prohlížet přes webovou prohglížečku (webový qgis)
 
