@@ -86,7 +86,7 @@ Common table expression s `window funkcí <http://www.postgresql.org/docs/9.3/st
 
    SELECT * FROM cte WHERE rn = 1;
 
-.. note:: Elegantní řešení nemusí být však vždy to nejvýkonější. A to ani při optimalizaci.
+.. warning:: Elegantní řešení nemusí být však vždy to nejvýkonější. A to ani při optimalizaci.
 
 ::
 
@@ -153,7 +153,7 @@ Případně můžeme použít `anonymní blok kódu <file:///usr/share/doc/postg
 
    ROLLBACK;
 
-.. note:: Srovnejte *EXPLAIN ANALYZE*
+.. tip:: Srovnejte *EXPLAIN ANALYZE*
 
 Řešení
 ^^^^^^
@@ -228,7 +228,7 @@ Ulice v okruhu 250 metrů můžeme vybrat buď bafrem,
    vesmirne_zrudice v
    WHERE ST_Relate(geom, ST_Buffer(geom_p, 250, 100), 'T********');
 
-.. note:: Vyzkoušejte místo ST_Relate ST_Intersects
+.. tip:: Vyzkoušejte místo ST_Relate ST_Intersects
 
 optimalizovaná verze
 ::
@@ -256,8 +256,8 @@ nebo na základě vzdálenosti.
    WHERE ST_Distance(geom, geom_p) <= 250;
 
 
-Součet ploch pod bafrem
------------------------
+Součet ploch v určitém okruhu
+-----------------------------
 
 *Nemáte dostatek agentů v terénu, nejspíše se nepodaří neutralizovat všechna vejce, seřaďte body podle počtu budov v ohrožené zóně, aby bylo možné minimalizovat škody.*
 
@@ -338,7 +338,7 @@ Chyby můžeme opravit, nebo použít *ST_MakeValid* rovnou v dotazu.
 
 U mnoha budov ovšem nemáme polygon, ale pouze definiční bod.
 
-.. note:: Navrhněte, jak upravit dotaz tak, aby se použily definiční body u budov, u kterých nemáme geometrii. Pro výpočet plochy můžete použít zastavěnou plochu.
+.. tip:: Navrhněte, jak upravit dotaz tak, aby se použily definiční body u budov, u kterých nemáme geometrii. Pro výpočet plochy můžete použít zastavěnou plochu.
 
 Nejbližší bod 2
 ---------------

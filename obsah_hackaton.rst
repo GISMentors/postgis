@@ -18,5 +18,5 @@ Výstupní dovednost:
 Potřebosti:
 -----------
 * Buď mašina s linuxem, postgre, qgisem a připojení na internet, nezaškodí pgadmin, libreoffice, rko
-* Nebo přístupy na server přes ssh, na servru běží postgre, na klientu by se hodilo psql a data stačí prohlížet přes webovou prohglížečku (webový qgis)
+* Nebo přístupy na server přes ssh, na servru běží postgre, na klientu by se hodilo psql a data stačí prohlížet přes webovou prohlížečku (webový qgis)
 * `pracovní data <http://46.28.111.140/gismentors/skoleni/data_postgis/>`_.

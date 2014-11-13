@@ -37,13 +37,13 @@ Příkaz může tedy vypadat například takto
 
 Copy je příkaz na kopírování dat mezi databázovou tabulku a textovým souborem. A to v obou směrech. Kopírovate můžeme ze/do souboru, z výstupu skriptu a ze standartního vstupu/na standartní výstup. Je možné nastavovat přehršel možností, oddělovače polí, řádků, hodnoty NULL, přítomnost řádku s hlavičkou, kódování a další. V případě, že máme nějaká data v exotickém formátování, vyplatí se vyzkoušet, jestli se nám nepodaří je do copy nakrmit, než je začneme soukat přez nějaké skripty na přeformátování. 
 
-Příklad kreativního využití `copy` pro přenos dat mezi dvěma servery:
-::
+.. notecmd:: kreativního využití `copy` pro přenos dat mezi dvěma servery
 
-   psql -h prvni_server.cz -c "COPY a TO STDOUT" db1 | \
+   psql -h prvni_server.cz -c "COPY a TO STDOUT" db1 | \\
+
    psql -h druhy_server.cz -c "COPY b (a, b, c) FROM STDIN" db2
 
-.. note:: Od verze 9.4 umí postgre jednu velice šikovnou věc a to *COPY FROM PROGRAM*, pomocí kterého nekopírujete ze souboru, ale z puštěného skriptu. Velice praktické například při pravidelném skenování stránek s nějakými uspořádanými daty. `Příklad použití <http://www.cybertec.at/importing-stock-market-data-into-postgresql/>`_. Je však třeba vzít potaz, že skript je spouštěn pod uživatelem, pod kterým běží databázový server a je nutné, aby tomu odpovídalo nastavení práv.
+.. noteadvanced:: Od verze 9.4 umí postgre jednu velice šikovnou věc a to *COPY FROM PROGRAM*, pomocí kterého nekopírujete ze souboru, ale z puštěného skriptu. Velice praktické například při pravidelném skenování stránek s nějakými uspořádanými daty. `Příklad použití <http://www.cybertec.at/importing-stock-market-data-into-postgresql/>`_. Je však třeba vzít potaz, že skript je spouštěn pod uživatelem, pod kterým běží databázový server a je nutné, aby tomu odpovídalo nastavení práv.
 
 Nás ovšem bude zajímat kopírování ze souboru do tabulky. Copy, totiž, jakkoliv je skvělé, má jedno omezení. Kopíruje totiž soubor, který leží na databázovém serveru a jako uživatel pod kterým je puštěné postgre (obvykle postgres) a někdy může být problematické soubor na server dostat a patřičná oprávnění mu přidělit. Řeší se to několika triky.
 
@@ -68,8 +68,9 @@ Tento postup je výhodný, pokud píšeme nějaké skripty pro převody dat, kdy
 Roura
 ^^^^^
 
-Další možnost je posílat data rourou:
-::
+Další možnost je posílat data rourou
+
+.. notecmd:: posílání dat rourou na psql
 
    cat body.csv | psql -h server.cz -c "COPY body (id, x, y) FROM STDIN" db
 
@@ -78,7 +79,7 @@ Metacommand \\copy
 
 Poslední možností, kterou já osobně používám nejčastěji pro ruční nahrávání dat, která dostanu v textovém formátu. \\copy funguje podobně jako COPY, ovšem s tím rozdílem, že kopírujete data z počítače na kterém je spuštěno psql a pod právy uživatele, který pustil psql. Když tedy chcete naplnit tabulky daty, které máte na svém lokále, je toto nejefektivnější postup. 
 
-.. note:: \\copy je metacommand psql, nikoliv SQL dotaz, funguje tedy jen v psql, není tedy možné s ním počítat v rámci přístupu k databázi z programovacích jazyků, různých grafických nástrojů apod.
+.. warning:: \\copy je metacommand psql, nikoliv SQL dotaz, funguje tedy jen v psql, není tedy možné s ním počítat v rámci přístupu k databázi z programovacích jazyků, různých grafických nástrojů apod.
 
 Vytváříme tabulku
 -----------------
@@ -92,7 +93,7 @@ Nejrozšířenější způsob je přidání geometrického sloupce k již existu
 
 Druhou věcí, kterou zmíněné *constrainty* řeší je generování *pohledu* s grafickými metadaty **geometry_columns**. Z toho pohledu drtivá většina software získává informace o typech geometrických prvků v databázi. V případě, že constrainty nejsou vytvořené, bude jako typ geometrie uvedeno obecné *GEOMETRY* a jako SRID "0". S tím mohou některé software mít problém, například do QGISu se Vám takovou vrstvu nepodaří přidat, natož jí zobrazit. Nicméně, sluší se zmínit, že v některých, avšak velice vzácných, případech má použití takové tabulky své opodstatnění. Jedním z nich je tvorba databázového modelu, kde potřebujete kombinovat v jedné tabulce data různých geometrických typů, nebo dat v různých souřadných systémech, databáze slouží jako úložiště a data jí opouštějí (například ve formátu GeoJSON) pomocí specifických procedur, kdy jsou potřebné informace doplněny, aparát na udržování geometrických metadat je tedy zbytečný. Dalším případem mohou být NOSQL databáze, kde vrstva v klasickém, relačním, pojetí pozbývá smyslu. Nicméně jedná se o případy specifické, ojedinělé a pokročilé, rozhodně nad rámec těchto lekcí.
 
-.. note:: Ve verzích PostGIS nižších než 2.0 nebyl *geometry_columns* pohled, ale tabulka. Při přidání pohledů, nebo při ruční registraci tabulek bylo třeba přidat do ní záznamy. V aktuálních verzích postgisu toto odpadá.
+.. noteadvanced:: Ve verzích PostGIS nižších než 2.0 nebyl *geometry_columns* pohled, ale tabulka. Při přidání pohledů, nebo při ruční registraci tabulek bylo třeba přidat do ní záznamy. V aktuálních verzích postgisu toto odpadá.
 
 Sloupců s geometrií můžeme k tabulce přidat prakticky libovolné množství, například k tabulce budov můžeme přidat sloupec s polygony pro obrys a s body pro definiční bod. Jedná se určitě o lepší řešení, než obojí uložit do jednoho sloupce do typu GEOMETRY COLLECTION.
 
@@ -112,7 +113,7 @@ Tabulku vytvoříme klasicky, příkazem *CREATE TABLE*.
 
 Je vhodné, když tabulka má primární klíč v datovém typu *INTEGER*, pokud je primární klíč v jiném datovém typu, nebo, pokud dokonce chybí úplně, některé software nemusí s tabulkou pracovat korektně. 
 
-.. note:: Například u dat ČUZAK ve VFK, kde jsou primární klíče v typu *NUMERIC(30)*. Zde ovšem můžeme narazit u skutečně objemných dat, nebo číselných řad sdílených mezi více tabulkami. Aktuální verze QGISu se, naštěstí, dokaže vypořádat s většinou celočíselných primárních klíčů. Přesto je dobré na tento problém pamatovat a v případě problémů jej prověřit.
+.. warning:: Například u dat ČUZAK ve VFK, kde jsou primární klíče v typu *NUMERIC(30)*. Zde ovšem můžeme narazit u skutečně objemných dat, nebo číselných řad sdílených mezi více tabulkami. Aktuální verze QGISu se, naštěstí, dokaže vypořádat s většinou celočíselných primárních klíčů. Přesto je dobré na tento problém pamatovat a v případě problémů jej prověřit.
 
 K tabulce přidáme sloupec s geometrií, v tomto případě použijeme geometrický typ *POINT*.
 ::
@@ -123,7 +124,7 @@ Přidáváme tedy k tabulce *vesmirne_zrudice* ve schématu *ukol_1* sloupec s j
 
 Do vytvořené tabulky nasypeme data jedním z dříve uvedených způsobů.
 
-.. tip:: Vytvořte si tabulku a naplňte ji `daty <https://raw.githubusercontent.com/GISMentors/postgis/master/data/body.csv>`_. Vyzkoušejte více způsobů. 
+.. tip:: Vytvořte si tabulku a naplňte ji `daty <http://46.28.111.140/gismentors/skoleni/data_postgis/body.csv>`_. Vyzkoušejte více způsobů. 
 
 Tvoříme geometrii
 -----------------
@@ -192,7 +193,6 @@ SRID nastavíme funkcí `ST_SetSRID(geometry,SRID) <http://postgis.net/docs/ST_S
 
 .. tip:: Srovnej výstupy z následujících dotazů.
 
-...
 ::
 
    SELECT 'POINT(0 0)'::geometry;
@@ -230,7 +230,6 @@ Při migraci do položky s geometrií se CAST provede automaticky.
 
 
 
-
 Trigger
 ^^^^^^^
 
@@ -256,3 +255,19 @@ S pomocí jednoduchého triggeru si můžeme usnadnit podstatně usnadnit život
    \copy vesmirne_zrudice (id, x, y) FROM jelen_dta/gismentors/postgis/data/body.csv
 
    SELECT *, ST_AsText(geom_p), ST_SRID(geom_p) FROM vesmirne_zrudice;
+
+
+Prostorové indexy
+-----------------
+
+Pro efektivní práci s prostorovými daty je nezbytné tato data oindexovat (pakliže se bavíme o objemu dat od tisícovek záznamů výše). Obvykle používáme gist index.
+::
+
+   CREATE INDEX vesmirne_zrudice_geom_p_geom_idx ON vesmirne_zrudice USING gist (geom_p);
+
+Zda je tabulka indexovaná (a další podrobnosti o tabulce) zjistíme v **psql** pomocí metacomandu \\d+
+
+Definici indexu získáme třeba takto:
+::
+
+   SELECT pg_get_indexdef('indexname'::regclass);
