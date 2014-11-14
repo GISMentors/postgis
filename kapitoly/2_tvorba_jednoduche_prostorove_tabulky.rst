@@ -53,7 +53,8 @@ Dump formát
 ^^^^^^^^^^^
 
 Upravíme data do podoby v jaké bývají produkována z pg_dump:
-::
+
+.. code-block:: sql
 
    COPY vesmirne_zrudice (id, x, y) FROM stdin;
    1	-750922.065478723	-1042251.84362287
@@ -105,13 +106,15 @@ Tabulka
 ^^^^^^^
 
 Nejdříve si vytvoříme pracovní schéma.
-::
+
+.. code-block:: sql
 
    CREATE SCHEMA ukol_1;
 
 
 Tabulku vytvoříme klasicky, příkazem *CREATE TABLE*.
-::
+
+.. code-block:: sql
 
    CREATE TABLE ukol_1.vesmirne_zrudice( id int PRIMARY KEY, x float, y float);
 
@@ -120,7 +123,8 @@ Je vhodné, když tabulka má primární klíč v datovém typu *INTEGER*, pokud
 .. warning:: Například u dat ČUZAK ve VFK, kde jsou primární klíče v typu *NUMERIC(30)*. Zde ovšem můžeme narazit u skutečně objemných dat, nebo číselných řad sdílených mezi více tabulkami. Aktuální verze QGISu se, naštěstí, dokaže vypořádat s většinou celočíselných primárních klíčů. Přesto je dobré na tento problém pamatovat a v případě problémů jej prověřit.
 
 K tabulce přidáme sloupec s geometrií, v tomto případě použijeme geometrický typ *POINT*.
-::
+
+.. code-block:: sql
 
    SELECT AddGeometryColumn ('ukol_1','vesmirne_zrudice','geom_p',5514,'POINT',2); 
 
@@ -139,7 +143,8 @@ ST_Point(x,y)
 ^^^^^^^^^^^^^
 
 Nejobvyklejším způsobem je použití funkce *ST_POINT(x,y)*, která vytvoří z páru souřadnic geometrický prvek typu bod.
-::
+
+.. code-block:: sql
 
    SELECT ST_Point(x,y) FROM ukol_1.vesmirne_zrudice;
 
@@ -151,27 +156,32 @@ Další možností je sestavit si geometrii ve `WKT <http://en.wikipedia.org/wik
 .. note:: Podobným způsobem můžeme využít také binární zápis geometrie *WKB*, a funkci *ST_GeomFromWKB*, což se může hodit například při migraci dat pomocí knihovny *GDAL*. Stejně se může hodit *ST_GeomFromGML*, případně *ST_GeomFromGeoJSON* atd. Další možnosti nabízí *ST_GeomFromEWKT* a *ST_GeomFromEWKV*. EWKT a EWKB je rozšíření OGC WKT/WKB o třetí rozměr a zápis souřadného systému. Je také třeba upozornit na fakt, žefunkce ST_GeomFromGML neumí, na rozdíl například od gnihovny GDAL všechny typy hran, které se mohou v GML vyskytnout, problematický je například kruh a také některé typy oblouků.
 
 Abychom nemuseli nadále vypisovat název schématu, přidáme si ho do **SEARCH_PATH**
-::
+
+.. code-block:: sql
 
    SET SEARCH_PATH = ukol_1, public;
 
 Geometrický prvek vytvoříme tedy například takto.
-::
+
+.. code-block:: sql
 
    SELECT ST_GeomFromText('POINT('||x::text||' '||y::text||')') FROM vesmirne_zrudice;
 
 Nebo také:
-::
+
+.. code-block:: sql
 
    SELECT ST_GeomFromWKB('\x01010000005c6d862194ea26c13a56efaf97ce2fc1');
 
 PostGIS si také umí inteligentně převádět řetězce na geometrii, můžeme tedy využít jednoduchý cast, který bude fungovat z WKB, WKT, EWKT a EWKB.
-::
+
+.. code-block:: sql
 
    SELECT ST_AsText('01010000005c6d862194ea26c13a56efaf97ce2fc1'::geometry);
 
 Případně:
-::
+
+.. code-block:: sql
 
    SELECT ('POINT('||x::text||' '||y::text||')')::geometry FROM vesmirne_zrudice;
 
@@ -182,12 +192,14 @@ UPDATE
 ^^^^^^
 
 Geometrii můžeme tvořit různě, u průběžně aktualizované tabulky si můžeme například vytvořit trigger, který nám už při importu souřadnic geometrii sestaví. Pro jednorázový import je ovšem nejsnazší aktualizovat geometrii pomocí *UPDATE*.
-::
+
+.. code-block:: sql
 
    UPDATE vesmirne_zrudice SET geom_p = ST_POINT(x,y);
 
 A vida, nedaří se to.
-::
+
+.. code-block:: sql
 
    ERROR:  Geometry SRID (0) does not match column SRID (5514)
 
@@ -197,7 +209,7 @@ SRID nastavíme funkcí `ST_SetSRID(geometry,SRID) <http://postgis.net/docs/ST_S
 
 .. tip:: Srovnej výstupy z následujících dotazů.
 
-::
+.. code-block:: sql
 
    SELECT 'POINT(0 0)'::geometry;
    SELECT ST_SetSRID('POINT(0 0)'::geometry, 5514);
@@ -205,18 +217,21 @@ SRID nastavíme funkcí `ST_SetSRID(geometry,SRID) <http://postgis.net/docs/ST_S
 Pokud tedy použijeme funkci ST_SetSRID v UPDATE, bude již dotaz pracovat dle očekávání. Zde se opět nabízí využití této funkce v triggeru při importu obsáhlejších datasetů.
 
 Funkce *ST_GeomFromText* umožňuje použít SRID jako druhý argument.
-::
+
+.. code-block:: sql
 
    SELECT ST_GeomFromText('POINT('||x::text||' '||y::text||')', 5514) FROM vesmirne_zrudice;
    UPDATE vesmirne_zrudice SET geom_p = ST_GeomFromText('POINT('||x::text||' '||y::text||')', 5514);
 
 V rámci *CAST* si můžeme snadno vypomoci pomocí `EWKT <http://postgis.net/docs/using_postgis_dbmanagement.html#EWKB_EWKT>`_ .
-::
+
+.. code-block:: sql
 
    SELECT ('SRID=5514;POINT('||x::text||' '||y::text||')')::geometry FROM vesmirne_zrudice;
 
 Při migraci do položky s geometrií se CAST provede automaticky.
-::
+
+.. code-block:: sql
 
    UPDATE vesmirne_zrudice SET geom_p = 'SRID=5514;POINT('||x::text||' '||y::text||')';
 
@@ -238,7 +253,8 @@ Trigger
 ^^^^^^^
 
 S pomocí jednoduchého triggeru si můžeme usnadnit podstatně usnadnit život. Pokud budeme pravidelně vkládat data do tabulky zbavíme se nutnosti spouštět další dotazy a data budou převedena automaticky.
-::
+
+.. code-block:: sql
 
 
    CREATE OR REPLACE FUNCTION geom_z_xy() RETURNS trigger
