@@ -16,16 +16,21 @@ Nejdříve vyzkoušíme jednoduchý skript
 
 .. notecmd:: nahrání **ESRI shapefile** pomocí shp2pgsql
 
-   shp2pgsql Ulice_cp1250.shp ukol_1.ulice | psql pokusnik 2> err
+   .. code-block:: bash
+
+      shp2pgsql Ulice_cp1250.shp ukol_1.ulice | psql pokusnik 2> err
 
 Tabulka se vůbec nevytvoří, problém je s kódováním. Dbf s numerikou je totiž v kódování cp1250 a naše databáze v UTF8. Použijeme proto přepínač -W pro nastavení kódování vstupního souboru.
 
 .. notecmd:: nahrání **ESRI shapefile** pomocí shp2pgsql
 
-   shp2pgsql -W cp1250 Ulice_cp1250.shp ukol_1.ulice | psql pokusnik 2> err
+   .. code-block:: bash
+
+      shp2pgsql -W cp1250 Ulice_cp1250.shp ukol_1.ulice | psql pokusnik 2> err
 
 Pohled do geometry columns
-::
+
+.. code-block:: sql
        
    pokusnik=# select * from geometry_columns where f_table_schema = 'ukol_1';
 
@@ -44,7 +49,9 @@ Musíme tedy rozšířit předešlý příkaz o zadání *SRID*, které má být
 
 .. notecmd:: nahrání **ESRI shapefile** pomocí shp2pgsql
 
-   shp2pgsql -W cp1250 -s 5514 Ulice_cp1250.shp ukol_1.ulice | psql pokusnik 2> err
+   .. code-block:: bash
+
+      shp2pgsql -W cp1250 -s 5514 Ulice_cp1250.shp ukol_1.ulice | psql pokusnik 2> err
 
 .. tip:: SRID vrstvy, je samozřejmě možné změnit u hotové vrstvy a to příkazem `UpdateGeometrySRID <http://postgis.net/docs/manual-2.0/UpdateGeometrySRID.html>`_, nicméně v případě, že nad takovou tabulkou už máte kupříkladu postavené pohledy, bude to neutně znamenat je všechny přegenerovat, přičemž si můžete (a také nemusíte) vyrobit nepříjemný chaos v právech. Je tedy jistě lepší na toto pamatovat a tabulky již vytvářet se správným SRID.
 
@@ -65,13 +72,12 @@ Nejdříve převedeme data z předešlého příkladu. Použijeme driver `Postgr
 
 .. notecmd:: nahrání **ESRI shapefile** pomocí ogr2ogr
 
-   export SHAPE_ENCODING="cp1250"
+   .. code-block:: bash
 
-   ogr2ogr -f PostgreSQL PG:dbname=pokusnik -a_srs 'EPSG:5514' Ulice_cp1250.shp \\
-
-      -nlt MULTILINESTRING \\
-
-      -nln ukol_1.ulice
+      export SHAPE_ENCODING="cp1250"
+      ogr2ogr -f PostgreSQL PG:dbname=pokusnik -a_srs 'EPSG:5514' Ulice_cp1250.shp \
+	 -nlt MULTILINESTRING \
+	 -nln ukol_1.ulice
 
 V prvním řádku řekneme, v jakém kódování je zdrojový soubor shp.
 
@@ -104,15 +110,13 @@ Zde přejmenujeme ulici *Kaštanová* na *Jírovcová*.
 
 .. notecmd:: nahrání **ESRI shapefile** pomocí ogr2ogr
 
-   export PG_USE_COPY=YES;
+   .. code-block:: bash
 
-   ogr2ogr -f PGDump /dev/stdout -a_srs 'EPSG:5514' Ulice_cp1250.shp \\
-
-   -nlt MULTILINESTRING -nln ukol_1.ulice_3 \\
-
-   | sed 's/Kaštanová/Jírovcová/g' \\
-
-   | psql pokusnik 2> err
+      export PG_USE_COPY=YES;
+      ogr2ogr -f PGDump /dev/stdout -a_srs 'EPSG:5514' Ulice_cp1250.shp \
+      -nlt MULTILINESTRING -nln ukol_1.ulice_3 \
+      | sed 's/Kaštanová/Jírovcová/g' \
+      | psql pokusnik 2> err
 
 V prvním řádku nastavíme proměnnou prostředí :option:`PG_USE_COPY`. Tím řekneme, že data mají být přenesena jako *COPY tabname FROM STDIN*, namísto řady *INSERT* statementů. Stejným způsobem by fungoval i *PostgrSQL** driver. 
 
@@ -124,57 +128,60 @@ Samozřejmě *ESRI shapefile* není jediný formát, se kterým ogr2ogr pracuje.
 
 .. notecmd:: nahrání **GML** pomocí ogr2ogr
 
-   ogr2ogr -f PGDump /dev/stdout -a_srs 'EPSG:5514' \\
+   .. code-block:: bash
 
-   adres_mista.gml \\
-
-   -nln ukol_1.adresy | \\
-
-   psql pokusnik 2> err
+      ogr2ogr -f PGDump /dev/stdout -a_srs 'EPSG:5514' \
+      adres_mista.gml \
+      -nln ukol_1.adresy | \
+      psql pokusnik 2> err
 
 V ogr2ogr je možné pracovat i s webovými službami, například můžeme načíst katastrální území z `WFS ČUZAKu <http://services.cuzk.cz/doc/inspire-cp-view.pdf>`_.
-:
 
-::
+.. notecmd:: nahrání WFS
 
-   ogr2ogr -f "PostgreSQL" PG:"dbname=pokusnik" \
-   "http://services.cuzk.cz/wfs/inspire-cp-wfs.asp? \
-   service=WFS \
-   &request=GetFeature&version=2.0.0 \
-   &srsName=urn:ogc:def:crs:EPSG::5514 \
-   &typeNames=CP:CadastralZoning \
-   &featureid=CZ.605999" \
-   -nln ukol_1.katatest
+   .. code-block:: bash
+
+      ogr2ogr -f "PostgreSQL" PG:"dbname=pokusnik" \
+      "http://services.cuzk.cz/wfs/inspire-cp-wfs.asp? \
+      service=WFS \
+      &request=GetFeature&version=2.0.0 \
+      &srsName=urn:ogc:def:crs:EPSG::5514 \
+      &typeNames=CP:CadastralZoning \
+      &featureid=CZ.605999" \
+      -nln ukol_1.katatest
 
 Ve WFS bývá zhusta limit na maximální počet prvků, není tedy, v praxi, možné obvykle stáhnout větší objem dat. Můžeme však stahovat prvky po jednom. Z `číselníku katastrálních území <http://www.cuzk.cz/CUZK/media/CiselnikyISKN/SC_SEZNAMKUKRA_DOTAZ/SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip>`_ vybereme katastry Prahy.
 
-::
+.. notecmd:: dávkového nahrání dat z WFS
 
-   wget http://www.cuzk.cz/CUZK/media/CiselnikyISKN/SC_SEZNAMKUKRA_DOTAZ/SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip
-   unzip SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip
-   psql -c "truncate table ukol_1.katatest" pokusnik;
+   .. code-block:: bash
 
-   cut -d ';' -f 7,8 SC_SEZNAMKUKRA_DOTAZ.csv | \
-      tail -n +2 | \
-      grep Praha |
-      cut -d ';' -f 2 |
-      while read kodku; do
-         echo $kodku;
-         ogr2ogr -append \
-         -f "PostgreSQL" PG:"dbname=pokusnik" \
-         "http://services.cuzk.cz/wfs/inspire-cp-wfs.asp?\
-   service=WFS\
-   &request=GetFeature&version=2.0.0\
-   &srsName=urn:ogc:def:crs:EPSG::5514\
-   &typeNames=CP:CadastralZoning&\
-   featureid=CZ.$kodku" \
-         -nln ukol_1.katatest
-      done;
+      wget http://www.cuzk.cz/CUZK/media/CiselnikyISKN/SC_SEZNAMKUKRA_DOTAZ/SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip
+      unzip SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip
+      psql -c "truncate table ukol_1.katatest" pokusnik;
+
+      cut -d ';' -f 7,8 SC_SEZNAMKUKRA_DOTAZ.csv | \
+	 tail -n +2 | \
+	 grep Praha |
+	 cut -d ';' -f 2 |
+	 while read kodku; do
+	    echo $kodku;
+	    ogr2ogr -append \
+	    -f "PostgreSQL" PG:"dbname=pokusnik" \
+	    "http://services.cuzk.cz/wfs/inspire-cp-wfs.asp?\
+      service=WFS\
+      &request=GetFeature&version=2.0.0\
+      &srsName=urn:ogc:def:crs:EPSG::5514\
+      &typeNames=CP:CadastralZoning&\
+      featureid=CZ.$kodku" \
+	    -nln ukol_1.katatest
+	 done;
 
 .. warning:: Bagrování WFS ovšem není ideální způsob jak plnit daty databázi (limit na bbox a počet prvků tam není jen tak pro nic za nic). Tato data je možné získat i pohodlněji a šetrněji k infrastruktuře ČUZAKu.
 
 Na závěr si naše data zobrazíme v **SVG**.
-::
+
+.. code-block:: sql
 
    SET SEARCH_PATH = public, ukol_1;
    SELECT 

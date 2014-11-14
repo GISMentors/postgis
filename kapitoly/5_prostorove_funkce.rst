@@ -47,7 +47,8 @@ V každém políčku je vyplněn počet rozměrů průniku. Tedy pro bod je :opt
 
 Funkci můžeme použít ve dvou tvarech, můžeme zadat jako třetí argument matici (i s využitím "divokých karet"), pak vrací funkce true/false
 Případně funkci můžeme použít jen se dvěma argumenty, geometriemi, pak fce vrací matici, případně můžeme přidat argument pro číslo pro pravidlo uzlů hranice.
-::
+
+.. code-block:: sql
 
    SELECT ST_Relate('POLYGON((1 1,1 3,3 3,3 1,1 1))'::geometry, 
       'POLYGON((1 1,1 3,3 3,3 1,1 1))'::geometry);
@@ -78,7 +79,7 @@ Na podobném principu jako předešlá funkce pracuje řada dalších funkcí, k
 
 :ST_Intersects: True za předpokladu, že prvky sdílejí alespoň jeden bod.
 
-::
+.. code-block:: sql
 
    SELECT ST_Intersects('POLYGON((0 0,4 0,4 3,0 0))', 'POLYGON((2 0,6 0,6 3,2 0))');
    SELECT ST_Intersects('POLYGON((0 0,4 0,4 3,0 0))', 'POLYGON((4 0,8 0,8 3,4 0))');
@@ -94,7 +95,7 @@ Na podobném principu jako předešlá funkce pracuje řada dalších funkcí, k
 
 :ST_Within: Podobné jako ST_CoveredBy
 
-::
+.. code-block:: sql
 
    SELECT ST_Within('POLYGON((0 0,4 0,4 3,0 0))'::geometry, 'POLYGON((0 0,8 0,8 6,0 0))'::geometry);
    SELECT ST_Contains('POLYGON((0 0,4 0,4 3,0 0))'::geometry, 'POLYGON((0 0,8 0,8 6,0 0))'::geometry);
@@ -131,7 +132,7 @@ Celá řada funkcí vrací změněnou geometrii, představíme si několik z nic
 
 .. warning:: Různý počet segmentů se může projevit i v počtu vybraných bodů.
 
-::
+.. code-block:: sql
 
    SET SEARCH_PATH = ukol_1, public;
 
@@ -182,6 +183,7 @@ ST_Multi
 ^^^^^^^^
 
 Mění typ geometrie z jednoduché na *Multi*.
-::
+
+.. code-block:: sql
 
    SELECT ST_AsText(ST_Multi('LINESTRING(1 1,5 5)'::geometry));

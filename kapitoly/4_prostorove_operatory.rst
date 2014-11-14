@@ -10,7 +10,8 @@ Operátor &&
 ^^^^^^^^^^^
 
 Operátor **&&** vrací **true**, pokud je bounding box prvního prvku alespoň částečně překryt bounding boxem druhého prvku, nebo pokud se bounding boxy dotýkají. To se dá využít jako nejjednodušší prostorový filtr pro zobrazení, případně jako předvýběr dat pro další analýzu, pokud chceme optimalizovat dotaz. Setkáte se s ním například pokud budete logovat všechny dotazy v databázi nad kterou někdo pracuje s QGISem.
-::
+
+.. code-block:: sql
 
    SELECT adresnibod geom FROM ukol_1.adresy 
    WHERE adresnibod && 'LINESTRING(-739719.43 -1046851.61,-735806.08 -1043755.06)'::geometry;
@@ -23,7 +24,8 @@ Operátor **&&** vrací **true**, pokud je bounding box prvního prvku alespoň 
 
 
 Dalším využitím je, jak již bylo řečeno optimalizace dotazů. Dejme tomu, že chceme spočítat počet adresních bodů v okruhu 250 metrů okolo bodu uložení vesmírných vajec s id=1.
-::
+
+.. code-block:: sql
 
    SET SEARCH_PATH = ukol_1, public;
 
@@ -51,7 +53,8 @@ Operátor **@** funguje podobně jako operátor **&&**, ovšem s tím rozdílem,
 Použití je podobné jako u předešlého operátoru, s tím rozdílem, že nevybereme prvky, které leží na hranici. Pokud bychom, například vybírali polygony, které leží celé uvnitř nějakého polygonu, zredukujeme počet analyzovaných prvků, už v rámci "hrubého" filtru (a ušetříme výkon), o prvky, o kterých víme, že není možné, aby v bafru ležely.
 
 Operátor **~** funguje stejně jako **@**, ovšem s obráceným pořadím prvků. Vrací tedy jen takové prvky, jejichž bounding box zcela zakrývá bounding box prvku za operátorem.
-::
+
+.. code-block:: sql
 
    SELECT 'LINESTRING(0 0, 1 1)'::geometry && 'LINESTRING(0 0, -1 -1)'::geometry;
    SELECT 'LINESTRING(0 0, 1 1)'::geometry @ 'LINESTRING(0 0, -1 -1)'::geometry;
@@ -67,7 +70,8 @@ Operátory <-> a <#>, vzdálenost
 -------------------------------
 
 Tyto dva operátory vrací vzdálenost. **<->** vrací vzdálenost centroidů, **<#>** vrací nejkratší vzdálenost boundingboxů. Využít je to možné například pro `optimalizaci vyhledávání nejbližšího prvku <http://boundlessgeo.com/2011/09/indexed-nearest-neighbour-search-in-postgis/>`_. Pokud pracujeme jen s body, vystačíme, samozřejmě, pouze s operátory.
-::
+
+.. code-block:: sql
 
    SELECT 'POINT(0 0)'::geometry <-> 'POINT(0 10)'::geometry;
    SELECT 'POINT(0 0)'::geometry <#> 'POINT(0 10)'::geometry;
@@ -86,7 +90,8 @@ Tyto dva operátory vrací vzdálenost. **<->** vrací vzdálenost centroidů, *
 .. warning:: Je zjevné, že u některých typů prvků předvýběr pomocí boundingboxu nemusí být zase taková výhra (například dlouhé multilinie a obecně hodně členité prvky).
 
 Předvedeme si, jak vyřešit úlohu s body v určité vzdálenosti od bodu pomocí tohoto operátoru. Je jedno, zdali použijeme *<->*, nebo *<#>*, protože se jedná o body.
-::
+
+.. code-block:: sql
 
    SET SEARCH_PATH = ukol_1, public;
    EXPLAIN ANALYZE

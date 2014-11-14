@@ -15,11 +15,13 @@ Rozbor
 ^^^^^^
 
 Nejdříve zkontrolujeme, zda je tabulka s adresními body patřičně oindexovaná.
-::
+
+.. code-block:: sql
 
    \d+ ukol_1.adresy
 
-   ...
+::
+
    Indexy:
        "adresy_pk" PRIMARY KEY, btree (ogc_fid)
        "adresy_adresnibod_geom_idx" gist (adresnibod)
@@ -29,7 +31,8 @@ Nejdříve zkontrolujeme, zda je tabulka s adresními body patřičně oindexova
 
 
 S ohledem na to, že pracujeme s body, vystačíme si s operátory.
-::
+
+.. code-block:: sql
 
    SET SEARCH_PATH = ukol_1, public;
    --public musí být proto, že v něm jsou uložený PostGIS
@@ -41,7 +44,8 @@ S ohledem na to, že pracujeme s body, vystačíme si s operátory.
 
 
 K výběru nejbližšího bodu použijeme *LIMIT*
-::
+
+.. code-block:: sql
 
    SELECT a.kod, v.id, a.adresnibod<->v.geom_p vzdalenost
    FROM adresy a, vesmirne_zrudice v 
@@ -53,7 +57,8 @@ K výběru nejbližšího bodu použijeme *LIMIT*
 K výběru nejbližšího bodu ke každému z bodů můžeme použít několik cest.
 
 Vnořený poddotaz:
-::
+
+.. code-block:: sql
 
    SELECT 
    id
@@ -66,7 +71,8 @@ Vnořený poddotaz:
    ) FROM vesmirne_zrudice;
 
 Common table expression s `window funkcí <http://www.postgresql.org/docs/9.3/static/tutorial-window.html>`_
-::
+
+.. code-block:: sql
 
    WITH cte AS
    (
@@ -88,7 +94,8 @@ Common table expression s `window funkcí <http://www.postgresql.org/docs/9.3/st
 
 .. warning:: Elegantní řešení nemusí být však vždy to nejvýkonější. A to ani při optimalizaci.
 
-::
+
+.. code-block:: sql
 
    WITH cte AS
    (
@@ -109,7 +116,8 @@ Common table expression s `window funkcí <http://www.postgresql.org/docs/9.3/st
    SELECT * FROM cte WHERE rn = 1;
 
 Window funkce v poddotazu
-::
+
+.. code-block:: sql
 
    SELECT * FROM 
    (
@@ -129,7 +137,8 @@ Window funkce v poddotazu
    WHERE rn = 1;
 
 Případně můžeme použít `anonymní blok kódu <file:///usr/share/doc/postgresql/html/sql-do.html>`_
-::
+
+.. code-block:: sql
 
    BEGIN;
 
@@ -157,8 +166,8 @@ Případně můžeme použít `anonymní blok kódu <file:///usr/share/doc/postg
 
 Řešení
 ^^^^^^
-::
 
+.. code-block:: sql
 
    BEGIN;
 
@@ -216,12 +225,14 @@ Rozbor
 ^^^^^^
 
 V tabulce ulice nám nejspíš bude chybět index. Zkontrolujeme ho a pokud tam není, tak ho vytvoříme.
-::
+
+.. code-block:: sql
 
    CREATE INDEX ulice_geom_idx ON ulice USING gist (geom);
 
 Ulice v okruhu 250 metrů můžeme vybrat buď bafrem,
-::
+
+.. code-block:: sql
 
    SELECT u.*, v.geom_p
    FROM ulice u,
@@ -231,7 +242,8 @@ Ulice v okruhu 250 metrů můžeme vybrat buď bafrem,
 .. tip:: Vyzkoušejte místo ST_Relate ST_Intersects
 
 optimalizovaná verze
-::
+
+.. code-block:: sql
 
    SELECT * FROM
    (
@@ -243,7 +255,8 @@ optimalizovaná verze
    WHERE ST_Relate(geom, ST_Buffer(geom_p, 250, 100), 'T********');
 
 nebo na základě vzdálenosti.
-::
+
+.. code-block:: sql
 
    EXPLAIN ANALYZE
    SELECT * FROM
@@ -270,13 +283,17 @@ Postup
 ^^^^^^
 
 Nahrajeme do databáze budovy.
-::
 
-   wget http://46.28.111.140/gismentors/skoleni/data_postgis/stav_objekty.dump
-   psql -f stav_objekty.dump pokusnik
+.. notecmd:: ploch z PGDump
+
+   .. code-block:: bash
+
+      wget http://46.28.111.140/gismentors/skoleni/data_postgis/stav_objekty.dump
+      psql -f stav_objekty.dump pokusnik
 
 Indexy už v tabulce jsou.
-::
+
+.. code-block:: sql
 
    SELECT 
    id
@@ -295,12 +312,14 @@ Indexy už v tabulce jsou.
    WHERE ST_Relate(ST_Buffer(geom_p, 250, 100), originalnihranice, '2********');
 
 Ale máme chybky v topologii
-::
+
+.. code-block:: sql
 
    SELECT * FROM budovy WHERE NOT ST_IsValid(originalnihranice) ;
 
 Chyby můžeme opravit, nebo použít *ST_MakeValid* rovnou v dotazu.
-::
+
+.. code-block:: sql
 
    SELECT
    id
