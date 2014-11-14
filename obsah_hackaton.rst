@@ -3,20 +3,28 @@ Obsah
 
 Vstupní znalost:
 ----------------
-* Uživatel zná alespoň základy SQL
-* Zvládne i počítač, na kterém nejsou windows
+* Uživatel zná alespoň základy :wikipedia:`SQL`
+* PostGIS je multiplatformní, je plně funkční na platformách jako
+  GNU/Linux, MS Windows či Mac OSX
+
 
 Výstupní dovednost:
 -------------------
-* Uživatel zvládne dostat data do postgis
-* Uživatel zvládne dostat data z postgis ven
-* Uživatel tuší, co má hledat, když chce data nějakým způsobem vizualizovat
-* Uživatel má povědomí s čím rámcově musí počítat, když chce dotazovat větší data (dejme tomu RUIAN pro phu na slabším stroji)
-* Uživatel tuší jak postupovat, když chce dostat z dat v postgisu informaci související s umístěním
-* Uživatel zvládá samostatně řešit jednoduché analýzy v postgis
+* Uživatel zvládne naimportovat data do PostGIS
+* Uživatel zvládne exportovat data z PostGIS do jiných GIS formátů
+* Uživatel je schopen data vizualizovat
+* Uživatel má povědomí s čím rámcově musí počítat, když se chce
+  dotazovat vna ětší data (dejme tomu RÚIAN pro Prahu na slabším
+  stroji)
+* Uživatel je schopen provádět prostorové dotazy
+* Uživatel zvládá samostatně řešit jednoduché analýzy v PostGIS
 
-Potřebosti:
------------
-* Buď mašina s linuxem, postgre, qgisem a připojení na internet, nezaškodí pgadmin, libreoffice, rko
-* Nebo přístupy na server přes ssh, na servru běží postgre, na klientu by se hodilo psql a data stačí prohlížet přes webovou prohlížečku (webový qgis)
-* `pracovní data <http://46.28.111.140/gismentors/skoleni/data_postgis/>`_.
+Požadavky
+---------
+
+* PC s OS GNU/Linux, PostgreSQL, QGIS a připojení k internetu,
+  volitelně pgAdminIII, LibreOffice, R
+* Alternativně přístup na server přes ssh, na kterém běží PostgreSQL,
+  na klientovi psql, data stačí prohlížet přes webový prohlížeč
+  (webový QGIS)
+* `pracovní data <http://46.28.111.140/gismentors/skoleni/data_postgis/>`_
