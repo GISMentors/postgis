@@ -18,16 +18,21 @@ Tvorba pomocí rozšíření
 Od **PostgreSQL** verze 9.1 můžeme vytvořit prostorovou databázi příkazem `CREATE EXTENSION`.
 
 Instalace PostGIS pomocí *CREATE EXTENSION*
-::
 
-   $ psql pokusnik
-   ...
+.. notecmd:: spuštění psql
+
+	.. code-block:: bash
+
+		psql pokusnik
+
+.. code-block:: sql
 
    CREATE EXTENSION postgis;
    CREATE EXTENSION postgis_topology;
 
 Velká výhoda tohoto postupu je snadný upgrade na vyšší verzi postgisu.
-::
+
+.. code-block:: sql
 
    ALTER EXTENSION postgis UPDATE TO "2.1.0";
 
@@ -36,29 +41,29 @@ Tvorba pomocí skriptů
 
 `Kompletní postup pro postgis 2.1 <http://postgis.net/docs/manual-2.1/postgis_installation.html#create_new_db>`_
 
-V některých případech není možné použít výše zmíněný postup kvůli staršímu postgrei, nastavení práv, nebo problémům s balíčky. Pak je možné provést tvorbu databáze `po staru` pomocí skriptů. Umístění skriptů se může lišit podle distribuce a verze postgisu.
+V některých případech není možné použít výše zmíněný postup kvůli staršímu postgre, nastavení práv, nebo problémům s balíčky. Pak je možné provést tvorbu databáze `po staru` pomocí skriptů. Umístění skriptů se může lišit podle distribuce a verze postgisu.
 
 .. notecmd:: dohledání instalačních skriptů PostGIS
 
-   $ locate postgis.sql
+	.. code-block:: bash
+
+		locate postgis.sql
+
+::
 
    /home/jelen/jelen_dta/work/postgis_circle/postgis.sql
-
    /usr/share/postgresql/contrib/postgis-2.1/postgis.sql
-
    /usr/share/postgresql/contrib/postgis-2.1/rtpostgis.sql
-
    /usr/share/postgresql/contrib/postgis-2.1/uninstall_postgis.sql
-
    /usr/share/postgresql/contrib/postgis-2.1/uninstall_rtpostgis.sql
 
-   $ 
 
 .. notecmd:: instalace PostGIS pomocí skriptů
 
-   psql -d db_s_postgis -f postgis.sql
+	.. code-block:: bash
 
-   psql -d db_s_postgis -f spatial_ref_sys.sql
+		psql -d db_s_postgis -f postgis.sql
+		psql -d db_s_postgis -f spatial_ref_sys.sql
 
 Vytvoříme postgis a naplníme tabulku souřadných systémů základní sadou předpřipravených SRS.
 
@@ -90,14 +95,18 @@ Pokud kopírujeme databázi, kopírujeme ji se vším všudy, je-li v ní nahrá
 Postgre umožňuje kopírovat databázi použitím `template`.
 
 Buď v psql (nebo pg_adminu - který je ovšem pro uplakánky):
-::
+
+.. code-block:: sql
 
    CREATE DATABASE moje_nova_databaze WITH TEMPLATE predem_pripravena_predloha;
 
 Nebo pomocí příkazu `createdb`:
-::
 
-   createdb moje_nova_databaze -T predem_pripravena_predloha
+.. notecmd:: použití
+
+	.. code-block:: bash
+
+		createdb moje_nova_databaze -T predem_pripravena_predloha
 
 Toho se využívalo u verzí PostgreSQL starších než 9.1 k tomu, že si správce databáze na serveru vytvořil prázdnou databázi s postgisem, aby se vyhnul otravnému vypisování skriptů.
 
@@ -118,8 +127,9 @@ V defaultní sadě souřadných systémů schází křovákovo zobrazení :EPSG:
 
 .. notecmd:: přidání souřadného systému do databáze
 
-   wget http://epsg.io/5514.sql
+	.. code-block:: bash
 
-   psql -f 5514.sql moje_nova_databaze
+		wget http://epsg.io/5514.sql
+		psql -f 5514.sql moje_nova_databaze
 
 .. noteadvanced:: Definice souřadných systémů umožňují využít zpřesňující klíče pro transformaci do wgs. Je záhodno tuto možnost využít, pokud máte v úmyslu data transformovat například do systému WGS84, nebo googlího mercatora. Trochu nešťastné ovšem je, že pro jeden souřadný systém je možné použít jen jednu sadu klíčů. Zároveň nefunguje žádná `dědičnost souřadných systémů`. Pokud tedy máte pokryté Česko i Slovensko a pro každý stát používáte 5514, pokaždé s jiným transformačním klíčem, nezbyde Vám, než nadefinovat si pro každý stát vlastní SRS s vlastním SRID.

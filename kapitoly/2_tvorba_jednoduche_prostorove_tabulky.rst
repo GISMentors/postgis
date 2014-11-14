@@ -31,7 +31,8 @@ COPY
 Manuál k COPY je `tady <http://www.postgresql.org/docs/9.4/static/sql-copy.html>`_.
 
 Příkaz může tedy vypadat například takto
-::
+
+.. code-block:: sql
 
    COPY vesmirne_zrudice FROM vesmirne_zrudice.txt
 
@@ -39,9 +40,10 @@ Copy je příkaz na kopírování dat mezi databázovou tabulku a textovým soub
 
 .. notecmd:: kreativního využití `copy` pro přenos dat mezi dvěma servery
 
-   psql -h prvni_server.cz -c "COPY a TO STDOUT" db1 | \\
+   .. code-block:: bash
 
-   psql -h druhy_server.cz -c "COPY b (a, b, c) FROM STDIN" db2
+      psql -h prvni_server.cz -c "COPY a TO STDOUT" db3 | \
+      psql -h druhy_server.cz -c "COPY b (a, b, c) FROM STDIN" db2
 
 .. noteadvanced:: Od verze 9.4 umí postgre jednu velice šikovnou věc a to *COPY FROM PROGRAM*, pomocí kterého nekopírujete ze souboru, ale z puštěného skriptu. Velice praktické například při pravidelném skenování stránek s nějakými uspořádanými daty. `Příklad použití <http://www.cybertec.at/importing-stock-market-data-into-postgresql/>`_. Je však třeba vzít potaz, že skript je spouštěn pod uživatelem, pod kterým běží databázový server a je nutné, aby tomu odpovídalo nastavení práv.
 
@@ -72,7 +74,9 @@ Další možnost je posílat data rourou
 
 .. notecmd:: posílání dat rourou na psql
 
-   cat body.csv | psql -h server.cz -c "COPY body (id, x, y) FROM STDIN" db
+   .. code-block:: bash
+
+      cat body.csv | psql -h server.cz -c "COPY body (id, x, y) FROM STDIN" db
 
 Metacommand \\copy
 ^^^^^^^^^^^^^^^^^^
