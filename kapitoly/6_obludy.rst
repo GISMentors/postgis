@@ -284,7 +284,7 @@ Postup
 
 Nahrajeme do databáze budovy.
 
-.. notecmd:: ploch z PGDump
+.. notecmd:: načtení dat z PGDump
 
    .. code-block:: bash
 
