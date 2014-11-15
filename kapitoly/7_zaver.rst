@@ -1,5 +1,25 @@
-Závěr
-=====
+A co dál?
+=========
+
+Topologie
+---------
+
+* zaplochování
+* generalizace
+
+Rastry
+------
+
+Pohledy a materializované pohledy
+---------------------------------
+
+Vlastní funkce
+--------------
+
+* R
+
+...
+---
 
 godzilalalala@gmail.com
 
