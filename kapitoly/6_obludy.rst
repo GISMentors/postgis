@@ -211,8 +211,8 @@ Případně můžeme použít `anonymní blok kódu <file:///usr/share/doc/postg
 
    ROLLBACK;
 
-Výběr bafrem
-------------
+Výběr podle obalové zóny
+------------------------
 
 *V případě, že se obludy vylíhnou, všechno živé v okruhu čtvrt kilometru se změní ve sliz. Najděte všechny ulice ve vzdálenosti 250 metrů od vejce, aby je bylo možné evakuovat.*
 
