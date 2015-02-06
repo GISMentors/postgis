@@ -1,0 +1,591 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.12: http://docutils.sourceforge.net/" />
+<title>Generujeme SVG z POSTGISu</title>
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 7614 2013-02-21 15:55:51Z milde $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+object[type="image/svg+xml"], object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title, .code .error {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left, .figure.align-left, object.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
+
+img.align-right, .figure.align-right, object.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: inherit }
+
+/* div.align-center * { */
+/*   text-align: left } */
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+pre.literal-block, pre.doctest-block, pre.math, pre.code {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+pre.code .ln { color: grey; } /* line numbers */
+pre.code, code { background-color: #eeeeee }
+pre.code .comment, code .comment { color: #5C6576 }
+pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
+pre.code .literal.string, code .literal.string { color: #0C5404 }
+pre.code .name.builtin, code .name.builtin { color: #352B84 }
+pre.code .deleted, code .deleted { background-color: #DEB0A1}
+pre.code .inserted, code .inserted { background-color: #A3D289}
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+/* "booktabs" style (no vertical lines) */
+table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+table.docutils.booktabs * {
+  border: 0px;
+}
+table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="generujeme-svg-z-postgisu">
+<h1 class="title">Generujeme <cite>SVG</cite> z POSTGISu</h1>
+<h2 class="subtitle" id="zastoupeni-drevin-po-orp">Zastoupení dřevin po ORP</h2>
+
+<div class="section" id="motivace">
+<h1>Motivace</h1>
+<p>Mezi funkcemi PostGISu pro výstup je funkce <a class="reference external" href="http://postgis.net/docs/ST_AsSVG.html">ST_AsSVG</a>. <cite>SVG</cite>, neboli škálovatelná grafika. Není předmětem následujícího postu rozberírat do podrobna výhody a nevýhody tohoto formátu, takže jen velmi stručně. <cite>SVG</cite> se dá vkládat přímo do html, dá se stylovat pomocí kaskádových stylů a výborně spolupracuje s javascriptem. Vykresluje se přímo na prohlížeči. Je ovšem třeba pamatovat na to, že ne každý prohlížeč vykreslí <cite>SVG</cite> a některé prohlížeče nedovedou pracovat správně se všemi prvky a jejich vlastnostmi. S <cite>SVG</cite> je možné ve webové prezentaci pracovat interaktivně a protože se jedná o vektorovou grafiku, při zvětšení nedochází k převzorkování. Na druhou stranu pro všechna měřítka se posílá stejně velký soubor, vykreslování opravdu velkého počtuprvků, nebo hodně složitých prvků může být zátěž pro prohlížeč a práce s takovým souborem nebude plynulá.</p>
+<p><cite>SVG</cite> je vhodné pro tvorbu interaktivních kartodiagramů, grafů, přehledových map. Pro tvorbu složitějších kartografických prezentací není tento formát optimální.</p>
+<p><cite>SVG</cite> je formát založený na <cite>XML</cite>, můžeme tedy, podle libosti, využívat funkce PostgreSQL pro práci s tímto formátem.</p>
+</div>
+<div class="section" id="zadani">
+<h1>Zadání</h1>
+<p>Občas se mě moji přátelé ptají na to, jaká data dáváme z ÚHÚL. Proto se podíváme, když se někde řekne &quot;jasan&quot;, kolik jich roste. Budeme pracovat s grafikou ORP.</p>
+</div>
+<div class="section" id="import-dat">
+<h1>Import dat</h1>
+<p>Ve své oblíbené databázi pokusník jsem si vytvořil schéma na hraní.</p>
+<pre class="literal-block">
+pokusnik=# create schema hratky_se_svg;
+</pre>
+<p>Wgetnu si RUIAN s generalizovanými hranicemi vyšších územně správních celků.</p>
+<pre class="literal-block">
+wget http://vdp.cuzk.cz/vymenny_format/soucasna/20141130_ST_UKSG.xml.gz
+</pre>
+<p>A z toho vyberu ORP a nahrno celou parádu do postgre</p>
+<pre class="literal-block">
+ogr2ogr -f PGDump /dev/stdout -a_srs 'EPSG:5514' 20141130_ST_UKSG.xml.gz Orp \
+-nln hratky_se_svg.orpecka \
+| psql pokusnik 2&gt; er
+</pre>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">Použiji formát PGDump, místo PostgreSQL, protože na mé distribuci zlobí přidávání více sloupců s geometrií.</p>
+</div>
+<p>Jako numeriku použijeme data o stavu lesa za rok 2013:</p>
+<pre class="literal-block">
+wget http://www.uhul.cz/images/ke_stazeni%5CSLHP/2013.rar
+</pre>
+<p>Data jsou, bohužel, v poměrně pitomém formátu xlsx, takže budeme muset trochu čarovat, abychom vykuchali potřebné údaje. K čtení xlsx použijeme utilitu gnumeric <cite>ssconvert</cite>.</p>
+<p>Rozrarujeme si stažené soubory a v něm najdeme zararované výkazy. Vybereme výkazy po orp a opět je rozrarujeme.</p>
+<pre class="literal-block">
+OLDIFS=$IFS;
+IFS=`echo -en &quot;\n\n&quot;`;
+find *.xlsx | while read ff; do
+ssconvert --export-type=Gnumeric_stf:stf_assistant \
+-O 'separator=; eol=unix sheet=dřeviny quoting-mode=never format=raw' \
+$ff;
+done 2&gt; err
+
+IFS=$OLDIFS;
+
+find *.xlsx | wc -l
+find *.txt | wc -l
+</pre>
+<p>V rychlosti si vysvětleme, co jsem v této dávce provedl. Protože jsou v názvech kulišácky použité mezery, musím přenastavit proměnnou prostředí <cite>IFS</cite>, abych mohl použít smyčku. Aktuální hodnotu IFS si proto uložím do proměnné OLDIFS. Následně ve while smyčce projdu všechny soubory xlsx a proženu je přes ssconvert. Ssconvert je jak již bylo řečeno utilita distribuovaná společně s kancelářskou sadou libreoffice a slouží k převodům mezi formáty. Pomocí <cite>--export-type=Gnumeric_stf:stf_assistant</cite> si vyberu výstupní formátu jako konfigurovatelný textový soubor. Za přepínačem <cite>-O</cite> následují nastavení výstupu. Já si nastavil oddělovač na středník, konce řádků na unixové, zrušil jsem uvozovkování a formátování. Potom jsem uvedl IFS do původního stavu a srovnal počet vstupních a výstupních souborů, protože se mi v logu <cite>err</cite> objevily chyby. Pokud bych chtěl s těmito daty nějak vážně pracovat, pochopitelně bych se s takto povrchní kontrolou nespokojil.</p>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">ÚHÚL bohužel používá číselník ORP podle ČSÚ, takže k párování nemůžeme použít kódy. Podle ČUZK je navíc o jedno ORP méně, proto nebudeme mít numeriku ke všem polygonům.</p>
+</div>
+<p>Data budou muset někde bydlet, vyrobíme pro ně tabulky.</p>
+<pre class="literal-block">
+SET SEARCH_PATH = hratky_se_svg, public;
+
+CREATE SEQUENCE id_orp_seq;
+
+CREATE TABLE soubory_slhp(
+   id_orp int NOT NULL DEFAULT nextval('id_orp_seq') PRIMARY KEY
+   , nazev varchar(255)
+);
+
+
+CREATE FUNCTION f_id_orp() RETURNS BIGINT LANGUAGE SQL AS
+$$
+SELECT last_value FROM hratky_se_svg.id_orp_seq;
+$$
+;
+
+CREATE TABLE slhp(
+   id_orp int NOT NULL DEFAULT f_id_orp()
+   , drevina varchar(255)
+   , plocha_ha float
+   , plocha_proc float
+   , zasoba_m3 float
+   , zasoba_proc float
+   , avb float
+   , stredni_vek float
+);
+
+
+CREATE INDEX ON slhp(id_orp);
+</pre>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">Tady je použitý jeden takový šikovný (leč zrádný trik). Budeme střídavě nahrávat do dvou tabulek, do první název souboru a do druhé data, přičemž u druhé tabulky se nám automaticky vloží hodnota naposledy vloženého záznamu. Pokud se ovšem něco pokazí a hodnota do první tabulky se nevloží, budeme mít špatně spárované hodnoty, protože budou mít id posledního úspěšně zapsaného záznamu.</p>
+</div>
+<p>Nahrajeme data do tabulek</p>
+<pre class="literal-block">
+OLDIFS=$IFS;
+IFS=`echo -en &quot;\n\n&quot;`;
+
+find *.txt | while read ff; do
+   head -n 1 $ff | cut -d ';' -f 1 | psql -c &quot;COPY hratky_se_svg.soubory_slhp (nazev) FROM STDIN&quot; pokusnik;
+
+   tail -n +8 $ff | sed 's/,/./g' |
+   psql -c &quot;COPY hratky_se_svg.slhp (drevina, plocha_ha, plocha_proc, zasoba_m3, zasoba_proc, avb, stredni_vek)
+   FROM STDIN WITH DELIMITER ';' NULL ''&quot; pokusnik;
+done 2&gt; err
+
+IFS=$OLDIFS;
+</pre>
+<p>Z prvního řádku získáme název ORP a zkop9rujeme do databáze. Z každého listu vezmeme řádky od osmého výše a zkopírujeme do databáze, musíme však přenastavit DELIMITER, tedy oddělovač záznamů na středník a zápis hodnoty  NULL na prázdný řetězec.</p>
+<p>Srovnáme, co nám chybí.</p>
+<pre class="literal-block">
+SELECT nazev FROM orpecka
+EXCEPT
+SELECT regexp_replace(nazev, 'ORP \d{4} \- ','') FROM soubory_slhp;
+</pre>
+<p>Je to <cite>Hlavní město Praha</cite>. Zjevně bude mít nějaký vlastní status. Nevadí. Spárujeme si to.</p>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">Pro kontrolu doporučuji provést porovnání EXCEPTem i na druhou stranu.</p>
+</div>
+<p>Párování můžeme provést třeba takto.</p>
+<pre class="literal-block">
+ALTER TABLE orpecka ADD slhp_id_orp int;
+
+UPDATE orpecka o SET slhp_id_orp = id_orp
+FROM soubory_slhp s WHERE o.nazev =  regexp_replace(s.nazev, 'ORP \d{4} \- ','');
+</pre>
+<div class="note">
+<p class="first admonition-title">Note</p>
+<p class="last">V tomto případě nemá cenu pro něco málo přes dvěstě záznamů nový sloupec indexovat.</p>
+</div>
+</div>
+<div class="section" id="komu-se-neleni-tomu-se-jasani">
+<h1>Komu se nelení, tomu se jasaní</h1>
+<p><em>Vyrobobíme si mapku zastoupení jasanů</em></p>
+<div class="section" id="co-vraci-st-assvg">
+<h2>Co vrací <cite>ST_AsSVG</cite></h2>
+<p>Takže, co tedy vrací?</p>
+<pre class="literal-block">
+SELECT ST_AsSVG(generalizovanehranice) FROM hratky_se_svg.orpecka LIMIT 1;
+</pre>
+<p>Ale to nevypadá jako <cite>XML</cite>! Ano, jistě. Není to totiž celé svg, pouze zápis vektorových geometrií jednotlivých prvků. Je to kvůli tomu, že budeme chtít prvkům určovat jejich grafickou reprezentaci. Tloušťku čar, barvu a tak dále.</p>
+</div>
+<div class="section" id="element-path">
+<h2>Element path</h2>
+<p>Použijeme xml funkce postgisu k sestavení kompletního elementu path.</p>
+<pre class="literal-block">
+SET SEARCH_PATH = hratky_se_svg, public;
+
+SELECT XMLELEMENT(NAME path,
+   XMLATTRIBUTES(
+      ST_AsSVG(generalizovanehranice, 0, 1) AS d
+      , 'black' AS stroke
+      , 50 AS &quot;stroke-width&quot;
+      , 'none' AS fill
+   )
+) svg_path
+
+from orpecka;
+</pre>
+<p>Tady se nám již vrací xml elementy. Co jsem to právě povedl? Funkce <cite>XMLELEMENT</cite> vyrobí, jak již název napoví elemenmt xml. Pomocí fce <cite>XMLATTRIBUTES</cite> tento element naplníme nějakými atributy. První atribut pojmenujeme <cite>d</cite> a naplníme ho výstupem z funkce <cite>ST_AsSVG</cite>. Všiměte si druhého a třetího parametru funkce <cite>ST_AsSVG</cite>. Druhý parametr rozlišuje, jestli mají být souřadnice lomových bodů v absolutních hodnotách, nebo relativně k prvku. Nula značí relativně. Druhý je počet desetinných míst. Jednička znamená jedno desetinné místo. Přesnost na deset centimetrů je u generalizovaných hranic ORP více než dostačující. Teoreticky by bylo možné posunout pomocí ST_Translate celou geometrii na souřadnice 0.0, případně to přetransformovat do SRS s jinými jednotkami pomoci ST_Transform. Tím se však ted nebudeme zdržovat.</p>
+</div>
+<div class="section" id="prvni-obrazek">
+<h2>První obrázek</h2>
+<p>Nyní si vytvořené prvky umístíme do prvku svg, kterému nastavíme atributy pro správné zobrazení.</p>
+<pre class="literal-block">
+SET SEARCH_PATH = hratky_se_svg, public;
+
+\a \t \o orp.svg
+
+SELECT
+XMLELEMENT(NAME svg,
+   XMLATTRIBUTES(
+   600 AS height
+   , 800 AS width
+   , array_to_string(ARRAY[MIN(ST_XMIN(generalizovanehranice)) - 2500, -1 * (MAX(ST_YMAX(generalizovanehranice))) - 2500
+      , (&#64;(MAX(ST_XMAX(generalizovanehranice)) - MIN(ST_XMIN(generalizovanehranice)))) + 5000
+      , (&#64;(MAX(ST_YMAX(generalizovanehranice)) - MIN(ST_YMIN(generalizovanehranice)))) + 5000], ' ') AS &quot;viewBox&quot;
+      , 'http://www.w3.org/2000/svg' AS xmlns, '1.1' AS version
+   )
+   , XMLAGG (
+      XMLELEMENT(NAME path,
+         XMLATTRIBUTES(
+            ST_AsSVG(generalizovanehranice, 0, 0) AS d
+            , 'black' AS stroke
+            , 300 AS &quot;stroke-width&quot;
+            , 'none' AS fill
+         )
+      )
+   )
+)
+
+from orpecka;
+
+\o \a \t
+</pre>
+<p><a class="reference external" href="orp.svg">Výsledek</a></p>
+<p>Co se tady dělo?</p>
+<p>V prvním řádku jsem nastavil search_path na složku s daty a public (v publicu jsou funkce postgisu). Dále jsem vypnul alignování výpisu a nastavil vypisování jen na výslekdy dotazu. Soubor pro výstup jsem nastavil na <cite>orp.svg</cite>. Připomínám, že \a \t a \o jsou metapříkazy psql, tudíž je třeba pracovat z psql konzole. V adminu toto nejspíš nebude fungovat. Nicméně můžete pustit dávku bez těchto metapříkazů a výstup uložit do souboru jinou cestou. Celý výsledek je uzavřen v elementu nazvaném svg. Tomuto elementu přiřadíme výšku a šířku a viewbox, nakonec zařadíme namespace a verzi svg.</p>
+<p>U viewboxu se trochu zdržíme. SVG maluje do třetího kvadrantu (neptejte se mě proč) a to tak, že x je směr doprava a ypsilon mazaně dolů. Viewbox se uvádí jako čtveřice mezerou oddělených hodnot ve tvaru &quot;xmin ymin šířka výška&quot;. Viewbox jsem protáhnul o pět kilometrů, tedy dva a půl na každé straně. Operátor <cite>&#64;</cite> je absolutní hodnota.</p>
+<p>Poté zagreguji do elementu svg všechny elementy path všechny elementy path (šířku linie jsem zvětšil na 300).</p>
+<p>Nakonec zavřu soubor a zpět zapnu vypisování v psql.</p>
+</div>
+<div class="section" id="barvicky-podle-numeriky">
+<h2>Barvičky podle numeriky</h2>
+<pre class="literal-block">
+SET SEARCH_PATH = hratky_se_svg, public;
+
+
+\a \t \o orp_jasan.svg
+
+SELECT
+XMLELEMENT(NAME svg,
+   XMLATTRIBUTES(
+   600 AS height
+   , 800 AS width
+   , array_to_string(ARRAY[MIN(ST_XMIN(generalizovanehranice)) - 2500, -1 * (MAX(ST_YMAX(generalizovanehranice))) - 2500
+      , (&#64;(MAX(ST_XMAX(generalizovanehranice)) - MIN(ST_XMIN(generalizovanehranice)))) + 5000
+      , (&#64;(MAX(ST_YMAX(generalizovanehranice)) - MIN(ST_YMIN(generalizovanehranice)))) + 5000], ' ') AS &quot;viewBox&quot;
+      , 'http://www.w3.org/2000/svg' AS xmlns, '1.1' AS version
+   )
+   , XMLAGG (
+      XMLELEMENT(NAME path,
+         XMLATTRIBUTES(
+            ST_AsSVG(generalizovanehranice, 0, 0) AS d
+            , 'black' AS stroke
+            , 300 AS &quot;stroke-width&quot;
+            , 'rgb('||(2.55*(100-(plocha_proc*4)))::int||',255,'||(2.55*(100-(plocha_proc * 4)))::int||')' AS fill
+         )
+      )
+   )
+)
+
+FROM orpecka o, slhp s
+WHERE o.slhp_id_orp = s.id_orp
+AND drevina = 'jasan';
+
+\o \a \t
+</pre>
+<p><a class="reference external" href="orp_jasan.svg">Výsledek obarvený podle jasanu</a></p>
+<p>TODO</p>
+<p>Posun do kilometrovýho křováka a souřadnice 0.0.</p>
+<p>Měnění csssek s vybarvenim pomocí javascriptu</p>
+<p>Měnění barev javascriptem z JSONU</p>
+</div>
+</div>
+</div>
+</body>
+</html>
