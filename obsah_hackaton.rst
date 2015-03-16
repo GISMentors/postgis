@@ -1,5 +1,5 @@
-Obsah
-=====
+Program pro hackaton v Brně
+===========================
 
 Vstupní znalost:
 ----------------
