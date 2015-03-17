@@ -37,13 +37,13 @@ Obsah
 O dokumentu
 -----------
 
-..
-   Text dokumentu je licencován pod `Creative Commons
-   Attribution-ShareAlike 4.0 International License
-   <http://creativecommons.org/licenses/by-sa/4.0/>`_.
-   .. figure:: images/cc-by-sa.png 
-	       :width: 130px
-	       :scale-latex: 120
+Text dokumentu je licencován pod `Creative Commons
+Attribution-ShareAlike 4.0 International License
+<http://creativecommons.org/licenses/by-sa/4.0/>`_.
+
+.. figure:: images/cc-by-sa.png 
+	    :width: 130px
+	    :scale-latex: 120
               
 *Verze textu dokumentu:* |release| (sestaveno |today|)
 
