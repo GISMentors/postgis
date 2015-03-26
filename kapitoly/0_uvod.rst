@@ -27,7 +27,7 @@ Velkou chybou je podcenění návrhu databázových struktur. Z vlastní zkušen
 Nalaďte si Postgre
 ^^^^^^^^^^^^^^^^^^
 
-Je třeba si uvědomit, že PostgreSQL je databáze. Ukládání dat do databáze se v mnohém liší od ukládání dat do souborů. K dosažení maximální efektivity je třeba PostgreSQL správně nastavit. Rozdíl v rychlosti mezi správně nastavenou databází a defaultním nastavením klidně může být o několik řádů. Postgre se nastavuje jednak s ohledem n hardware a jednak i s ohledem na požadované využití (předpokládaný počet paralelně připojebých uživatelů, velikost tabulek atd.). Nastavení se provádí ručně a je netriviální. Pokud ho někdo zmatlá, hrozí havárie a to včetně rizika poškození dat. Pokud se na to necítíte, nebo nevíte přesně co děláte, je rozumné nechat si poradit.
+Je třeba si uvědomit, že PostgreSQL je databáze. Ukládání dat do databáze se v mnohém liší od ukládání dat do souborů. K dosažení maximální efektivity je třeba PostgreSQL správně nastavit. Rozdíl v rychlosti mezi správně nastavenou databází a defaultním nastavením klidně může být o několik řádů. Postgre se nastavuje jednak s ohledem n hardware a jednak i s ohledem na požadované využití (předpokládaný počet paralelně připojených uživatelů, velikost tabulek atd.). Nastavení se provádí ručně a je netriviální. Pokud ho někdo zmatlá, hrozí havárie a to včetně rizika poškození dat. Pokud se na to necítíte, nebo nevíte přesně co děláte, je rozumné nechat si poradit.
 
 Základní úvod do problematiky je možné nabýt třeba `zde <http://www.linuxexpres.cz/praxe/optimalizace-postgresql>`_ .
 
