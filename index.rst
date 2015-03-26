@@ -26,6 +26,7 @@ Obsah
    :maxdepth: 3
 
    obsah_hackaton
+   kapitoly/0_uvod
    kapitoly/1_vytvarime_prostorovou_db
    kapitoly/2_tvorba_jednoduche_prostorove_tabulky
    kapitoly/3_shp2pgsql_a_davkove_nahrani

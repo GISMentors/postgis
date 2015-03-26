@@ -240,7 +240,7 @@ Při migraci do položky s geometrií se CAST provede automaticky.
 .. tip:: Zobrazte si tabulku ve svém oblíbeném GIS desktopu.
 
 
-.. figure:: ../grafika/fig_001.svg
+.. figure:: ../grafika/fig_001.png
     :align: center
     :alt: alternate text
 

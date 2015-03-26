@@ -1,4 +1,4 @@
-Program pro hackaton v Brně
+Program pro workshop v Brně
 ===========================
 
 Vstupní znalost:

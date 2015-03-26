@@ -16,7 +16,7 @@ Operátor **&&** vrací **true**, pokud je bounding box prvního prvku alespoň 
    SELECT adresnibod geom FROM ukol_1.adresy 
    WHERE adresnibod && 'LINESTRING(-739719.43 -1046851.61,-735806.08 -1043755.06)'::geometry;
 
-.. figure:: ../grafika/fig_002.svg
+.. figure:: ../grafika/fig_002.png
     :align: center
     :alt: alternate text
 
