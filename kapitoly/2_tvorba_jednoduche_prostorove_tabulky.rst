@@ -1,10 +1,10 @@
 Vytváříme prostorovou tabulku
 =============================
 
-*Záhadná vesmírná obludnost ukryla po praze svoje zrůdná vejce. Podařilo se, s nasazením života, získat jejich souřadnice. Nyní musíme vytvořit v postgisu tabulku, ze které si je budou moci zobrazit teréní agenti, aby vejce našli a zneškodnili, dřív, než se z nich vylíhnou malé, nepředstavitelně ohavné, obludky.*
+*Záhadná vesmírná obludnost ukryla po Praze svoje zrůdná vejce. Podařilo se, s nasazením života, získat jejich souřadnice. Nyní musíme vytvořit v PostGISu tabulku, ze které si je budou moci zobrazit terénní agenti, aby vejce našli a zneškodnili, dřív, než se z nich vylíhnou malé, nepředstavitelně ohavné, obludky.*
 
-Jak dostat data do Postgre
---------------------------
+Import dat do PostgreSQL
+------------------------
 
 Dejme tomu, že naše data budou vypadat nějak takto:
 ::
@@ -21,33 +21,33 @@ S tím, že známe strukturu, která vypadá takto:
 
    id	x	y
 
-Oddělovač je tabelátor.
+Oddělovačem je tabulátor.
 
-Dostat takovouto jednoduchou tabulku do Postgre můžeme celou řadou způsobů. Můžeme pomocí `sed` převést jednotlivé řádky na insert statementy. Můžeme použít libre/open office jak je popsáno `zde <http://grasswiki.osgeo.org/wiki/Openoffice.org_with_SQL_Databases#Converting_Excel.2C_CSV.2C_..._to_PostgreSQL.2FMySQL.2F..._via_OO-Base>`_ (to je, mimochodem, velice užitečná technika, pokud někdy budete potřebovat do Postgre převést větší množství dat z excelu, jako jsou číselníky z ČUZK, data se statistického úřadu apod). Můžeme tabulku otevřít v qgisu a ze souřadnic rovnou udělat geometrii, uložit do shp a použít `shp2pgsql`. To se hodí obzvlášť pokud dostanete od někoho data opsané ručně z GPS navigace v minutách a vteřinách. Qgis umí načíst tato data rovnou a ušetříte si poměrně otravné přepočítávání. Nicméně nejpřímější cesta jak dostat textovou tabulku do postgre je použití **COPY**.
+.. note::
+   
+   Naimportovat tato data do PostgreSQL můžeme různými způsoby. Pomocí unixového programu ``sed`` můžeme např. převést jednotlivé řádky na :sqlcmd:`INSERT` statementy. Nebo můžeme použít Libre/OpenOffice, jak je popsáno `zde <http://grasswiki.osgeo.org/wiki/Openoffice.org_with_SQL_Databases#Converting_Excel.2C_CSV.2C_..._to_PostgreSQL.2FMySQL.2F..._via_OO-Base>`_ (to je, mimochodem, velice užitečná technika, pokud někdy budete potřebovat do PostgreSQL převést větší množství dat z MS Excel, jako jsou číselníky ČUZK, data se statistického úřadu apod). Tabulku můžeme otevřít v QGISu a ze souřadnic rovnou vytvořit geometrii, uložit do formátu Esri Shapefile a použít pro import do PostGISu nástroj ``shp2pgsql``, který je součástí instalace PostGIS. To se hodí obzvlášť pokud dostanete od někoho data opsané ručně z GPS navigace v minutách a vteřinách. QGIS umí načíst tato data rovnou a ušetříte si poměrně otravné přepočítávání. Nicméně nejpřímější cesta jak dostat textovou tabulku do PostgreSQL je použití příkazu :sqlcmd:`COPY`.
 
 COPY
 ^^^^
 
-Manuál k COPY je `tady <http://www.postgresql.org/docs/9.4/static/sql-copy.html>`_.
-
-Příkaz může tedy vypadat například takto
+Příkaz `COPY <http://www.postgresql.org/docs/9.4/static/sql-copy.html>`_ může vypadat například takto
 
 .. code-block:: sql
 
    COPY vesmirne_zrudice FROM vesmirne_zrudice.txt
 
-Copy je příkaz na kopírování dat mezi databázovou tabulku a textovým souborem. A to v obou směrech. Kopírovate můžeme ze/do souboru, z výstupu skriptu a ze standartního vstupu/na standartní výstup. Je možné nastavovat přehršel možností, oddělovače polí, řádků, hodnoty NULL, přítomnost řádku s hlavičkou, kódování a další. V případě, že máme nějaká data v exotickém formátování, vyplatí se vyzkoušet, jestli se nám nepodaří je do copy nakrmit, než je začneme soukat přez nějaké skripty na přeformátování. 
+:sqlcmd:`COPY` je příkaz pro kopírování dat mezi databázovou tabulku a textovým souborem. A to v obou směrech. Kopírovat můžeme z/do souboru, z výstupu skriptu či ze standardního vstupu/na standardní výstup. Je možné nastavovat přehršel možností, oddělovače polí, řádků, hodnoty NULL, přítomnost řádku s hlavičkou, kódování a další. V případě, že máme data v exotickém formátování, vyplatí se vyzkoušet, jestli se nám nepodaří je nakopírovat přímo příkazem :sqlcmd:`COPY`, než začnete používat specializované programy na přeformátování. 
 
-.. notecmd:: kreativního využití `copy` pro přenos dat mezi dvěma servery
+.. notecmd:: Příklad kreativního využití :sqlcmd:`COPY` pro přenos dat mezi dvěma databázovými servery
 
    .. code-block:: bash
 
       psql -h prvni_server.cz -c "COPY a TO STDOUT" db3 | \
       psql -h druhy_server.cz -c "COPY b (a, b, c) FROM STDIN" db2
 
-.. noteadvanced:: Od verze 9.4 umí postgre jednu velice šikovnou věc a to *COPY FROM PROGRAM*, pomocí kterého nekopírujete ze souboru, ale z puštěného skriptu. Velice praktické například při pravidelném skenování stránek s nějakými uspořádanými daty. `Příklad použití <http://www.cybertec.at/importing-stock-market-data-into-postgresql/>`_. Je však třeba vzít potaz, že skript je spouštěn pod uživatelem, pod kterým běží databázový server a je nutné, aby tomu odpovídalo nastavení práv.
+.. noteadvanced:: Od verze 9.4 umí PostgreSQL jednu velice šikovnou věc a to *COPY FROM PROGRAM*, pomocí kterého nekopírujete ze souboru, ale ze spuštěného skriptu. Velice praktické například při pravidelném skenování stránek s nějakými uspořádanými daty. `Příklad použití <http://www.cybertec.at/importing-stock-market-data-into-postgresql/>`_. Je však třeba vzít v potaz, že skript je spouštěn pod uživatelem, pod kterým běží databázový server a je nutné, aby tomu odpovídalo nastavení práv.
 
-Nás ovšem bude zajímat kopírování ze souboru do tabulky. Copy, totiž, jakkoliv je skvělé, má jedno omezení. Kopíruje totiž soubor, který leží na databázovém serveru a jako uživatel pod kterým je puštěné postgre (obvykle postgres) a někdy může být problematické soubor na server dostat a patřičná oprávnění mu přidělit. Řeší se to několika triky.
+Nás ovšem bude zajímat kopírování ze souboru do tabulky. Příkaz :sqlcmd:`COPY`, jakkoliv je skvělý, má jedno omezení. Kopíruje totiž soubor, který je umístěn na databázovém serveru a jako uživatel, pod kterým je spuštěn PostgreSQL (obvykle `postgres`). Někdy může být problematické soubor na server dostat a udělit mu patřičná oprávnění. Řeší se to několika triky.
 
 Dump formát
 ^^^^^^^^^^^
@@ -240,9 +240,8 @@ Při migraci do položky s geometrií se CAST provede automaticky.
 .. tip:: Zobrazte si tabulku ve svém oblíbeném GIS desktopu.
 
 
-.. figure:: ../grafika/fig_001.png
+.. figure:: ../grafika/fig_001.svg
     :align: center
-    :alt: alternate text
 
     Obr. 1: Jako podklad jsou použité pražské ulice
 

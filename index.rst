@@ -16,6 +16,8 @@ Kromě podpory práce s vektorovými daty v podobě jednoduchých geoprvků
 topologickém formátu a bezešvý přístup k uložení rastrových dat a
 jejich využití v prostorovém SQL v souvislosti s daty vektorovými.
 
+PostGIS je multiplatformní a plně funkční na platformách jako
+GNU/Linux, MS Windows či Mac OSX.
 
 Obsah
 =====
