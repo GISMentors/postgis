@@ -45,14 +45,14 @@ Příkaz `COPY <http://www.postgresql.org/docs/9.4/static/sql-copy.html>`_ můž
       psql -h prvni_server.cz -c "COPY a TO STDOUT" db3 | \
       psql -h druhy_server.cz -c "COPY b (a, b, c) FROM STDIN" db2
 
-.. noteadvanced:: Od verze 9.4 umí PostgreSQL jednu velice šikovnou věc a to *COPY FROM PROGRAM*, pomocí kterého nekopírujete ze souboru, ale ze spuštěného skriptu. Velice praktické například při pravidelném skenování stránek s nějakými uspořádanými daty. `Příklad použití <http://www.cybertec.at/importing-stock-market-data-into-postgresql/>`_. Je však třeba vzít v potaz, že skript je spouštěn pod uživatelem, pod kterým běží databázový server a je nutné, aby tomu odpovídalo nastavení práv.
+.. noteadvanced:: Od verze 9.4 umí PostgreSQL jednu velice šikovnou věc a to *COPY FROM PROGRAM*, pomocí kterého nekopírujete ze souboru, ale ze spuštěného skriptu. Velice praktické například při pravidelném skenování stránek s nějakými uspořádanými daty (`příklad použití <http://www.cybertec.at/importing-stock-market-data-into-postgresql/>`_). Je však třeba vzít v potaz, že skript je spouštěn pod uživatelem, pod kterým běží databázový server a je nutné, aby tomu odpovídalo nastavení práv.
 
 Nás ovšem bude zajímat kopírování ze souboru do tabulky. Příkaz :sqlcmd:`COPY`, jakkoliv je skvělý, má jedno omezení. Kopíruje totiž soubor, který je umístěn na databázovém serveru a jako uživatel, pod kterým je spuštěn PostgreSQL (obvykle `postgres`). Někdy může být problematické soubor na server dostat a udělit mu patřičná oprávnění. Řeší se to několika triky.
 
 Dump formát
 ^^^^^^^^^^^
 
-Upravíme data do podoby v jaké bývají produkována z pg_dump:
+Upravíme data do podoby v jaké bývají produkována z ``pg_dump``:
 
 .. code-block:: sql
 
@@ -64,43 +64,41 @@ Upravíme data do podoby v jaké bývají produkována z pg_dump:
    5	-739810.27441117	-1038080.18144734
    \.
 
-Jak patrno, stačí doplnit první řádek s COPY a poslední s označením konce vkládání. Výsledný skript pustíme pomocí psql -f. 
+Jak patrno, stačí doplnit první řádek s :sqlcmd:`COPY` a poslední s označením konce vkládání (``\.``). Výsledný skript pustíme pomocí ``psql``. 
 
-Tento postup je výhodný, pokud píšeme nějaké skripty pro převody dat, když doplníme dva jednoduché řádky, můžeme snadno posílat výstup ze skriptu rovnou na psql, aniž by bylo třeba ho někam ukládat.
+Tento postup je výhodný, pokud píšete skripty pro převody dat. Stačí doplnit dva jednoduché řádky, potom můžete snadno posílat výstup ze skriptu rovnou na ``psql``, aniž by bylo třeba ho někam ukládat.
 
 Roura
 ^^^^^
 
-Další možnost je posílat data rourou
+Další možnost je posílat data tzv. rourou. Tento postup je určen pouze
+pro operační systém unixového typu jako je např. GNU/Linux.
 
-.. notecmd:: posílání dat rourou na psql
-
-   .. code-block:: bash
-
-      cat body.csv | psql -h server.cz -c "COPY body (id, x, y) FROM STDIN" db
+.. code-block:: bash
+                
+   cat body.csv | psql -h server.cz -c "COPY body (id, x, y) FROM STDIN" db
 
 Metacommand \\copy
 ^^^^^^^^^^^^^^^^^^
 
-Poslední možností, kterou já osobně používám nejčastěji pro ruční nahrávání dat, která dostanu v textovém formátu. \\copy funguje podobně jako COPY, ovšem s tím rozdílem, že kopírujete data z počítače na kterém je spuštěno psql a pod právy uživatele, který pustil psql. Když tedy chcete naplnit tabulky daty, které máte na svém lokále, je toto nejefektivnější postup. 
+Příkaz ``\copy`` funguje podobně jako :sqlcmd:`COPY`, ovšem s tím rozdílem, že kopírujete data z počítače na kterém je spuštěno ``psql`` a pod právy uživatele, který pustil ``psql``. Pokud tedy chcete naplnit tabulky daty, které máte na svém počítači, je toto nejefektivnější postup. 
 
-.. warning:: \\copy je metacommand psql, nikoliv SQL dotaz, funguje tedy jen v psql, není tedy možné s ním počítat v rámci přístupu k databázi z programovacích jazyků, různých grafických nástrojů apod.
+.. warning:: ``\copy`` je metacommand ``psql``, nikoliv SQL dotaz, funguje tedy pouze v ``psql``, není možné s ním počítat v rámci přístupu k databázi z programovacích jazyků, různých grafických nástrojů apod.
 
 Vytváříme tabulku
 -----------------
 
-Vytvořit tabulku, do které půjdou uložit prostorová data lze více způsoby. Jak už to bývá, některé jsou vhodnější, než jiné. 
+Vytvořit tabulku, do které půjdou uložit prostorová data lze více způsoby. Sloupec s geometrii můžete od verze PostGIS 2.0 přidávat standardně pomocí :sqlcmd:`ALTER TABLE ... ADD COLUMN`. Ve starších verzích (PostGIS a 1.5 a nižších) byla jedinou možností funkce ``AddGeometryColumn()``, která je nicméně pro zachování zpětné kompatibility součástí i novějších verzí.
 
-AddGeometryColumn
-^^^^^^^^^^^^^^^^^
+Krom samotného přidání sloupce s typem ``geometry`` se vytvoří *constrainty*, neboli omezení, na geometrický typ, dimenzi prvků a souřadnicový systém. V praxi to obnáší dvě podstatné věci. Tou první je, jak by se dalo očekávat omezení vkládaných prvků na prvky splňující určitá kritéria (typ, SRID, počet dimenzí). Což zamezí tomu, aby Vám nezodpovědný uživatel vyrobil v databázi nepořádek, případně abyste si ho tam v záchvatu kreativity vyrobili sami. 
 
-Nejrozšířenější způsob je přidání geometrického sloupce k již existující tabulce pomocí postgis funkce `AddGeometryColumn() <http://postgis.refractions.net/docs/AddGeometryColumn.html>`_ která, krom samotného přidání sloupce s typem geometry, také vytvoří *constrainty*, neboli omezení, na geometrický typ, počet dimenzí a souřadný systém pro přidaný sloupec. V praxi to obnáší dvě podstatné věci. Tou první je, jak by se dalo očekávat omezení vkládaných prvků na prvky splňující určitá kritéria (typ, SRID, počet dimenzí). Což zamezí tomu, aby Vám nezodpovědný uživatel vyrobil v databázi nepořádek, případně abyste si ho tam v záchvatu kreativity vyrobili sami. Jistě, jsou omezení, která jsou omezující a potažmo škodlivá. Tohle není ten případ.
+.. note::
+   
+   Druhou věcí, kterou zmíněné *constrainty* řeší, je generování *pohledu* (view) s metadaty :dbtable:`geometry_columns`. V případě, že constrainty nejsou vytvořené, bude jako typ geometrie uvedeno obecné ``geometry`` a jako SRID "0". S tím mohou mít některé programy přistupující k datům problém, například do QGISu se Vám takovou vrstvu nepodaří přidat, natož jí zobrazit. Nicméně, sluší se zmínit, že v některých, avšak velice vzácných, případech má použití takové tabulky své opodstatnění. Jedním z nich je tvorba databázového modelu, kde potřebujete kombinovat v jedné tabulce data různých geometrických typů, nebo dat v různých souřadných systémech. Databáze potom slouží jako úložiště a data jí opouštějí (například ve formátu GeoJSON) pomocí specifických procedur, kdy jsou potřebné informace doplněny a aparát na udržování geometrických metadat je tedy zbytečný. Dalším případem mohou být NOSQL databáze, kde vrstva v klasickém, relačním, pojetí pozbývá smyslu. Nicméně jedná se o případy specifické, ojedinělé a pokročilé, rozhodně nad rámec tohoto kurzu.
 
-Druhou věcí, kterou zmíněné *constrainty* řeší je generování *pohledu* s grafickými metadaty **geometry_columns**. Z toho pohledu drtivá většina software získává informace o typech geometrických prvků v databázi. V případě, že constrainty nejsou vytvořené, bude jako typ geometrie uvedeno obecné *GEOMETRY* a jako SRID "0". S tím mohou některé software mít problém, například do QGISu se Vám takovou vrstvu nepodaří přidat, natož jí zobrazit. Nicméně, sluší se zmínit, že v některých, avšak velice vzácných, případech má použití takové tabulky své opodstatnění. Jedním z nich je tvorba databázového modelu, kde potřebujete kombinovat v jedné tabulce data různých geometrických typů, nebo dat v různých souřadných systémech, databáze slouží jako úložiště a data jí opouštějí (například ve formátu GeoJSON) pomocí specifických procedur, kdy jsou potřebné informace doplněny, aparát na udržování geometrických metadat je tedy zbytečný. Dalším případem mohou být NOSQL databáze, kde vrstva v klasickém, relačním, pojetí pozbývá smyslu. Nicméně jedná se o případy specifické, ojedinělé a pokročilé, rozhodně nad rámec těchto lekcí.
+.. noteadvanced:: Ve verzích PostGIS nižších než 2.0 nebyl :dbtable:`geometry_columns` pohled, ale tabulka. Při přidání pohledů na data nebo při ruční registraci tabulek bylo třeba do ní záznamy přidávat ručně. To v aktuálních verzích PostGISu odpadá.
 
-.. noteadvanced:: Ve verzích PostGIS nižších než 2.0 nebyl *geometry_columns* pohled, ale tabulka. Při přidání pohledů, nebo při ruční registraci tabulek bylo třeba přidat do ní záznamy. V aktuálních verzích postgisu toto odpadá.
-
-Sloupců s geometrií můžeme k tabulce přidat prakticky libovolné množství, například k tabulce budov můžeme přidat sloupec s polygony pro obrys a s body pro definiční bod. Jedná se určitě o lepší řešení, než obojí uložit do jednoho sloupce do typu GEOMETRY COLLECTION.
+Sloupců s geometrií můžeme do tabulky přidat prakticky libovolné množství. Například k tabulce budov můžeme přidat sloupec s polygony pro obrys a s body pro definiční bod. Jedná se určitě o lepší řešení, než obojí uložit do jednoho sloupce do typu GEOMETRY COLLECTION.
 
 Tabulka
 ^^^^^^^
@@ -112,13 +110,13 @@ Nejdříve si vytvoříme pracovní schéma.
    CREATE SCHEMA ukol_1;
 
 
-Tabulku vytvoříme klasicky, příkazem *CREATE TABLE*.
+Tabulku vytvoříme klasicky, příkazem :sqlcmd:`CREATE TABLE`.
 
 .. code-block:: sql
 
-   CREATE TABLE ukol_1.vesmirne_zrudice( id int PRIMARY KEY, x float, y float);
+   CREATE TABLE ukol_1.vesmirne_zrudice(id INT PRIMARY KEY, x FLOAT, y FLOAT);
 
-Je vhodné, když tabulka má primární klíč v datovém typu *INTEGER*, pokud je primární klíč v jiném datovém typu, nebo, pokud dokonce chybí úplně, některé software nemusí s tabulkou pracovat korektně. 
+.. note:: Je vhodné, pokud má tabulka primární klíč celočíslený (datový typ *INTEGER*). Pokud je primární klíč jiného datového typu nebo dokonce chybí úplně, tak některé programy nemusí s tabulkou pracovat korektně. 
 
 .. warning:: Například u dat ČUZAK ve VFK, kde jsou primární klíče v typu *NUMERIC(30)*. Zde ovšem můžeme narazit u skutečně objemných dat, nebo číselných řad sdílených mezi více tabulkami. Aktuální verze QGISu se, naštěstí, dokaže vypořádat s většinou celočíselných primárních klíčů. Přesto je dobré na tento problém pamatovat a v případě problémů jej prověřit.
 
