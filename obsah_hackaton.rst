@@ -26,4 +26,4 @@ Požadavky
   na klientovi psql. Data stačí prohlížet přes webový prohlížeč
   (webový QGIS)
 * PostGIS 2.0 a vyšší
-* `pracovní data <http://training.gismentors.eu/data/geopython/>`_
+* `pracovní data <http://training.gismentors.eu/geodata/postgis/>`_
