@@ -98,8 +98,8 @@ Ve složce se skripty jsou však některé další užitečné skripty, které s
 *legacy.sql*
    Zpětná kompatibilita.
 
-Kopie již existující databáze s postgisem
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Kopie již existující databáze
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Pokud kopírujeme databázi, kopírujeme ji se vším všudy, je-li v ní nahrán PostGIS, kopírujeme ji i s ním.
 
