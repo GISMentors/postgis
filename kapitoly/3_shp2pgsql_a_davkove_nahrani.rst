@@ -1,61 +1,54 @@
 Dávkové nahrání dat
 ===================
 
-*Dávkové zpracování a následné nahrávání dat z různých zdrojů do databáze je nejzákladnějším úkonem při budování databáze prostorových dat. Data obvykle nahráváme ze souborových formátů, případně z webových služeb. Řetězec úkonů mezi uchopením nějakého zdroje dat a jeho konečným umístěním do databáze bychom nejspíš označili termínem* **ETL**. *Pro standartní formáty s úspěchem můžeme využít utility knihovny gdal, jmenovitě* **ogr2ogr** *, pro import* **ESRI shapefile** *můžeme využít loader* **shp2pgsql** *instalovaný spolu s PostGISem.*
+*Dávkové zpracování a následné nahrávání dat z různých zdrojů do databáze je nejzákladnějším úkonem při budování databáze prostorových dat. Data obvykle nahráváme ze souborových formátů, případně z webových služeb. Řetězec úkonů mezi uchopením nějakého zdroje dat a jeho konečným umístěním do databáze bychom nejspíš označili termínem* **ETL**. *Pro standardní formáty s úspěchem můžeme využít utility knihovny* `GDAL <http://gdal.org>`_, *jmenovitě* `ogr2ogr <http://www.gdal.org/ogr2ogr.html>`_, *pro import* :wikipedia-en:`Esri shapefile` *můžeme využít loader shp2pgsql instalovaný spolu s PostGISem.*
 
 shp2pgsql
 ---------
 
-**shp2pgsql** Je utilitka distribuovaná spolu s PostGISem. `Velice pěkně zpracovaný cheatsheet <http://www.bostongis.com/pgsql2shp_shp2pgsql_quickguide.bqg>`_. shp2pgsql vrací data v dump formátu a umí je poslat na standartní výstup. Je tedy možné, v případě potřeby prohnat výstup z této utility například přes sed, případně uložit do souboru a ručně zeditovat.
+`shp2pgsql <http://www.bostongis.com/pgsql2shp_shp2pgsql_quickguide.bqg>`_ je utilitka distribuovaná spolu s PostGISem, která vrací data v dump formátu na standardní výstup. Je tedy možné, v případě potřeby, upravit výstup z této utility například unixovým nástrojem ``sed`` či případně uložit do souboru a ručně zeditovat.
 
-shp2pgsql umí jak data přidat do již existující tabulky, tak potřebnou tabulku vytvořit. Umí také pouze vytvořit tabulku podle souboru, aniž by do ní přidal data. Více v `manuálu <http://postgis.net/docs/manual-2.1/using_postgis_dbmanagement.html#shp2pgsql_usage>`_.
+shp2pgsql umí jak data přidat do již existující tabulky, tak potřebnou tabulku vytvořit. Lze také pouze vytvořit na základě dat prázdnou tabulku a samotná data do ní nenahrávat. Více v `manuálu <http://postgis.net/docs/using_postgis_dbmanagement.html#shp2pgsql_usage>`_.
 
-.. note:: Hlavním limitem pro použití shp2pgsql jsou samotné limity ESRI shapefile, které je zastaralé. Jda například o zakracování názvů sloupců. Také může být problém s delšími celými čísly. Například numeric bude surově zakrácen na int, což může způsobit problémy mimo jiné u dat z ČUZAKu, které používají primární klíče numeric(30).
+.. note:: Hlavním limitem pro použití shp2pgsql jsou samotné limity formátu Esri Shapefile. Jde například o zkracování názvů sloupců, formát nedovoluje délku názvu sloupce větší než 10 znaků. Dále můžete mít problém s některými datovými typy, například ``numeric`` bude surově zakrácen na ``int``, což může způsobit problémy mimo jiné u dat ve formátu VFK, které používají primární klíče ``numeric(30)``.
 
-Nejdříve vyzkoušíme jednoduchý skript
+V našem příkladě zkusíme nahrát `datovou vrstvu ulic <http://training.gismentors.eu/geodata/postgis/Ulice_cp1250.zip>`_.
 
-.. notecmd:: nahrání **ESRI shapefile** pomocí shp2pgsql
+.. code-block:: bash
 
-   .. code-block:: bash
+   shp2pgsql Ulice_cp1250.shp ukol_1.ulice | psql pokusnik 2> err
 
-      shp2pgsql Ulice_cp1250.shp ukol_1.ulice | psql pokusnik 2> err
+Tabulka se vůbec nevytvoří, problém je s kódováním. Atributová tabulka vstupních dat je v kódování cp1250 a naše databáze v UTF8. Použijeme proto přepínač :option:`-W` pro nastavení kódování vstupního souboru.
 
-Tabulka se vůbec nevytvoří, problém je s kódováním. Dbf s numerikou je totiž v kódování cp1250 a naše databáze v UTF8. Použijeme proto přepínač -W pro nastavení kódování vstupního souboru.
+.. code-block:: bash
 
-.. notecmd:: nahrání **ESRI shapefile** pomocí shp2pgsql
+   shp2pgsql -W cp1250 Ulice_cp1250.shp ukol_1.ulice | psql pokusnik 2> err
 
-   .. code-block:: bash
-
-      shp2pgsql -W cp1250 Ulice_cp1250.shp ukol_1.ulice | psql pokusnik 2> err
-
-Pohled do geometry columns
+Pohled do :dbtable:`geometry_columns` nám odhalí poměrně nepříjemný fakt a to, že naše nově přidaná vrstva nemá správný souřadnicový systém (SRID 5514), nýbrž neznámý souřadnicový systém s kódem 0.
 
 .. code-block:: sql
        
-   pokusnik=# select * from geometry_columns where f_table_schema = 'ukol_1';
+   SELECT * FROM geometry_columns WHERE f_table_schema = 'ukol_1';
 
-.. table::
-   :class: border
+::
 
-   +-----------------+----------------+--------------+-------------------+-----------------+--------+-----------------+
-   | f_table_catalog | f_table_schema | f_table_name | f_geometry_column | coord_dimension |  srid  |      type       |
-   +=================+================+==============+===================+=================+========+=================+
-   | pokusnik        | ukol_1         | ulice        | geom              |               2 |      0 | MULTILINESTRING |
-   +-----------------+----------------+--------------+-------------------+-----------------+--------+-----------------+
+   f_table_catalog   | skoleni
+   f_table_schema    | ukol_1
+   f_table_name      | ulice
+   f_geometry_column | geom
+   coord_dimension   | 2
+   srid              | 0
+   type              | MULTILINESTRING
 
-Nám odhalí poměrně nepříjemný fakt a to, že naše nově přidaná vrstva nemá správný souřadný systém (SRID 5514), nýbrž souřadný systém 0.
+Musíme tedy rozšířit předešlý příkaz o zadání *SRID*, které má být nové vrstvě přiřazeno (přídáme přepínačý :option:`-d`, který stavající tabulku nejprve odstraní).
 
-Musíme tedy rozšířit předešlý příkaz o zadání *SRID*, které má být nové vrstvě přiřazeno.
+.. code-block:: bash
 
-.. notecmd:: nahrání **ESRI shapefile** pomocí shp2pgsql
+   shp2pgsql -d -W cp1250 -s 5514 Ulice_cp1250.shp ukol_1.ulice | psql pokusnik 2> err
 
-   .. code-block:: bash
+.. tip:: SRID vrstvy, je samozřejmě možné změnit u hotové vrstvy a to příkazem :pgiscmd:`UpdateGeometrySRID`, nicméně v případě, že nad takovou tabulkou už máte kupříkladu postavené pohledy, bude to nutně znamenat je všechny přegenerovat, přičemž si můžete (a také nemusíte) vyrobit nepříjemný chaos v právech. Je tedy lepší na toto pamatovat a tabulky již vytvářet se správným SRID.
 
-      shp2pgsql -W cp1250 -s 5514 Ulice_cp1250.shp ukol_1.ulice | psql pokusnik 2> err
-
-.. tip:: SRID vrstvy, je samozřejmě možné změnit u hotové vrstvy a to příkazem `UpdateGeometrySRID <http://postgis.net/docs/manual-2.0/UpdateGeometrySRID.html>`_, nicméně v případě, že nad takovou tabulkou už máte kupříkladu postavené pohledy, bude to neutně znamenat je všechny přegenerovat, přičemž si můžete (a také nemusíte) vyrobit nepříjemný chaos v právech. Je tedy jistě lepší na toto pamatovat a tabulky již vytvářet se správným SRID.
-
-.. tip:: K utilitě shp2pgsql existuje také obrácený nástroj **pgsql2shp** který slouží k exportu tabulek do ESRI shapefile. Jeho použití je jednoduché a najdete ho na každém stroji s postgisem. Na druhou stranu, ESRI shapefile je zastaralý formát a při jeho použití může dojít k degradaci dat, tudíž ho má smysl použít jen pokud příjemce dat vyžaduje výslovně tento formát.
+.. tip:: K utilitě shp2pgsql existuje také obrácený nástroj **pgsql2shp**, který slouží k exportu tabulek do formátu Esri Shapefile. Jeho použití je jednoduché a najdete ho na každém stroji s PostGISem. Nicméně, jak již bylo zmíněno, Esri Shapefile je zastaralý formát. Při jeho použití může dojít k degradaci dat, tudíž ho má smysl použít jen pokud příjemce dat vyžaduje výslovně tento formát.
 
 
 Ogr2ogr
