@@ -1,4 +1,4 @@
-postgis
+PostGIS
 =======
 
-Postgis školení
+Školení GISMentors PostGIS pro pokročilé uživatele

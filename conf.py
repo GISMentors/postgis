@@ -6,7 +6,7 @@ import os
 # -- General configuration ------------------------------------------------
 
 # General information about the project.
-project = u'Školení PostGIS'
+project = u'Školení PostGIS pro pokročilé'
 #copyright = u'2014, Martin Landa (GISMentors.eu)'
 copyright = u'2014, Jan JELEN Michálek (GISMentors.eu)'
 
