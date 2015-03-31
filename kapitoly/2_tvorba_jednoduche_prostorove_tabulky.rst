@@ -81,9 +81,9 @@ Upravíme data do podoby v jaké bývají produkována z ``pg_dump``:
    5	-739810.27441117	-1038080.18144734
    \.
 
-Jak patrno, stačí doplnit první řádek s :sqlcmd:`COPY` a poslední s označením konce vkládání (``\.``). Výsledný skript pustíme pomocí ``psql``. 
+Jak patrno, stačí doplnit první řádek s :sqlcmd:`COPY` a poslední s označením konce vkládání (``\.``). Výsledný skript pustíme pomocí :program:`psql`. 
 
-Tento postup je výhodný, pokud píšete skripty pro převody dat. Stačí doplnit dva jednoduché řádky, potom můžete snadno posílat výstup ze skriptu rovnou na ``psql``, aniž by bylo třeba ho někam ukládat.
+Tento postup je výhodný, pokud píšete skripty pro převody dat. Stačí doplnit dva jednoduché řádky, potom můžete snadno posílat výstup ze skriptu rovnou na :program:`psql`, aniž by bylo třeba ho někam ukládat.
 
 Roura
 -----
@@ -98,9 +98,9 @@ pro operační systém unixového typu jako je např. GNU/Linux.
 Metacommand \\copy
 ------------------
 
-Příkaz ``\copy`` funguje podobně jako :sqlcmd:`COPY`, ovšem s tím rozdílem, že kopírujete data z počítače na kterém je spuštěno ``psql`` a pod právy uživatele, který pustil ``psql``. Pokud tedy chcete naplnit tabulky daty, které máte na svém počítači, je toto nejefektivnější postup. 
+Příkaz ``\copy`` funguje podobně jako :sqlcmd:`COPY`, ovšem s tím rozdílem, že kopírujete data z počítače na kterém je spuštěno :program:`psql` a pod právy uživatele, který pustil :program:`psql`. Pokud tedy chcete naplnit tabulky daty, které máte na svém počítači, je toto nejefektivnější postup. 
 
-.. warning:: ``\copy`` je metacommand ``psql``, nikoliv SQL dotaz, funguje tedy pouze v ``psql``, není možné s ním počítat v rámci přístupu k databázi z programovacích jazyků, různých grafických nástrojů apod.
+.. warning:: ``\copy`` je metacommand :program:`psql`, nikoliv SQL dotaz, funguje tedy pouze v :program:`psql`, není možné s ním počítat v rámci přístupu k databázi z programovacích jazyků, různých grafických nástrojů apod.
 
 Vytváříme tabulku
 =================
@@ -296,7 +296,7 @@ Pro efektivní práci s prostorovými daty je nezbytné tato data xindexovat (pa
 
    CREATE INDEX vesmirne_zrudice_geom_p_geom_idx ON vesmirne_zrudice USING gist (geom_p);
 
-.. note:: Zda je tabulka indexovaná (a další podrobnosti o tabulce) zjistíme v *psql* pomocí metacomandu ``\d+``:
+.. note:: Zda je tabulka indexovaná (a další podrobnosti o tabulce) zjistíme v :program:`psql` pomocí metacomandu ``\d+``:
 
    .. code-block:: sql
 

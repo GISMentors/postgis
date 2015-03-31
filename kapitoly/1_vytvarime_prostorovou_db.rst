@@ -107,7 +107,7 @@ Pokud kopírujeme databázi, kopírujeme ji se vším všudy, je-li v ní nahrá
 
 PostgreSQL umožňuje kopírovat databázi pomocí parametru :option:`template`.
 
-Buď v psql (nebo pgAdminIII - který je ovšem pro "uplakánky"):
+Buď v :program:`psql` (nebo :program:`pgAdminIII` - který je ovšem pro "uplakánky"):
 
 .. code-block:: sql
 
