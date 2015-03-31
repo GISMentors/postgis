@@ -223,6 +223,7 @@ ve formátu :wikipedia-en:`GML <Geography Markup Language>`.
    .. code-block:: bash
 
       ogr2ogr -f PGDump /dev/stdout -a_srs 'EPSG:5514' \
+      -lco 'GEOMETRY_NAME=adresnibod' \       
       adres_mista.gml.gz \
       -nln ukol_1.adresy | \
       psql pokusnik 2> err

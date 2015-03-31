@@ -388,7 +388,7 @@ Při migraci do položky s geometrií se CAST provede automaticky.
 .. figure:: ../grafika/fig_001.svg
     :align: center
 
-    Obr. 1: Jako podklad jsou použité pražské ulice
+    Jako podklad jsou použité pražské ulice
 
 .. _geometrie-trigger:
 
