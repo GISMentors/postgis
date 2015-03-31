@@ -1,7 +1,12 @@
 Operátory datového typu geometry
 ================================
 
-*S datovým typem geometry nám v PostgreSQL přibyde několik poměrně zajímavých* `operátorů <http://postgis.net/docs/manual-2.1/reference.html#Operators>`_. *Rozhodně není od věci se s nimi seznámit. Vesměs řeší vzájemnou polohu bounding boxů prvků a kromě pohodlného a přehledného zápisu jsou obvykle velice rychlé.*
+*S datovým typem geometry nám v PostgreSQL přibyde několik poměrně
+ zajímavých* `operátorů
+ <http://postgis.net/docs/manual-2.1/reference.html#Operators>`_. *Rozhodně
+ není od věci se s nimi seznámit. Vesměs řeší vzájemnou polohu
+ bounding boxů prvků a kromě pohodlného a přehledného zápisu jsou
+ obvykle velice rychlé.*
 
 Překryv bounding boxů
 ---------------------
@@ -9,7 +14,13 @@ Překryv bounding boxů
 Operátor &&
 ^^^^^^^^^^^
 
-Operátor **&&** vrací **true**, pokud je bounding box prvního prvku alespoň částečně překryt bounding boxem druhého prvku, nebo pokud se bounding boxy dotýkají. To se dá využít jako nejjednodušší prostorový filtr pro zobrazení, případně jako předvýběr dat pro další analýzu, pokud chceme optimalizovat dotaz. Setkáte se s ním například pokud budete logovat všechny dotazy v databázi nad kterou někdo pracuje s QGISem.
+Operátor **&&** vrací **true**, pokud je bounding box prvního prvku
+alespoň částečně překryt bounding boxem druhého prvku, nebo pokud se
+bounding boxy dotýkají. To se dá využít jako nejjednodušší prostorový
+filtr pro zobrazení, případně jako předvýběr dat pro další analýzu,
+pokud chceme optimalizovat dotaz. Setkáte se s ním například pokud
+budete logovat všechny dotazy v databázi nad kterou někdo pracuje s
+QGISem.
 
 .. code-block:: sql
 
@@ -22,7 +33,9 @@ Operátor **&&** vrací **true**, pokud je bounding box prvního prvku alespoň 
     Obr. 2: Adresní body vybrané pomocí boundingboxu linie.
 
 
-Dalším využitím je, jak již bylo řečeno optimalizace dotazů. Dejme tomu, že chceme spočítat počet adresních bodů v okruhu 250 metrů okolo bodu uložení vesmírných vajec s id=1.
+Dalším využitím je, jak již bylo řečeno optimalizace dotazů. Dejme
+tomu, že chceme spočítat počet adresních bodů v okruhu 250 metrů okolo
+bodu uložení vesmírných vajec s id=1.
 
 .. code-block:: sql
 
@@ -47,11 +60,20 @@ Dalším využitím je, jak již bylo řečeno optimalizace dotazů. Dejme tomu,
 Operátor @ a ~
 ^^^^^^^^^^^^^^
 
-Operátor **@** funguje podobně jako operátor **&&**, ovšem s tím rozdílem, že vrací prvky, jejichž bounding box je zcela překryt bounding boxem druhého prvku.
+Operátor **@** funguje podobně jako operátor **&&**, ovšem s tím
+rozdílem, že vrací prvky, jejichž bounding box je zcela překryt
+bounding boxem druhého prvku.
 
-Použití je podobné jako u předešlého operátoru, s tím rozdílem, že nevybereme prvky, které leží na hranici. Pokud bychom, například vybírali polygony, které leží celé uvnitř nějakého polygonu, zredukujeme počet analyzovaných prvků, už v rámci "hrubého" filtru (a ušetříme výkon), o prvky, o kterých víme, že není možné, aby v bafru ležely.
+Použití je podobné jako u předešlého operátoru, s tím rozdílem, že
+nevybereme prvky, které leží na hranici. Pokud bychom, například
+vybírali polygony, které leží celé uvnitř nějakého polygonu,
+zredukujeme počet analyzovaných prvků, už v rámci "hrubého" filtru (a
+ušetříme výkon), o prvky, o kterých víme, že není možné, aby v bafru
+ležely.
 
-Operátor **~** funguje stejně jako **@**, ovšem s obráceným pořadím prvků. Vrací tedy jen takové prvky, jejichž bounding box zcela zakrývá bounding box prvku za operátorem.
+Operátor **~** funguje stejně jako **@**, ovšem s obráceným pořadím
+prvků. Vrací tedy jen takové prvky, jejichž bounding box zcela zakrývá
+bounding box prvku za operátorem.
 
 .. code-block:: sql
 
@@ -68,7 +90,11 @@ Operátor **~** funguje stejně jako **@**, ovšem s obráceným pořadím prvk�
 Operátory <-> a <#>, vzdálenost
 -------------------------------
 
-Tyto dva operátory vrací vzdálenost. **<->** vrací vzdálenost centroidů, **<#>** vrací nejkratší vzdálenost boundingboxů. Využít je to možné například pro `optimalizaci vyhledávání nejbližšího prvku <http://boundlessgeo.com/2011/09/indexed-nearest-neighbour-search-in-postgis/>`_. Pokud pracujeme jen s body, vystačíme, samozřejmě, pouze s operátory.
+Tyto dva operátory vrací vzdálenost. **<->** vrací vzdálenost
+centroidů, **<#>** vrací nejkratší vzdálenost boundingboxů. Využít je
+to možné například pro `optimalizaci vyhledávání nejbližšího prvku
+<http://boundlessgeo.com/2011/09/indexed-nearest-neighbour-search-in-postgis/>`_. Pokud
+pracujeme jen s body, vystačíme, samozřejmě, pouze s operátory.
 
 .. code-block:: sql
 
@@ -82,13 +108,19 @@ Tyto dva operátory vrací vzdálenost. **<->** vrací vzdálenost centroidů, *
    SELECT ST_Buffer('POINT(0 0)'::geometry, 10) <-> ST_Buffer('POINT(10 0)'::geometry, 10);
    SELECT ST_Buffer('POINT(0 0)'::geometry, 10) <#> ST_Buffer('POINT(10 0)'::geometry, 10);
 
-.. warning:: Centroid nemusí ležet uvnitř geometrie (např u různých dutých tvarů.
+.. warning:: Centroid nemusí ležet uvnitř geometrie (např u různých
+             dutých tvarů.
 
-.. important:: Výčet operátorů není kompletní. Určitě není na škodu věnovat pozornost manuálové stránce.
+.. important:: Výčet operátorů není kompletní. Určitě není na škodu
+               věnovat pozornost manuálové stránce.
 
-.. warning:: Je zjevné, že u některých typů prvků předvýběr pomocí boundingboxu nemusí být zase taková výhra (například dlouhé multilinie a obecně hodně členité prvky).
+.. warning:: Je zjevné, že u některých typů prvků předvýběr pomocí
+             boundingboxu nemusí být zase taková výhra (například
+             dlouhé multilinie a obecně hodně členité prvky).
 
-Předvedeme si, jak vyřešit úlohu s body v určité vzdálenosti od bodu pomocí tohoto operátoru. Je jedno, zdali použijeme *<->*, nebo *<#>*, protože se jedná o body.
+Předvedeme si, jak vyřešit úlohu s body v určité vzdálenosti od bodu
+pomocí tohoto operátoru. Je jedno, zdali použijeme *<->*, nebo *<#>*,
+protože se jedná o body.
 
 .. code-block:: sql
 

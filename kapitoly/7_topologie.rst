@@ -1,4 +1,5 @@
 Topologie
 =========
 
-*PostGIS nabízí, kromě práce se `simple features` také práci s vektory v topologii*
+*PostGIS nabízí, kromě práce se `simple features` také práci s vektory
+ v topologii*

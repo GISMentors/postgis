@@ -2,12 +2,19 @@
  Vytváříme prostorovou tabulku
 ===============================
 
-*Záhadná vesmírná obludnost ukryla po Praze svoje zrůdná vejce. Podařilo se, s nasazením života, získat jejich souřadnice. Nyní musíme vytvořit v PostGISu tabulku, ze které si je budou moci zobrazit terénní agenti, aby vejce našli a zneškodnili, dřív, než se z nich vylíhnou malé, nepředstavitelně ohavné, obludky.*
+*Záhadná vesmírná obludnost ukryla po Praze svoje zrůdná
+ vejce. Podařilo se, s nasazením života, získat jejich
+ souřadnice. Nyní musíme vytvořit v PostGISu tabulku, ze které si je
+ budou moci zobrazit terénní agenti, aby vejce našli a zneškodnili,
+ dřív, než se z nich vylíhnou malé, nepředstavitelně ohavné, obludky.*
 
 Import dat do PostgreSQL
 ========================
 
-Dejme tomu, že `naše data <http://training.gismentors.eu/geodata/postgis/body.csv>`_ budou vypadat nějak takto:
+Dejme tomu, že `naše data
+<http://training.gismentors.eu/geodata/postgis/body.csv>`_ budou
+vypadat nějak takto:
+
 ::
 
    1	-750922.065478723	-1042251.84362287
@@ -18,6 +25,7 @@ Dejme tomu, že `naše data <http://training.gismentors.eu/geodata/postgis/body.
    ...
 
 S tím, že známe strukturu, která vypadá takto:
+
 ::
 
    id	x	y
@@ -26,7 +34,22 @@ Oddělovačem je tabulátor.
 
 .. note::
    
-   Naimportovat tato data do PostgreSQL můžeme různými způsoby. Pomocí unixového programu ``sed`` můžeme např. převést jednotlivé řádky na :sqlcmd:`INSERT` statementy. Nebo můžeme použít Libre/OpenOffice, jak je popsáno `zde <http://grasswiki.osgeo.org/wiki/Openoffice.org_with_SQL_Databases#Converting_Excel.2C_CSV.2C_..._to_PostgreSQL.2FMySQL.2F..._via_OO-Base>`_ (to je, mimochodem, velice užitečná technika, pokud někdy budete potřebovat do PostgreSQL převést větší množství dat z MS Excel, jako jsou číselníky ČUZK, data se statistického úřadu apod). Tabulku můžeme otevřít v QGISu a ze souřadnic rovnou vytvořit geometrii, uložit do formátu Esri Shapefile a použít pro import do PostGISu nástroj ``shp2pgsql``, který je součástí instalace PostGIS. To se hodí obzvlášť pokud dostanete od někoho data opsané ručně z GPS navigace v minutách a vteřinách. QGIS umí načíst tato data rovnou a ušetříte si poměrně otravné přepočítávání. Nicméně nejpřímější cesta jak dostat textovou tabulku do PostgreSQL je použití příkazu :sqlcmd:`COPY`.
+   Naimportovat tato data do PostgreSQL můžeme různými způsoby. Pomocí
+   unixového programu ``sed`` můžeme např. převést jednotlivé řádky na
+   :sqlcmd:`INSERT` statementy. Nebo můžeme použít Libre/OpenOffice,
+   jak je popsáno `zde
+   <http://grasswiki.osgeo.org/wiki/Openoffice.org_with_SQL_Databases#Converting_Excel.2C_CSV.2C_..._to_PostgreSQL.2FMySQL.2F..._via_OO-Base>`_
+   (to je, mimochodem, velice užitečná technika, pokud někdy budete
+   potřebovat do PostgreSQL převést větší množství dat z MS Excel,
+   jako jsou číselníky ČUZK, data se statistického úřadu
+   apod). Tabulku můžeme otevřít v QGISu a ze souřadnic rovnou
+   vytvořit geometrii, uložit do formátu Esri Shapefile a použít pro
+   import do PostGISu nástroj ``shp2pgsql``, který je součástí
+   instalace PostGIS. To se hodí obzvlášť pokud dostanete od někoho
+   data opsané ručně z GPS navigace v minutách a vteřinách. QGIS umí
+   načíst tato data rovnou a ušetříte si poměrně otravné
+   přepočítávání. Nicméně nejpřímější cesta jak dostat textovou
+   tabulku do PostgreSQL je použití příkazu :sqlcmd:`COPY`.
 
 Nejdříve si vytvoříme pracovní schéma.
 
@@ -40,8 +63,16 @@ Tabulku vytvoříme klasicky, příkazem :sqlcmd:`CREATE TABLE`.
 
    CREATE TABLE ukol_1.vesmirne_zrudice(id INT PRIMARY KEY, x FLOAT, y FLOAT);
 
-.. note:: Je vhodné, pokud má tabulka primární klíč celočíslený (datový typ *INTEGER*). Pokud je primární klíč jiného datového typu nebo dokonce chybí úplně, tak některé programy nemusí s tabulkou pracovat korektně. 
-   Například u dat `VFK <http://freegis.fsv.cvut.cz/gwiki/VFK>`_, kde jsou primární klíče v typu *NUMERIC(30)*. Zde ovšem můžeme narazit u skutečně objemných dat, nebo číselných řad sdílených mezi více tabulkami. Aktuální verze QGISu se, naštěstí, dokaže vypořádat s většinou celočíselných primárních klíčů. Přesto je dobré na tento problém pamatovat a v případě problémů jej prověřit.
+.. note:: Je vhodné, pokud má tabulka primární klíč celočíslený
+   (datový typ *INTEGER*). Pokud je primární klíč jiného datového typu
+   nebo dokonce chybí úplně, tak některé programy nemusí s tabulkou
+   pracovat korektně.  Například u dat `VFK
+   <http://freegis.fsv.cvut.cz/gwiki/VFK>`_, kde jsou primární klíče v
+   typu *NUMERIC(30)*. Zde ovšem můžeme narazit u skutečně objemných
+   dat, nebo číselných řad sdílených mezi více tabulkami. Aktuální
+   verze QGISu se, naštěstí, dokaže vypořádat s většinou celočíselných
+   primárních klíčů. Přesto je dobré na tento problém pamatovat a v
+   případě problémů jej prověřit.
    
 COPY
 ----
@@ -53,7 +84,15 @@ Příkaz `COPY <http://www.postgresql.org/docs/9.4/static/sql-copy.html>`_ můž
    COPY ukol_1.vesmirne_zrudice FROM '/home/user/Downloads/body.csv' DELIMITER E'\t' csv;
 
 
-:sqlcmd:`COPY` je příkaz pro kopírování dat mezi databázovou tabulku a textovým souborem. A to v obou směrech. Kopírovat můžeme z/do souboru, z výstupu skriptu či ze standardního vstupu/na standardní výstup. Je možné nastavovat přehršel možností, oddělovače polí, řádků, hodnoty NULL, přítomnost řádku s hlavičkou, kódování a další. V případě, že máme data v exotickém formátování, vyplatí se vyzkoušet, jestli se nám nepodaří je nakopírovat přímo příkazem :sqlcmd:`COPY`, než začnete používat specializované programy na přeformátování. 
+:sqlcmd:`COPY` je příkaz pro kopírování dat mezi databázovou tabulku a
+textovým souborem. A to v obou směrech. Kopírovat můžeme z/do
+souboru, z výstupu skriptu či ze standardního vstupu/na
+standardní výstup. Je možné nastavovat přehršel možností,
+oddělovače polí, řádků, hodnoty NULL, přítomnost řádku s
+hlavičkou, kódování a další. V případě, že máme data v
+exotickém formátování, vyplatí se vyzkoušet, jestli se nám
+nepodaří je nakopírovat přímo příkazem :sqlcmd:`COPY`, než
+začnete používat specializované programy na přeformátování.
 
 .. notecmd:: Příklad kreativního využití :sqlcmd:`COPY` pro přenos dat mezi dvěma databázovými servery
 
@@ -62,9 +101,23 @@ Příkaz `COPY <http://www.postgresql.org/docs/9.4/static/sql-copy.html>`_ můž
       psql -h prvni_server.cz -c "COPY a TO STDOUT" db3 | \
       psql -h druhy_server.cz -c "COPY b (a, b, c) FROM STDIN" db2
 
-.. noteadvanced:: Od verze 9.4 umí PostgreSQL jednu velice šikovnou věc a to *COPY FROM PROGRAM*, pomocí kterého nekopírujete ze souboru, ale ze spuštěného skriptu. Velice praktické například při pravidelném skenování stránek s nějakými uspořádanými daty (`příklad použití <http://www.cybertec.at/importing-stock-market-data-into-postgresql/>`_). Je však třeba vzít v potaz, že skript je spouštěn pod uživatelem, pod kterým běží databázový server a je nutné, aby tomu odpovídalo nastavení práv.
+.. noteadvanced:: Od verze 9.4 umí PostgreSQL jednu velice šikovnou
+                  věc a to *COPY FROM PROGRAM*, pomocí kterého
+                  nekopírujete ze souboru, ale ze spuštěného
+                  skriptu. Velice praktické například při pravidelném
+                  skenování stránek s nějakými uspořádanými daty
+                  (`příklad použití
+                  <http://www.cybertec.at/importing-stock-market-data-into-postgresql/>`_). Je
+                  však třeba vzít v potaz, že skript je spouštěn pod
+                  uživatelem, pod kterým běží databázový server a je
+                  nutné, aby tomu odpovídalo nastavení práv.
 
-Nás ovšem bude zajímat kopírování ze souboru do tabulky. Příkaz :sqlcmd:`COPY`, jakkoliv je skvělý, má jedno omezení. Kopíruje totiž soubor, který je umístěn na databázovém serveru a jako uživatel, pod kterým je spuštěn PostgreSQL (obvykle `postgres`). Někdy může být problematické soubor na server dostat a udělit mu patřičná oprávnění. Řeší se to několika triky.
+Nás ovšem bude zajímat kopírování ze souboru do tabulky. Příkaz
+:sqlcmd:`COPY`, jakkoliv je skvělý, má jedno omezení. Kopíruje totiž
+soubor, který je umístěn na databázovém serveru a jako uživatel, pod
+kterým je spuštěn PostgreSQL (obvykle `postgres`). Někdy může být
+problematické soubor na server dostat a udělit mu patřičná
+oprávnění. Řeší se to několika triky.
 
 Dump formát
 -----------
@@ -81,9 +134,14 @@ Upravíme data do podoby v jaké bývají produkována z ``pg_dump``:
    5	-739810.27441117	-1038080.18144734
    \.
 
-Jak patrno, stačí doplnit první řádek s :sqlcmd:`COPY` a poslední s označením konce vkládání (``\.``). Výsledný skript pustíme pomocí :program:`psql`. 
+Jak patrno, stačí doplnit první řádek s :sqlcmd:`COPY` a poslední s
+označením konce vkládání (``\.``). Výsledný skript pustíme pomocí
+:program:`psql`.
 
-Tento postup je výhodný, pokud píšete skripty pro převody dat. Stačí doplnit dva jednoduché řádky, potom můžete snadno posílat výstup ze skriptu rovnou na :program:`psql`, aniž by bylo třeba ho někam ukládat.
+Tento postup je výhodný, pokud píšete skripty pro převody dat. Stačí
+doplnit dva jednoduché řádky, potom můžete snadno posílat výstup ze
+skriptu rovnou na :program:`psql`, aniž by bylo třeba ho někam
+ukládat.
 
 Roura
 -----
@@ -98,29 +156,71 @@ pro operační systém unixového typu jako je např. GNU/Linux.
 Metacommand \\copy
 ------------------
 
-Příkaz ``\copy`` funguje podobně jako :sqlcmd:`COPY`, ovšem s tím rozdílem, že kopírujete data z počítače na kterém je spuštěno :program:`psql` a pod právy uživatele, který pustil :program:`psql`. Pokud tedy chcete naplnit tabulky daty, které máte na svém počítači, je toto nejefektivnější postup. 
+Příkaz ``\copy`` funguje podobně jako :sqlcmd:`COPY`, ovšem s tím
+rozdílem, že kopírujete data z počítače na kterém je spuštěno
+:program:`psql` a pod právy uživatele, který pustil
+:program:`psql`. Pokud tedy chcete naplnit tabulky daty, které máte na
+svém počítači, je toto nejefektivnější postup.
 
-.. warning:: ``\copy`` je metacommand :program:`psql`, nikoliv SQL dotaz, funguje tedy pouze v :program:`psql`, není možné s ním počítat v rámci přístupu k databázi z programovacích jazyků, různých grafických nástrojů apod.
+.. warning:: ``\copy`` je metacommand :program:`psql`, nikoliv SQL
+             dotaz, funguje tedy pouze v :program:`psql`, není možné s
+             ním počítat v rámci přístupu k databázi z programovacích
+             jazyků, různých grafických nástrojů apod.
 
 Vytváříme tabulku
 =================
 
-Vytvořit tabulku, do které půjdou uložit prostorová data lze více způsoby. Sloupec s geometrii můžete od verze PostGIS 2.0 přidávat standardně pomocí :sqlcmd:`ALTER TABLE ... ADD COLUMN`. Ve starších verzích (PostGIS a 1.5 a nižších) byla jedinou možností funkce :pgiscmd:`AddGeometryColumn`, která je nicméně pro zachování zpětné kompatibility součástí i novějších verzí.
+Vytvořit tabulku, do které půjdou uložit prostorová data lze více
+způsoby. Sloupec s geometrii můžete od verze PostGIS 2.0 přidávat
+standardně pomocí :sqlcmd:`ALTER TABLE ... ADD COLUMN`. Ve starších
+verzích (PostGIS a 1.5 a nižších) byla jedinou možností funkce
+:pgiscmd:`AddGeometryColumn`, která je nicméně pro zachování zpětné
+kompatibility součástí i novějších verzí.
 
-Krom samotného přidání sloupce s typem ``geometry`` se vytvoří *constrainty*, neboli omezení, na geometrický typ, dimenzi prvků a souřadnicový systém. V praxi to obnáší dvě podstatné věci. Tou první je, jak by se dalo očekávat omezení vkládaných prvků na prvky splňující určitá kritéria (typ, SRID, počet dimenzí). Což zamezí tomu, aby Vám nezodpovědný uživatel vyrobil v databázi nepořádek, případně abyste si ho tam v záchvatu kreativity vyrobili sami. 
+Krom samotného přidání sloupce s typem ``geometry`` se vytvoří
+*constrainty*, neboli omezení, na geometrický typ, dimenzi prvků a
+souřadnicový systém. V praxi to obnáší dvě podstatné věci. Tou první
+je, jak by se dalo očekávat omezení vkládaných prvků na prvky
+splňující určitá kritéria (typ, SRID, počet dimenzí). Což zamezí tomu,
+aby Vám nezodpovědný uživatel vyrobil v databázi nepořádek, případně
+abyste si ho tam v záchvatu kreativity vyrobili sami.
 
 .. note::
    
-   Druhou věcí, kterou zmíněné *constrainty* řeší, je generování *pohledu* (view) s metadaty :dbtable:`geometry_columns`. V případě, že constrainty nejsou vytvořené, bude jako typ geometrie uvedeno obecné ``geometry`` a jako SRID "0". S tím mohou mít některé programy přistupující k datům problém, například do QGISu se Vám takovou vrstvu nepodaří přidat, natož jí zobrazit. Nicméně, sluší se zmínit, že v některých, avšak velice vzácných, případech má použití takové tabulky své opodstatnění. Jedním z nich je tvorba databázového modelu, kde potřebujete kombinovat v jedné tabulce data různých geometrických typů, nebo dat v různých souřadných systémech. Databáze potom slouží jako úložiště a data jí opouštějí (například ve formátu GeoJSON) pomocí specifických procedur, kdy jsou potřebné informace doplněny a aparát na udržování geometrických metadat je tedy zbytečný. Dalším případem mohou být NOSQL databáze, kde vrstva v klasickém, relačním, pojetí pozbývá smyslu. Nicméně jedná se o případy specifické, ojedinělé a pokročilé, rozhodně nad rámec tohoto kurzu.
+   Druhou věcí, kterou zmíněné *constrainty* řeší, je generování
+   *pohledu* (view) s metadaty :dbtable:`geometry_columns`. V případě,
+   že constrainty nejsou vytvořené, bude jako typ geometrie uvedeno
+   obecné ``geometry`` a jako SRID "0". S tím mohou mít některé
+   programy přistupující k datům problém, například do QGISu se Vám
+   takovou vrstvu nepodaří přidat, natož jí zobrazit. Nicméně, sluší
+   se zmínit, že v některých, avšak velice vzácných, případech má
+   použití takové tabulky své opodstatnění. Jedním z nich je tvorba
+   databázového modelu, kde potřebujete kombinovat v jedné tabulce
+   data různých geometrických typů, nebo dat v různých souřadných
+   systémech. Databáze potom slouží jako úložiště a data jí opouštějí
+   (například ve formátu GeoJSON) pomocí specifických procedur, kdy
+   jsou potřebné informace doplněny a aparát na udržování
+   geometrických metadat je tedy zbytečný. Dalším případem mohou být
+   NOSQL databáze, kde vrstva v klasickém, relačním, pojetí pozbývá
+   smyslu. Nicméně jedná se o případy specifické, ojedinělé a
+   pokročilé, rozhodně nad rámec tohoto kurzu.
 
-.. noteadvanced:: Ve verzích PostGIS nižších než 2.0 nebyl :dbtable:`geometry_columns` pohled, ale tabulka. Při přidání pohledů na data nebo při ruční registraci tabulek bylo třeba do ní záznamy přidávat ručně. To v aktuálních verzích PostGISu odpadá.
+.. noteadvanced:: Ve verzích PostGIS nižších než 2.0 nebyl
+                  :dbtable:`geometry_columns` pohled, ale tabulka. Při
+                  přidání pohledů na data nebo při ruční registraci
+                  tabulek bylo třeba do ní záznamy přidávat ručně. To
+                  v aktuálních verzích PostGISu odpadá.
 
-Sloupců s geometrií můžeme do tabulky přidat prakticky libovolné množství. Například k tabulce budov můžeme přidat sloupec s polygony pro obrys a s body pro definiční bod. Jedná se určitě o lepší řešení, než obojí uložit do jednoho sloupce do typu GEOMETRY COLLECTION.
+Sloupců s geometrií můžeme do tabulky přidat prakticky libovolné
+množství. Například k tabulce budov můžeme přidat sloupec s polygony
+pro obrys a s body pro definiční bod. Jedná se určitě o lepší řešení,
+než obojí uložit do jednoho sloupce do typu GEOMETRY COLLECTION.
 
 Přidání sloupce z geometrií
 ---------------------------
 
-K tabulce přidáme sloupec s geometrií, v tomto případě použijeme geometrický typ *POINT*.
+K tabulce přidáme sloupec s geometrií, v tomto případě použijeme
+geometrický typ *POINT*.
 
 .. code-block:: sql
 
@@ -132,16 +232,20 @@ K tabulce přidáme sloupec s geometrií, v tomto případě použijeme geometri
                    
       SELECT AddGeometryColumn ('ukol_1','vesmirne_zrudice','geom_p',5514,'POINT',2); 
 
-Do tabulky :dbtable:`vesmirne_zrudice` ve schématu :dbtable:`ukol_1` jsme přidali sloupec :dbcolumn:`geom_p` s 2D bodovými prvky v souřadnicovém systému se SRID *5514*.
+Do tabulky :dbtable:`vesmirne_zrudice` ve schématu :dbtable:`ukol_1`
+jsme přidali sloupec :dbcolumn:`geom_p` s 2D bodovými prvky v
+souřadnicovém systému se SRID *5514*.
 
 Do vytvořené tabulky vložíme data jedním z dříve uvedených způsobů.
 
 Vytváříme geometrii prvků
 =========================
 
-V následujícím kroku si ze souřadnic x a y vytvoříme geometrii prvků. Opět to lze provést několikerým způsobem.
+V následujícím kroku si ze souřadnic x a y vytvoříme geometrii
+prvků. Opět to lze provést několikerým způsobem.
 
-Abychom nemuseli nadále vypisovat název schématu, přidáme si ho do *SEARCH_PATH*.
+Abychom nemuseli nadále vypisovat název schématu, přidáme si ho do
+*SEARCH_PATH*.
 
 .. code-block:: sql
 
@@ -150,7 +254,8 @@ Abychom nemuseli nadále vypisovat název schématu, přidáme si ho do *SEARCH_
 ST_Point(x,y)
 -------------
 
-Nejobvyklejším způsobem je použití funkce :pgiscmd:`ST_Point`, která vytvoří z páru souřadnic geometrický prvek typu bod.
+Nejobvyklejším způsobem je použití funkce :pgiscmd:`ST_Point`, která
+vytvoří z páru souřadnic geometrický prvek typu bod.
 
 .. code-block:: sql
 
@@ -159,9 +264,25 @@ Nejobvyklejším způsobem je použití funkce :pgiscmd:`ST_Point`, která vytvo
 ST_GeomFrom*
 ------------
 
-Další možností je sestavit si geometrii ve `WKT <http://en.wikipedia.org/wiki/Well-known_text>`_ použít funkci :pgiscmd:`ST_GeomFromText`. WKT je textový formát dle `standardu OGC <http://www.opengeospatial.org/standards>`_ pro zápis vektorové geometrie.
+Další možností je sestavit si geometrii ve `WKT
+<http://en.wikipedia.org/wiki/Well-known_text>`_ použít funkci
+:pgiscmd:`ST_GeomFromText`. WKT je textový formát dle `standardu OGC
+<http://www.opengeospatial.org/standards>`_ pro zápis vektorové
+geometrie.
 
-.. note:: Podobným způsobem můžeme využít také binární zápis geometrie *WKB*, a funkci :pgiscmd:`ST_GeomFromWKB`, což se může hodit například při migraci dat pomocí knihovny `GDAL <http://gdal.org>`_. Stejně se může hodit :pgiscmd:`ST_GeomFromGML`, případně :pgiscmd:`ST_GeomFromGeoJSON` atd. Další možnosti nabízí :pgiscmd:`ST_GeomFromEWKT` a :pgiscmd:`ST_GeomFromEWKB`. EWKT a EWKB je rozšíření OGC WKT/WKB o třetí rozměr a zápis souřadnicového systému. Je také třeba upozornit na fakt, že funkce ST_GeomFromGML neumí, na rozdíl například od knihovny GDAL všechny typy prvků, které se mohou v GML vyskytnout. Problematický je například kruh a také některé typy oblouků.
+.. note:: Podobným způsobem můžeme využít také binární zápis geometrie
+          *WKB*, a funkci :pgiscmd:`ST_GeomFromWKB`, což se může hodit
+          například při migraci dat pomocí knihovny `GDAL
+          <http://gdal.org>`_. Stejně se může hodit
+          :pgiscmd:`ST_GeomFromGML`, případně
+          :pgiscmd:`ST_GeomFromGeoJSON` atd. Další možnosti nabízí
+          :pgiscmd:`ST_GeomFromEWKT` a
+          :pgiscmd:`ST_GeomFromEWKB`. EWKT a EWKB je rozšíření OGC
+          WKT/WKB o třetí rozměr a zápis souřadnicového systému. Je
+          také třeba upozornit na fakt, že funkce ST_GeomFromGML
+          neumí, na rozdíl například od knihovny GDAL všechny typy
+          prvků, které se mohou v GML vyskytnout. Problematický je
+          například kruh a také některé typy oblouků.
 
 Geometrický prvek vytvoříme tedy například takto.
 
@@ -178,7 +299,9 @@ Nebo také:
 ST_AsText
 ---------
 
-PostGIS si také umí inteligentně převádět řetězce na geometrii pomocí funkce :pgiscmd:`ST_AsText`. Můžeme tedy využít jednoduchý cast, který bude fungovat z WKB, WKT, EWKT a EWKB.
+PostGIS si také umí inteligentně převádět řetězce na geometrii pomocí
+funkce :pgiscmd:`ST_AsText`. Můžeme tedy využít jednoduchý cast, který
+bude fungovat z WKB, WKT, EWKT a EWKB.
 
 .. code-block:: sql
 
@@ -196,7 +319,10 @@ Přidáváme geometrii do tabulky
 UPDATE
 ------
 
-Geometrii můžeme tvořit různě, u průběžně aktualizované tabulky si můžeme například vytvořit :ref:`trigger <geometrie-trigger>`, který nám už při importu souřadnic geometrii sestaví. Pro jednorázový import je ovšem nejsnazší aktualizovat geometrii pomocí :sqlcmd:`UPDATE`.
+Geometrii můžeme tvořit různě, u průběžně aktualizované tabulky si
+můžeme například vytvořit :ref:`trigger <geometrie-trigger>`, který
+nám už při importu souřadnic geometrii sestaví. Pro jednorázový import
+je ovšem nejsnazší aktualizovat geometrii pomocí :sqlcmd:`UPDATE`.
 
 .. code-block:: sql
 
@@ -208,7 +334,10 @@ A vida, nedaří se to.
 
    ERROR:  Geometry SRID (0) does not match column SRID (5514)
 
-Důvod je zjevný. Naše geometrie nemá požadovaný souřadnicový systém. PostGIS totiž ukládá geometrii včetně *SRID* a to musí, při vkládání korespondovat s omezeními. Pokud není SRID nastaveno, je jako defaultní považováno SRID=0.
+Důvod je zjevný. Naše geometrie nemá požadovaný souřadnicový
+systém. PostGIS totiž ukládá geometrii včetně *SRID* a to musí, při
+vkládání korespondovat s omezeními. Pokud není SRID nastaveno, je jako
+defaultní považováno SRID=0.
 
 SRID nastavíme funkcí :pgiscmd:`ST_SetSRID`.
 
@@ -219,7 +348,8 @@ SRID nastavíme funkcí :pgiscmd:`ST_SetSRID`.
       SELECT 'POINT(0 0)'::geometry;
       SELECT ST_SetSRID('POINT(0 0)'::geometry, 5514);
 
-Pokud tedy použijeme funkci :pgiscmd:`ST_SetSRID` v :sqlcmd:`UPDATE`, bude již dotaz pracovat dle očekávání. 
+Pokud tedy použijeme funkci :pgiscmd:`ST_SetSRID` v :sqlcmd:`UPDATE`,
+bude již dotaz pracovat dle očekávání.
 
 .. code-block:: sql
                 
@@ -235,7 +365,9 @@ Funkce :pgiscmd:`ST_GeomFromText` umožňuje použít SRID jako druhý argument.
 
    UPDATE vesmirne_zrudice SET geom_p = ST_GeomFromText('POINT('||x::text||' '||y::text||')', 5514);
 
-V rámci *CAST* si můžeme snadno vypomoci pomocí `EWKT <http://postgis.net/docs/using_postgis_dbmanagement.html#EWKB_EWKT>`_ .
+V rámci *CAST* si můžeme snadno vypomoci pomocí `EWKT
+<http://postgis.net/docs/using_postgis_dbmanagement.html#EWKB_EWKT>`_
+.
 
 .. code-block:: sql
 
@@ -247,7 +379,8 @@ Při migraci do položky s geometrií se CAST provede automaticky.
                 
    UPDATE vesmirne_zrudice SET geom_p = 'SRID=5514;POINT('||x::text||' '||y::text||')';
 
-.. tip:: Zkuste si přidat data do sloupce s geometrií všemi výše uvedenými způsoby.
+.. tip:: Zkuste si přidat data do sloupce s geometrií všemi výše
+         uvedenými způsoby.
 
 .. tip:: Zobrazte si tabulku ve svém oblíbeném GIS desktopu.
 
@@ -263,7 +396,9 @@ Při migraci do položky s geometrií se CAST provede automaticky.
 Trigger
 -------
 
-S pomocí jednoduchého triggeru si můžeme usnadnit podstatně usnadnit život. Pokud budeme pravidelně vkládat data do tabulky zbavíme se nutnosti spouštět další dotazy a data budou převedena automaticky.
+S pomocí jednoduchého triggeru si můžeme usnadnit podstatně usnadnit
+život. Pokud budeme pravidelně vkládat data do tabulky zbavíme se
+nutnosti spouštět další dotazy a data budou převedena automaticky.
 
 .. code-block:: sql
 
@@ -290,7 +425,9 @@ S pomocí jednoduchého triggeru si můžeme usnadnit podstatně usnadnit život
 Prostorové indexy
 =================
 
-Pro efektivní práci s prostorovými daty je nezbytné tato data xindexovat (pakliže se bavíme o objemu dat od tisícovek záznamů výše). Obvykle používáme GIST index.
+Pro efektivní práci s prostorovými daty je nezbytné tato data
+indexovat (pakliže se bavíme o objemu dat od tisícovek záznamů
+výše). Obvykle používáme GIST index.
 
 .. code-block:: sql
 

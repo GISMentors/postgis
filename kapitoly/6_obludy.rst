@@ -4,17 +4,21 @@ Praktické příklady
 Nejbližší bod
 -------------
 
-*Protože Vaše agentura pro boj s vesmírnými obludami nemá dostatek peněz, vybavuje své agenty pouze turistickými mapkami, které se prodávají na nádraží, najděte ke každému bodu nejbližší adresu.*
+*Protože Vaše agentura pro boj s vesmírnými obludami nemá dostatek
+ peněz, vybavuje své agenty pouze turistickými mapkami, které se
+ prodávají na nádraží, najděte ke každému bodu nejbližší adresu.*
 
 Zadání
 ^^^^^^
 
-Ke každému z bodů v tabulce **ukol_1.vesmirne_zrudice** nejděte nejbližší bod z tabulky **ukol_1.adresy**.
+Ke každému z bodů v tabulce **ukol_1.vesmirne_zrudice** nejděte
+nejbližší bod z tabulky **ukol_1.adresy**.
 
 Rozbor
 ^^^^^^
 
-Nejdříve zkontrolujeme, zda je tabulka s adresními body patřičně oindexovaná.
+Nejdříve zkontrolujeme, zda je tabulka s adresními body patřičně
+oindexovaná.
 
 .. code-block:: sql
 
@@ -70,7 +74,8 @@ Vnořený poddotaz:
       LIMIT 1
    ) FROM vesmirne_zrudice;
 
-Common table expression s `window funkcí <http://www.postgresql.org/docs/9.3/static/tutorial-window.html>`_
+Common table expression s `window funkcí
+<http://www.postgresql.org/docs/9.3/static/tutorial-window.html>`_
 
 .. code-block:: sql
 
@@ -92,7 +97,8 @@ Common table expression s `window funkcí <http://www.postgresql.org/docs/9.3/st
 
    SELECT * FROM cte WHERE rn = 1;
 
-.. warning:: Elegantní řešení nemusí být však vždy to nejvýkonější. A to ani při optimalizaci.
+.. warning:: Elegantní řešení nemusí být však vždy to nejvýkonější. A
+             to ani při optimalizaci.
 
 
 .. code-block:: sql
@@ -136,7 +142,8 @@ Window funkce v poddotazu
    ) a
    WHERE rn = 1;
 
-Případně můžeme použít `anonymní blok kódu <file:///usr/share/doc/postgresql/html/sql-do.html>`_
+Případně můžeme použít `anonymní blok kódu
+<file:///usr/share/doc/postgresql/html/sql-do.html>`_
 
 .. code-block:: sql
 
@@ -214,7 +221,9 @@ Případně můžeme použít `anonymní blok kódu <file:///usr/share/doc/postg
 Výběr podle obalové zóny
 ------------------------
 
-*V případě, že se obludy vylíhnou, všechno živé v okruhu čtvrt kilometru se změní ve sliz. Najděte všechny ulice ve vzdálenosti 250 metrů od vejce, aby je bylo možné evakuovat.*
+*V případě, že se obludy vylíhnou, všechno živé v okruhu čtvrt
+ kilometru se změní ve sliz. Najděte všechny ulice ve vzdálenosti 250
+ metrů od vejce, aby je bylo možné evakuovat.*
 
 Zadání
 ^^^^^^
@@ -224,7 +233,8 @@ Vyberte všechny ulice v okruhu 250 metrů kolem každého bodu.
 Rozbor
 ^^^^^^
 
-V tabulce ulice nám nejspíš bude chybět index. Zkontrolujeme ho a pokud tam není, tak ho vytvoříme.
+V tabulce ulice nám nejspíš bude chybět index. Zkontrolujeme ho a
+pokud tam není, tak ho vytvoříme.
 
 .. code-block:: sql
 
@@ -272,12 +282,17 @@ nebo na základě vzdálenosti.
 Součet ploch v určitém okruhu
 -----------------------------
 
-*Nemáte dostatek agentů v terénu, nejspíše se nepodaří neutralizovat všechna vejce, seřaďte body podle počtu budov v ohrožené zóně, aby bylo možné minimalizovat škody.*
+*Nemáte dostatek agentů v terénu, nejspíše se nepodaří neutralizovat
+ všechna vejce, seřaďte body podle počtu budov v ohrožené zóně, aby
+ bylo možné minimalizovat škody.*
 
 Zadání
 ^^^^^^
 
-Vyberte budovy v okruhu 250 metrů kolem bodů z tabulky *vesmirne_zrudice*, zjistěte počet u každého bodu. Zjistěte plochu průniku u každého bodu. Zjistěte celkovou plochu všech zasažených podlaží.
+Vyberte budovy v okruhu 250 metrů kolem bodů z tabulky
+*vesmirne_zrudice*, zjistěte počet u každého bodu. Zjistěte plochu
+průniku u každého bodu. Zjistěte celkovou plochu všech zasažených
+podlaží.
 
 Postup
 ^^^^^^
@@ -357,15 +372,20 @@ Chyby můžeme opravit, nebo použít *ST_MakeValid* rovnou v dotazu.
 
 U mnoha budov ovšem nemáme polygon, ale pouze definiční bod.
 
-.. tip:: Navrhněte, jak upravit dotaz tak, aby se použily definiční body u budov, u kterých nemáme geometrii. Pro výpočet plochy můžete použít zastavěnou plochu.
+.. tip:: Navrhněte, jak upravit dotaz tak, aby se použily definiční
+         body u budov, u kterých nemáme geometrii. Pro výpočet plochy
+         můžete použít zastavěnou plochu.
 
 Nejbližší bod 2
 ---------------
 
-*U každého místa najděte nejbližší přístupové místo pro hasiče a záchranku mimo kontaminovanou zonu.*
+*U každého místa najděte nejbližší přístupové místo pro hasiče a
+ záchranku mimo kontaminovanou zonu.*
 
 Zadání
 ^^^^^^
 
-V tabulce adresy jsou i body přístupových míst pro hasiče a záchranou službu. Navrhněte možné postupy, jak najít ke každému bodu nejližší přístupový bod pro hasiče a nejbližší přístupový bod pro záchranku, který je vzdálen více než 250 metrů od bodu.
-
+V tabulce adresy jsou i body přístupových míst pro hasiče a záchranou
+službu. Navrhněte možné postupy, jak najít ke každému bodu nejližší
+přístupový bod pro hasiče a nejbližší přístupový bod pro záchranku,
+který je vzdálen více než 250 metrů od bodu.

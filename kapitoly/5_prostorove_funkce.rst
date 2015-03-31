@@ -1,12 +1,21 @@
 Prostorové funkce
 =================
 
-Z celé přehršle funkcí a funkcionalit nabízených PostGISem vyberem jen některé. Zaměříme se na vybrané `analytické funkce <http://postgis.net/docs/manual-2.1/reference.html#Spatial_Relationships_Measurements>`_ a `funkce na processing geometrií <http://postgis.net/docs/manual-2.1/reference.html#Geometry_Processing>`_.
+Z celé přehršle funkcí a funkcionalit nabízených PostGISem vyberem jen
+některé. Zaměříme se na vybrané `analytické funkce
+<http://postgis.net/docs/manual-2.1/reference.html#Spatial_Relationships_Measurements>`_
+a `funkce na processing geometrií
+<http://postgis.net/docs/manual-2.1/reference.html#Geometry_Processing>`_.
 
 Výpočet plochy, obvodu, délky a dalších charakteristik geometrie
 ----------------------------------------------------------------
 
-Asi nejzákladnější informace, kterou můžeme o ploše zjistit je její rozloha. Kromě základního zadání "zjisti, jak velkou mají Vomáčkovi zahrádku" je nezbytná pro provedení pokročilejších úloh typu "vyber obce, jejichž rozloha leží alespoň z osmdesáti procent v národním parku atp". Poměr plochy a obvodu se používá při odstraňování "sliverů".
+Asi nejzákladnější informace, kterou můžeme o ploše zjistit je její
+rozloha. Kromě základního zadání "zjisti, jak velkou mají Vomáčkovi
+zahrádku" je nezbytná pro provedení pokročilejších úloh typu "vyber
+obce, jejichž rozloha leží alespoň z osmdesáti procent v národním
+parku atp". Poměr plochy a obvodu se používá při odstraňování
+"sliverů".
 
 Jedná se například o funkce:
 
@@ -23,12 +32,16 @@ Jedná se například o funkce:
 Informace o vzájemné poloze prvků
 ---------------------------------
 
-Celá řada funkcí nám vrací nějakou informaci o `vzájemné poloze dvou geometrií <http://postgis.net/docs/manual-2.1/using_postgis_dbmanagement.html#DE-9IM>`_. 
+Celá řada funkcí nám vrací nějakou informaci o `vzájemné poloze dvou
+geometrií
+<http://postgis.net/docs/manual-2.1/using_postgis_dbmanagement.html#DE-9IM>`_.
 
 ST_Relate
 ^^^^^^^^^
 
-Je jakousi nejobecnější rovinou, v jaké lze s informací o vzájemné poloze dvou prvků něco zjistit. Pracujeme zde s takzvanou "maticí devíti průniků".
+Je jakousi nejobecnější rovinou, v jaké lze s informací o vzájemné
+poloze dvou prvků něco zjistit. Pracujeme zde s takzvanou "maticí
+devíti průniků".
 
 .. table::
    :class: border
@@ -43,10 +56,17 @@ Je jakousi nejobecnější rovinou, v jaké lze s informací o vzájemné poloze
    | exterior  |            |            |            |
    +-----------+------------+------------+------------+
 
-V každém políčku je vyplněn počet rozměrů průniku. Tedy pro bod je :option:`0`, pro linii :option:`1` a pro polygony :option:`2` Může být také vyplněno :option:`F` pro prázdný průnik, :option:`T` pro libovolný neprázdný průnik a :option:`*` použijeme v případě, že informaci o průniku na tomto místě matice nepovažujeme za směrodatnou.
+V každém políčku je vyplněn počet rozměrů průniku. Tedy pro bod je
+:option:`0`, pro linii :option:`1` a pro polygony :option:`2` Může být
+také vyplněno :option:`F` pro prázdný průnik, :option:`T` pro
+libovolný neprázdný průnik a :option:`*` použijeme v případě, že
+informaci o průniku na tomto místě matice nepovažujeme za směrodatnou.
 
-Funkci můžeme použít ve dvou tvarech, můžeme zadat jako třetí argument matici (i s využitím "divokých karet"), pak vrací funkce true/false
-Případně funkci můžeme použít jen se dvěma argumenty, geometriemi, pak fce vrací matici, případně můžeme přidat argument pro číslo pro pravidlo uzlů hranice.
+Funkci můžeme použít ve dvou tvarech, můžeme zadat jako třetí argument
+matici (i s využitím "divokých karet"), pak vrací funkce true/false
+Případně funkci můžeme použít jen se dvěma argumenty, geometriemi, pak
+fce vrací matici, případně můžeme přidat argument pro číslo pro
+pravidlo uzlů hranice.
 
 .. code-block:: sql
 
@@ -75,7 +95,9 @@ Případně funkci můžeme použít jen se dvěma argumenty, geometriemi, pak f
 ST_Intersects, ST_Overlaps, ST_Touches a další
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Na podobném principu jako předešlá funkce pracuje řada dalších funkcí, které vrací true/false podle toho, zda jsou prostorové prvky ve správné poloze.
+Na podobném principu jako předešlá funkce pracuje řada dalších funkcí,
+které vrací true/false podle toho, zda jsou prostorové prvky ve
+správné poloze.
 
 :ST_Intersects: True za předpokladu, že prvky sdílejí alespoň jeden bod.
 
@@ -107,30 +129,42 @@ Na podobném principu jako předešlá funkce pracuje řada dalších funkcí, k
 
 .. warning:: I když se tyto funkce tváří podobně, jsou mezi nimi `rozdíly <http://lin-ear-th-inking.blogspot.cz/2007/06/subtleties-of-ogc-covers-spatial.html>`_
 
-:ST_Overlaps: Je podobná ST_Intersects, ovšem vrací true pouze tehdy, pokud průnik je stejného typu jako vstupní plochy (tedy, průnikem ploch je plocha, průnikem linií linie a tak dále) a zároveň ani jeden prvek zcela nezakrývá druhý.
+:ST_Overlaps: Je podobná ST_Intersects, ovšem vrací true pouze tehdy,
+              pokud průnik je stejného typu jako vstupní plochy (tedy,
+              průnikem ploch je plocha, průnikem linií linie a tak
+              dále) a zároveň ani jeden prvek zcela nezakrývá druhý.
 
-:ST_Crosses: Pokud mají obě geometrie nějaký společný bod, ne však všechny.
+:ST_Crosses: Pokud mají obě geometrie nějaký společný bod, ne však
+             všechny.
 
 :ST_Touches: Pokud mají společný bod, ne však společný vnitřek.
 
 :ST_Equals: Geometrická shoda.
 
-.. important:: Tyto funkce jsou často velmi podobné a liší se v detailech (které však mohou být podstatné). Mohou to být také implementace různých standardů, mohou mít odlišné požadavky na výkon.
+.. important:: Tyto funkce jsou často velmi podobné a liší se v
+               detailech (které však mohou být podstatné). Mohou to
+               být také implementace různých standardů, mohou mít
+               odlišné požadavky na výkon.
 
 ST_Distance
 ^^^^^^^^^^^
 
-Funkce ST_Distance vrací, celkem nepřekvapivě minimální vzdálenost mezi dvěma prostorovými prvky.
+Funkce ST_Distance vrací, celkem nepřekvapivě minimální vzdálenost
+mezi dvěma prostorovými prvky.
 
 
 Geometrické analýzy
 -------------------
 
-Celá řada funkcí vrací změněnou geometrii, představíme si několik z nich.
+Celá řada funkcí vrací změněnou geometrii, představíme si několik z
+nich.
 
-:ST_Buffer: Obalová zóna, tři parametry, vstupní geometrie, šířka zóny a počet segmentů na čtvrtinu kruhu. Je možné zadat ještě nějaké další parametry ("čepičky", "kolínka" atp).
+:ST_Buffer: Obalová zóna, tři parametry, vstupní geometrie, šířka zóny
+            a počet segmentů na čtvrtinu kruhu. Je možné zadat ještě
+            nějaké další parametry ("čepičky", "kolínka" atp).
 
-.. warning:: Různý počet segmentů se může projevit i v počtu vybraných bodů.
+.. warning:: Různý počet segmentů se může projevit i v počtu vybraných
+             bodů.
 
 .. code-block:: sql
 
@@ -158,7 +192,9 @@ Celá řada funkcí vrací změněnou geometrii, představíme si několik z nic
 
 :ST_Intersection: Průnik.
 
-:ST_Split: Rozdělí prvek podle jiného prvku a vrátí geometry collection. Možné použít například pro dělení prvků podle sítě.
+:ST_Split: Rozdělí prvek podle jiného prvku a vrátí geometry
+           collection. Možné použít například pro dělení prvků podle
+           sítě.
 
 :ST_Union: Spojí dvě geometrie.
 
@@ -175,9 +211,11 @@ Speciální Funkce
 ST_IsValid a ST_MakeValid
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-ST_IsValid, případně ST_IsValidDetail, nebo ST_IsValidReason slouží ke zjištění, zda je prvek geometricky validní.
+ST_IsValid, případně ST_IsValidDetail, nebo ST_IsValidReason slouží ke
+zjištění, zda je prvek geometricky validní.
 
-ST_MakeValid nahradí invalidní geometrii validní geometrií, zkrátka prvek zvaliduje.
+ST_MakeValid nahradí invalidní geometrii validní geometrií, zkrátka
+prvek zvaliduje.
 
 ST_Multi
 ^^^^^^^^
