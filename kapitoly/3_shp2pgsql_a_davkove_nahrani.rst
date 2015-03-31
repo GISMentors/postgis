@@ -2,14 +2,14 @@ Dávkové nahrání dat
 ===================
 
 *Dávkové zpracování a následné nahrávání dat z různých zdrojů do
- databáze je nejzákladnějším úkonem při budování databáze prostorových
- dat. Data obvykle nahráváme ze souborových formátů, případně z
- webových služeb. Řetězec úkonů mezi uchopením nějakého zdroje dat a
- jeho konečným umístěním do databáze bychom nejspíš označili termínem*
- **ETL**. *Pro standardní formáty s úspěchem můžeme využít utility
- knihovny* `GDAL <http://gdal.org>`_, *jmenovitě* :ref:`ogr2ogr`, *pro
- import* :wikipedia-en:`Esri shapefile` *můžeme využít loader*
- :ref:`shp2pgsql` *instalovaný spolu s PostGISem.*
+databáze je nejzákladnějším úkonem při budování databáze prostorových
+dat. Data obvykle nahráváme ze souborových formátů, případně z
+webových služeb. Řetězec úkonů mezi uchopením nějakého zdroje dat a
+jeho konečným umístěním do databáze bychom nejspíš označili termínem*
+**ETL**. *Pro standardní formáty s úspěchem můžeme využít utility
+knihovny* `GDAL <http://gdal.org>`_, *jmenovitě* :ref:`ogr2ogr`, *pro
+import* :wikipedia-en:`Esri shapefile` *můžeme využít loader*
+:ref:`shp2pgsql` *instalovaný spolu s PostGISem.*
 
 .. _shp2pgsql:
 

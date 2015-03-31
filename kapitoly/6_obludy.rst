@@ -5,8 +5,8 @@ Nejbližší bod
 -------------
 
 *Protože Vaše agentura pro boj s vesmírnými obludami nemá dostatek
- peněz, vybavuje své agenty pouze turistickými mapkami, které se
- prodávají na nádraží, najděte ke každému bodu nejbližší adresu.*
+peněz, vybavuje své agenty pouze turistickými mapkami, které se
+prodávají na nádraží, najděte ke každému bodu nejbližší adresu.*
 
 Zadání
 ^^^^^^

@@ -2,11 +2,11 @@ Operátory datového typu geometry
 ================================
 
 *S datovým typem geometry nám v PostgreSQL přibyde několik poměrně
- zajímavých* `operátorů
- <http://postgis.net/docs/manual-2.1/reference.html#Operators>`_. *Rozhodně
- není od věci se s nimi seznámit. Vesměs řeší vzájemnou polohu
- bounding boxů prvků a kromě pohodlného a přehledného zápisu jsou
- obvykle velice rychlé.*
+zajímavých* `operátorů
+<http://postgis.net/docs/manual-2.1/reference.html#Operators>`_. *Rozhodně
+není od věci se s nimi seznámit. Vesměs řeší vzájemnou polohu
+bounding boxů prvků a kromě pohodlného a přehledného zápisu jsou
+obvykle velice rychlé.*
 
 Překryv bounding boxů
 ---------------------

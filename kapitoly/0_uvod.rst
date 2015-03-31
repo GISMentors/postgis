@@ -2,12 +2,12 @@
 ====
 
 **PostGIS** rozšiřuje možnosti relační databáze *PostgreSQL* o
- ukládání, správu a dotazování geografické (prostorové) informace. Po
- instalaci PostGISu do databáze jsou dostupné nové operátory, funkce,
- typy a relace. Pomocí PostGISu je možné zpracovávat jak vektorová,
- tak rastrová data. Nad vektorovými daty lze dokonce vybudovat
- topologii a dotazovat se na ni. Nejobvyklejším využitím je ovšem
- práce s jednoduchými prvky, tzv. *simple features.*
+ukládání, správu a dotazování geografické (prostorové) informace. Po
+instalaci PostGISu do databáze jsou dostupné nové operátory, funkce,
+typy a relace. Pomocí PostGISu je možné zpracovávat jak vektorová,
+tak rastrová data. Nad vektorovými daty lze dokonce vybudovat
+topologii a dotazovat se na ni. Nejobvyklejším využitím je ovšem
+práce s jednoduchými prvky, tzv. *simple features.*
 
 Obecná doporučení
 -----------------

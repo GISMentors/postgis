@@ -3,10 +3,10 @@
 ===============================
 
 *Záhadná vesmírná obludnost ukryla po Praze svoje zrůdná
- vejce. Podařilo se, s nasazením života, získat jejich
- souřadnice. Nyní musíme vytvořit v PostGISu tabulku, ze které si je
- budou moci zobrazit terénní agenti, aby vejce našli a zneškodnili,
- dřív, než se z nich vylíhnou malé, nepředstavitelně ohavné, obludky.*
+vejce. Podařilo se, s nasazením života, získat jejich
+souřadnice. Nyní musíme vytvořit v PostGISu tabulku, ze které si je
+budou moci zobrazit terénní agenti, aby vejce našli a zneškodnili,
+dřív, než se z nich vylíhnou malé, nepředstavitelně ohavné, obludky.*
 
 Import dat do PostgreSQL
 ========================
