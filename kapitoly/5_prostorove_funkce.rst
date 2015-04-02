@@ -1,105 +1,54 @@
 Prostorové funkce
 =================
 
-Z celé přehršle funkcí a funkcionalit nabízených PostGISem vyberem jen
-některé. Zaměříme se na vybrané `analytické funkce
-<http://postgis.net/docs/manual-2.1/reference.html#Spatial_Relationships_Measurements>`_
-a `funkce na processing geometrií
-<http://postgis.net/docs/manual-2.1/reference.html#Geometry_Processing>`_.
+Z mnoha funkcí a funkcionalit nabízených PostGISem se zaměříme jen
+na vybrané a to `analytické funkce
+<http://postgis.net/docs/reference.html#Spatial_Relationships_Measurements>`_
+a `funkce pro zpracování geometrií
+<http://postgis.net/docs/reference.html#Geometry_Processing>`_.
 
 Výpočet plochy, obvodu, délky a dalších charakteristik geometrie
 ----------------------------------------------------------------
 
-Asi nejzákladnější informace, kterou můžeme o ploše zjistit je její
-rozloha. Kromě základního zadání "zjisti, jak velkou mají Vomáčkovi
-zahrádku" je nezbytná pro provedení pokročilejších úloh typu "vyber
-obce, jejichž rozloha leží alespoň z osmdesáti procent v národním
-parku atp". Poměr plochy a obvodu se používá při odstraňování
-"sliverů".
+Asi nejzákladnější informace, kterou můžeme o plošném prvku (polygonu)
+zjistit je její výměru. Kromě základního zadání "zjisti, jak velkou
+mají Vomáčkovi zahrádku" je nezbytná pro provedení pokročilejších úloh
+typu "vyber obce, jejichž rozloha leží alespoň z osmdesáti procent v
+národním parku atp".
 
-Jedná se například o funkce:
+.. tip:: Poměr výměry a obvodu polygonu se používá při odstraňování
+	 "sliverů" (mezer mezi polygony).
 
-:ST_Area: Výpočet plochy
+Jedná se o následující funkce:
 
-:ST_Length: Délka linie
+:pgiscmd:`ST_Length`
+	 Délka linie lomené čáry
 
-:ST_Centroid: Vrací centroid 
+:pgiscmd:`ST_Area`
+	 Výpočet výměnry polygonu
 
-:ST_PointOnSurface: Bod ležící uvnitř geometrie
+:pgiscmd:`ST_Perimeter`
+	 Vrací obvod polygonu
 
-:ST_Perimeter: Vrací obvod
+:pgiscmd:`ST_Centroid`
+	 Vrací centroid polygonu
 
-Informace o vzájemné poloze prvků
----------------------------------
+:pgiscmd:`ST_PointOnSurface`
+	 Bod ležící uvnitř geometrie
 
-Celá řada funkcí nám vrací nějakou informaci o `vzájemné poloze dvou
-geometrií
-<http://postgis.net/docs/manual-2.1/using_postgis_dbmanagement.html#DE-9IM>`_.
+Informace o vzájemném prostorovém vztahu prvků
+----------------------------------------------
 
-ST_Relate
-^^^^^^^^^
+PostGIS definuje funkce pro určení prostorového vztahu prvků dle OGC
+standardu `Simple Features
+<http://www.opengeospatial.org/standards/sfa>`_ a to:
 
-Je jakousi nejobecnější rovinou, v jaké lze s informací o vzájemné
-poloze dvou prvků něco zjistit. Pracujeme zde s takzvanou "maticí
-devíti průniků".
+ST_Intesects a další
+^^^^^^^^^^^^^^^^^^^^
 
-.. table::
-   :class: border
-           
-   +-----------+------------+------------+------------+
-   |    A/B    |  interior  |  boundary  |  exterior  |
-   +-----------+------------+------------+------------+
-   | interior  |            |            |            |
-   +-----------+------------+------------+------------+
-   | hranice   |            |            |            |
-   +-----------+------------+------------+------------+
-   | exterior  |            |            |            |
-   +-----------+------------+------------+------------+
+:pgiscmd:`ST_Intersects`
 
-V každém políčku je vyplněn počet rozměrů průniku. Tedy pro bod je
-:option:`0`, pro linii :option:`1` a pro polygony :option:`2` Může být
-také vyplněno :option:`F` pro prázdný průnik, :option:`T` pro
-libovolný neprázdný průnik a :option:`*` použijeme v případě, že
-informaci o průniku na tomto místě matice nepovažujeme za směrodatnou.
-
-Funkci můžeme použít ve dvou tvarech, můžeme zadat jako třetí argument
-matici (i s využitím "divokých karet"), pak vrací funkce true/false
-Případně funkci můžeme použít jen se dvěma argumenty, geometriemi, pak
-fce vrací matici, případně můžeme přidat argument pro číslo pro
-pravidlo uzlů hranice.
-
-.. code-block:: sql
-
-   SELECT ST_Relate('POLYGON((1 1,1 3,3 3,3 1,1 1))'::geometry, 
-      'POLYGON((1 1,1 3,3 3,3 1,1 1))'::geometry);
-   SELECT ST_Relate('POLYGON((1 1,1 3,3 3,3 1,1 1))'::geometry, 
-      'POLYGON((0 0,0 3,3 3,3 0,0 0))'::geometry);
-   SELECT ST_Relate('POLYGON((1 1,1 4,4 4,4 1,1 1))'::geometry, 
-      'POLYGON((0 0,0 3,3 3,3 0,0 0))'::geometry);
-   SELECT ST_Relate('POLYGON((3 3,3 4,4 4,4 3,3 3))'::geometry, 
-      'POLYGON((0 0,0 3,3 3,3 0,0 0))'::geometry);
-   SELECT ST_Relate('POLYGON((0 3,0 6,3 6,3 3,0 3))'::geometry, 
-      'POLYGON((0 0,0 3,3 3,3 0,0 0))'::geometry);
-   ---
-   --mají dva polygony společný prostor
-
-   SELECT ST_Relate('POLYGON((1 1,1 4,4 4,4 1,1 1))'::geometry, 
-      'POLYGON((0 0,0 3,3 3,3 0,0 0))'::geometry, '2********');
-   --dva polygony se vzájemně nepřekrývají
-   SELECT ST_Relate('POLYGON((1 1,1 4,4 4,4 1,1 1))'::geometry, 
-      'POLYGON((0 0,0 3,3 3,3 0,0 0))'::geometry, 'F********');
-   --nepřekrývají a nemají společnou hranici
-   SELECT ST_Relate('POLYGON((1 1,1 4,4 4,4 1,1 1))'::geometry, 
-      'POLYGON((5 5,9 5,9 9,5 9,5 5))'::geometry, 'F***F****');
-
-ST_Intersects, ST_Overlaps, ST_Touches a další
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Na podobném principu jako předešlá funkce pracuje řada dalších funkcí,
-které vrací true/false podle toho, zda jsou prostorové prvky ve
-správné poloze.
-
-:ST_Intersects: True za předpokladu, že prvky sdílejí alespoň jeden bod.
+	 Prvky sdílejí alespoň jeden bod, dochází k jejich prostorovému průniku.
 
 .. code-block:: sql
 
@@ -107,15 +56,29 @@ správné poloze.
    SELECT ST_Intersects('POLYGON((0 0,4 0,4 3,0 0))', 'POLYGON((4 0,8 0,8 3,4 0))');
    SELECT ST_Intersects('POLYGON((0 0,4 0,4 3,0 0))', 'POLYGON((5 0,9 0,9 3,5 0))');
 
-:ST_Disjoint: NOT ST_Intersects
-              
-:ST_Contains: Obsahuje, tedy žádný bod z geometrie B neleží vně geometrie A a alespoň jeden bod z B leží uvnitř A.
-              
-:ST_Covers: Podobné jako ST_Contains
+:pgiscmd:`ST_Disjoint`
 
-:ST_CoveredBy: Opačné pořadí argumentů, než u předešlých funkcí.
+	 Doplněk k funkci :pgiscmd:`ST_Intersects`, prvky jsou prostorově různé.
+              
+:pgiscmd:`ST_Contains`
 
-:ST_Within: Podobné jako ST_CoveredBy
+	 Prvek A prostorově obsahuje prvek B, tj. žádný bod z
+	 geometrie B neleží vně geometrie A a alespoň jeden bod z B
+	 leží uvnitř A.
+              
+:pgiscmd:`ST_Covers`
+
+         Podobné jako :pgiscmd:`ST_Contains`
+
+:pgiscmd:`ST_CoveredBy`
+
+         Opačné pořadí argumentů, než u předešlých funkcí.
+
+:pgiscmd:`ST_Within`
+
+	 Doplněk k funkci :pgiscmd:`ST_Contains`, žádný bod z
+	 geometrie A neleží vně geometrie B a alespoň jeden bod z A
+	 leží uvnitř B.
 
 .. code-block:: sql
 
@@ -127,41 +90,113 @@ správné poloze.
    SELECT ST_CoveredBy('POLYGON((0 0,4 0,4 3,0 0))'::geometry, 'POLYGON((0 0,8 0,8 6,0 0))'::geometry);
    SELECT ST_Covers( 'POLYGON((0 0,8 0,8 8,0 8,0 0))'::geometry,'POLYGON((1 1,5 1,5 4,1 1))'::geometry);
 
-.. warning:: I když se tyto funkce tváří podobně, jsou mezi nimi `rozdíly <http://lin-ear-th-inking.blogspot.cz/2007/06/subtleties-of-ogc-covers-spatial.html>`_
-
-:ST_Overlaps: Je podobná ST_Intersects, ovšem vrací true pouze tehdy,
-              pokud průnik je stejného typu jako vstupní plochy (tedy,
-              průnikem ploch je plocha, průnikem linií linie a tak
-              dále) a zároveň ani jeden prvek zcela nezakrývá druhý.
-
-:ST_Crosses: Pokud mají obě geometrie nějaký společný bod, ne však
-             všechny.
-
-:ST_Touches: Pokud mají společný bod, ne však společný vnitřek.
-
-:ST_Equals: Geometrická shoda.
-
 .. important:: Tyto funkce jsou často velmi podobné a liší se v
-               detailech (které však mohou být podstatné). Mohou to
-               být také implementace různých standardů, mohou mít
-               odlišné požadavky na výkon.
+	       `detailech
+	       <http://lin-ear-th-inking.blogspot.cz/2007/06/subtleties-of-ogc-covers-spatial.html>`_
+	       (které však mohou být podstatné). 
+
+:pgiscmd:`ST_Overlaps` 
+
+	 Obdoba :pgiscmd:`ST_Intersects`, vrací true pouze tehdy,
+	 pokud průnik je stejného typu jako vstupní prvky (tedy,
+	 průnikem ploch je plocha, průnikem linií linie a tak dále) a
+	 zároveň ani jeden prvek zcela nezakrývá druhý.
+
+:pgiscmd:`ST_Crosses`
+
+	 Prvky se prostorově kříží, tj. mají společný bod, ne však
+         všechny.
+
+:pgiscmd:`ST_Touches`
+
+	 Prvky se prostorově dotýkají, tj. mají společný bod, ne však
+	 společný vnitřek.
+
+:pgiscmd:`ST_Equals`
+
+	 Geometrická shoda prvků.
+
+ST_Relate
+^^^^^^^^^
+
+Obecné určení vzájemného prostorového vztahu prkvů vychází z takzvané
+"matice devíti průniků" (DE-9IM), viz `manuál
+<http://postgis.net/docs/using_postgis_dbmanagement.html#DE-9IM>`_. Bližší
+informace o této problematice `zde
+<http://geo.fsv.cvut.cz/~gin/uzpd/uzpd.pdf#41>`_.
+
+Matice průniků vypadá následovně:
+
+.. table::
+   :class: border
+           
+   +-------------------+-------------------+---------------+-------------------+
+   |    **A/B**        | **vnitřní část**  |  **hranice**  |  **vnější část**  |
+   +-------------------+-------------------+---------------+-------------------+
+   | **vnitřní část**  |                   |               |                   |
+   +-------------------+-------------------+---------------+-------------------+
+   | **hranice**       |                   |               |                   |
+   +-------------------+-------------------+---------------+-------------------+
+   | **vnější část**   |                   |               |                   |
+   +-------------------+-------------------+---------------+-------------------+
+
+V každém políčku se objeví požadovaná dimenze prvku, který vznikne
+průnikem prvků A a B. Tedy pro bod :option:`0`, linii :option:`1` a
+polygon :option:`2`. Další povolené hodnody jsou :option:`F` pro
+prázdný průnik, :option:`T` pro libovolný neprázdný průnik a
+:option:`*` v případě, že informaci o průniku na tomto místě matice
+nepovažujeme za směrodatnou.
+
+Tuto funkcionalitu v PostGISu zajištuje funkce :pgiscmd:`ST_Relate`.
+Funkci můžeme použít ve dvou tvarech. Pokud zadáme jako třetí argument
+matici průniku (i s využitím "divokých karet") tak funkce funkce vrací
+hodnoty true/false podle toho zda jsou všechny podmínky v matici
+splněny. Případně funkci můžeme použít jen se dvěma argumenty,
+geometriemi. Potom funkce vrací matici průniku, případně můžeme přidat
+argument pro číslo pro pravidlo uzlů hranice.
+
+.. code-block:: sql
+
+   -- výpis matice průniku
+   SELECT ST_Relate('POLYGON((1 1,1 3,3 3,3 1,1 1))'::geometry, 
+      'POLYGON((1 1,1 3,3 3,3 1,1 1))'::geometry);
+   SELECT ST_Relate('POLYGON((1 1,1 3,3 3,3 1,1 1))'::geometry, 
+      'POLYGON((0 0,0 3,3 3,3 0,0 0))'::geometry);
+   SELECT ST_Relate('POLYGON((1 1,1 4,4 4,4 1,1 1))'::geometry, 
+      'POLYGON((0 0,0 3,3 3,3 0,0 0))'::geometry);
+   SELECT ST_Relate('POLYGON((3 3,3 4,4 4,4 3,3 3))'::geometry, 
+      'POLYGON((0 0,0 3,3 3,3 0,0 0))'::geometry);
+   SELECT ST_Relate('POLYGON((0 3,0 6,3 6,3 3,0 3))'::geometry, 
+      'POLYGON((0 0,0 3,3 3,3 0,0 0))'::geometry);
+
+   -- mají dva polygony společný prostor?
+   SELECT ST_Relate('POLYGON((1 1,1 4,4 4,4 1,1 1))'::geometry, 
+      'POLYGON((0 0,0 3,3 3,3 0,0 0))'::geometry, '2********');
+
+   --dva polygony se vzájemně nepřekrývají
+   SELECT ST_Relate('POLYGON((1 1,1 4,4 4,4 1,1 1))'::geometry, 
+      'POLYGON((0 0,0 3,3 3,3 0,0 0))'::geometry, 'F********');
+
+   -- polygony se nepřekrývají a nemají ani společnou hranici
+   SELECT ST_Relate('POLYGON((1 1,1 4,4 4,4 1,1 1))'::geometry, 
+      'POLYGON((5 5,9 5,9 9,5 9,5 5))'::geometry, 'F***F****');
 
 ST_Distance
 ^^^^^^^^^^^
 
-Funkce ST_Distance vrací, celkem nepřekvapivě minimální vzdálenost
-mezi dvěma prostorovými prvky.
-
+:pgiscmd:`ST_Distance` vrací minimální vzdálenost mezi dvěma prvky.
 
 Geometrické analýzy
 -------------------
 
-Celá řada funkcí vrací změněnou geometrii, představíme si několik z
-nich.
+V této části se zaměříme na funkce, které vrací modifikovanou
+geometrii vstupních prvků.
 
-:ST_Buffer: Obalová zóna, tři parametry, vstupní geometrie, šířka zóny
-            a počet segmentů na čtvrtinu kruhu. Je možné zadat ještě
-            nějaké další parametry ("čepičky", "kolínka" atp).
+:pgiscmd:`ST_Buffer`
+
+	 Obalová zóna. Funkce má dva parametry: vstupní geometrii a
+	 šířka zóny. Je možné zadat ještě nějaké další parametry
+	 (počet segmentů na čtvrtinu kruhu, "čepičky", "kolínka" atp).
 
 .. warning:: Různý počet segmentů se může projevit i v počtu vybraných
              bodů.
@@ -178,49 +213,60 @@ nich.
       AND a.adresnibod && ST_Buffer(v.geom_p, 250)
    ) data;
 
+   -- počet segmentů 100
    SELECT COUNT(NULLIF(ST_Intersects(adresnibod, ST_Buffer(geom_p, 250, 100)), false)) 
    FROM 
    (
       SELECT geom_p, adresnibod FROM adresy a, vesmirne_zrudice v 
       WHERE v.id = 1 
       AND a.adresnibod && ST_Buffer(v.geom_p, 250, 100)
-   ) data
-   ;
+   ) data;
 
 
-:ST_Difference: Prostorový rozdíl
+:pgiscmd:`ST_Difference`
 
-:ST_Intersection: Průnik.
+	 Vrací prostorový rozdíl prvků.
 
-:ST_Split: Rozdělí prvek podle jiného prvku a vrátí geometry
-           collection. Možné použít například pro dělení prvků podle
-           sítě.
+:pgiscmd:`ST_Intersection`
 
-:ST_Union: Spojí dvě geometrie.
+	 Vrací prostorový průnik prvků.
+
+:pgiscmd:`ST_Union`
+	 
+	 Vrací prostorové sjednocení prvků.
+
+:pgiscmd:`ST_Split`
+
+	 Rozdělí prvek podle jiného prvku a vrátí typ *geometry
+         collection*. Možné použít například pro dělení prvků na
+         základě mřížky.
 
 Agregační funkce
 ----------------
 
-:ST_Union, ST_Dump, ST_Collect, ST_UnaryUnion: Různé typy sjednocení.
+.. todo::
+
+:ST_Dump, ST_Collect, ST_UnaryUnion: Různé typy sjednocení.
 
 :ST_MakeLine: Vytvoří linii z množiny bodů.
 
-Speciální Funkce
-----------------
+Další funkce
+------------
 
 ST_IsValid a ST_MakeValid
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-ST_IsValid, případně ST_IsValidDetail, nebo ST_IsValidReason slouží ke
-zjištění, zda je prvek geometricky validní.
+:pgiscmd:`ST_IsValid`, :pgiscmd:`ST_IsValidDetail`, případně
+:pgiscmd:`ST_IsValidReason` slouží ke zjištění, zda je prvek
+geometricky validní.
 
-ST_MakeValid nahradí invalidní geometrii validní geometrií, zkrátka
-prvek zvaliduje.
+:pgiscmd:`ST_MakeValid` nahradí invalidní geometrii validní geometrií,
+zkrátka prvek zvaliduje.
 
 ST_Multi
 ^^^^^^^^
 
-Mění typ geometrie z jednoduché na *Multi*.
+Mění typ geometrie z jednoduché na *multigeometrii*.
 
 .. code-block:: sql
 
