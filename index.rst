@@ -35,7 +35,9 @@ Obsah
    kapitoly/4_prostorove_operatory
    kapitoly/5_prostorove_funkce
    kapitoly/6_obludy
-   kapitoly/7_zaver
+   kapitoly/7_topologie
+   kapitoly/8_rastry
+   kapitoly/9_zaver
 
 O dokumentu
 -----------
