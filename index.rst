@@ -19,6 +19,36 @@ jejich využití v prostorovém SQL v souvislosti s daty vektorovými.
 PostGIS je multiplatformní a plně funkční na platformách jako
 GNU/Linux, MS Windows či Mac OSX.
 
+Vstupní znalost
+---------------
+
+* Uživatel zná základy :wikipedia:`SQL`
+
+Výstupní dovednost
+------------------
+
+* Uživatel zvládne naimportovat data do PostGIS a to i dávkově
+* Uživatel zvládne exportovat data z PostGIS do jiných GIS formátů
+* Uživatel je schopen data vizualizovat
+* Uživatel má povědomí s čím rámcově musí počítat, když chce pracovat
+  s většími objemy data (dejme tomu RÚIAN pro Prahu na slabším stroji)
+* Uživatel je schopen provádět prostorové dotazy
+* Uživatel zvládá samostatně řešit jednoduché analýzy v PostGIS
+
+Požadavky
+---------
+
+* PC s OS GNU/Linux (např. `OSGeoLive <http://live.osgeo.org>`_),
+  `PostgreSQL <http://www.postgresql.org>`_, `QGIS
+  <http://www.qgis.org>`_ a připojení k internetu, volitelně
+  `pgAdminIII <http://www.pgadmin.org/>`_, `LibreOffice
+  <http://www.libreoffice.org/>`_
+* Alternativně přístup na server přes :program:`ssh`, na kterém běží
+  PostgreSQL, na klientovi :program:`psql`. Data stačí prohlížet přes
+  webový prohlížeč (webový QGIS)
+* `PostGIS 2.0 <http://www.postgis.net>`_ a vyšší
+* `pracovní data <http://training.gismentors.eu/geodata/postgis/>`_
+
 Obsah
 =====
 
@@ -27,7 +57,6 @@ Obsah
 .. toctree::
    :maxdepth: 3
 
-   obsah_hackaton
    kapitoly/0_uvod
    kapitoly/1_vytvarime_prostorovou_db
    kapitoly/2_tvorba_jednoduche_prostorove_tabulky
