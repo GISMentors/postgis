@@ -11,8 +11,8 @@ prodávají na nádraží, najděte ke každému bodu nejbližší adresu.*
 Zadání
 ^^^^^^
 
-Ke každému z bodů v tabulce **ukol_1.vesmirne_zrudice** nejděte
-nejbližší bod z tabulky **ukol_1.adresy**.
+Ke každému z bodů v tabulce :dbtable:`ukol_1.vesmirne_zrudice` nejděte
+nejbližší bod z tabulky :dbtable:`ukol_1.adresy`.
 
 Rozbor
 ^^^^^^
@@ -32,41 +32,39 @@ oindexovaná.
        "adresy_hasici_geom_idx" gist (hasici)
        "adresy_zachranka_geom_idx" gist (zachranka)
 
-
-
-S ohledem na to, že pracujeme s body, vystačíme si s operátory.
+S ohledem na to, že pracujeme s body, vystačíme si s :doc:`operátory
+<4_prostorove_operatory>`.
 
 .. code-block:: sql
 
    SET SEARCH_PATH = ukol_1, public;
-   --public musí být proto, že v něm jsou uložený PostGIS
 
    SELECT a.kod, v.id, a.adresnibod<->v.geom_p vzdalenost
-   FROM adresy a, vesmirne_zrudice v 
-   WHERE adresnibod IS NOT NULL
-   LIMIT 200;
+    FROM adresy a, vesmirne_zrudice v 
+    WHERE adresnibod IS NOT NULL
+    LIMIT 200;
 
 
-K výběru nejbližšího bodu použijeme *LIMIT*
+K výběru nejbližšího bodu použijeme :sqlcmd:`LIMIT`
 
 .. code-block:: sql
 
    SELECT a.kod, v.id, a.adresnibod<->v.geom_p vzdalenost
-   FROM adresy a, vesmirne_zrudice v 
-   WHERE adresnibod IS NOT NULL
-   AND v.id = 1
-   ORDER BY a.adresnibod<->v.geom_p
-   LIMIT 1;
+    FROM adresy a, vesmirne_zrudice v 
+    WHERE adresnibod IS NOT NULL
+    AND v.id = 1
+    ORDER BY a.adresnibod<->v.geom_p
+    LIMIT 1;
 
 K výběru nejbližšího bodu ke každému z bodů můžeme použít několik cest.
 
-Vnořený poddotaz:
+* Vnořený poddotaz
 
 .. code-block:: sql
 
    SELECT 
-   id
-   , (
+   id,
+   (
       SELECT ARRAY[kod, adresnibod<->geom_p]  
       FROM ukol_1.adresy 
       WHERE adresnibod IS NOT NULL 
@@ -74,8 +72,8 @@ Vnořený poddotaz:
       LIMIT 1
    ) FROM vesmirne_zrudice;
 
-Common table expression s `window funkcí
-<http://www.postgresql.org/docs/9.3/static/tutorial-window.html>`_
+* Common table expression s `window funkcí
+  <http://www.postgresql.org/docs/current/static/tutorial-window.html>`_
 
 .. code-block:: sql
 
@@ -97,9 +95,8 @@ Common table expression s `window funkcí
 
    SELECT * FROM cte WHERE rn = 1;
 
-.. warning:: Elegantní řešení nemusí být však vždy to nejvýkonější. A
-             to ani při optimalizaci.
-
+.. note:: Elegantní řešení nemusí být však vždy to nejvýkonější. A
+          to ani při optimalizaci.
 
 .. code-block:: sql
 
@@ -121,7 +118,7 @@ Common table expression s `window funkcí
 
    SELECT * FROM cte WHERE rn = 1;
 
-Window funkce v poddotazu
+* Window funkce v poddotazu
 
 .. code-block:: sql
 
@@ -142,15 +139,15 @@ Window funkce v poddotazu
    ) a
    WHERE rn = 1;
 
-Případně můžeme použít `anonymní blok kódu
-<file:///usr/share/doc/postgresql/html/sql-do.html>`_
+* Případně můžeme použít `anonymní blok kódu
+  <http://www.postgresql.org/docs/current/static/sql-do.html>`_
 
 .. code-block:: sql
 
    BEGIN;
-
+   
    CREATE TABLE ukol_1.outp (id int, kod numeric(30), vzdalenost float);
-
+   
    DO $$DECLARE r record;
    BEGIN
       FOR r IN
@@ -164,12 +161,12 @@ Případně můžeme použít `anonymní blok kódu
       LIMIT 1;
     END LOOP;
    END$$;
-
+   
    SELECT * FROM outp;
-
+   
    ROLLBACK;
 
-.. tip:: Srovnejte *EXPLAIN ANALYZE*
+.. tip:: Srovnejte výše uvedené dotazy pomocí :sqlcmd:`EXPLAIN ANALYZE`.
 
 Řešení
 ^^^^^^
@@ -178,7 +175,9 @@ Případně můžeme použít `anonymní blok kódu
 
    BEGIN;
 
-   CREATE TABLE ukol_1.outp (id int
+   SET search_path to ukol_1, public;
+
+   CREATE TABLE outp (id int
       , kod numeric(30)
       , vzdalenost float
       , cislodomovni int
@@ -222,49 +221,54 @@ Výběr podle obalové zóny
 ------------------------
 
 *V případě, že se obludy vylíhnou, všechno živé v okruhu čtvrt
- kilometru se změní ve sliz. Najděte všechny ulice ve vzdálenosti 250
- metrů od vejce, aby je bylo možné evakuovat.*
+kilometru se změní ve sliz. Najděte všechny ulice ve vzdálenosti 250
+metrů od vejce, aby je bylo možné evakuovat.*
 
 Zadání
 ^^^^^^
 
-Vyberte všechny ulice v okruhu 250 metrů kolem každého bodu.
+Vyberte všechny :dbtable:`ulice` v okruhu 250 metrů kolem každého bodu.
 
 Rozbor
 ^^^^^^
 
-V tabulce ulice nám nejspíš bude chybět index. Zkontrolujeme ho a
-pokud tam není, tak ho vytvoříme.
+.. note:: V tabulce :dbtable:`ulice` nám nejspíš bude chybět
+	  index. Zkontrolujeme ho (``\d``) a pokud tam není, tak ho vytvoříme.
+
+   .. code-block:: sql
+		
+      CREATE INDEX ulice_geom_idx ON ulice USING gist (geom);
+
+Ulice v okruhu 250 metrů můžeme vybrat buď pomocí *obalové zóny* anebo
+na základě *vzdálenosti*.
+
+* *Výběr na základě obalové zóny*
 
 .. code-block:: sql
 
-   CREATE INDEX ulice_geom_idx ON ulice USING gist (geom);
-
-Ulice v okruhu 250 metrů můžeme vybrat buď bafrem,
-
-.. code-block:: sql
-
+   SET search_path to ukol_1, public;
+   
    SELECT u.*, v.geom_p
    FROM ulice u,
    vesmirne_zrudice v
    WHERE ST_Relate(geom, ST_Buffer(geom_p, 250, 100), 'T********');
 
-.. tip:: Vyzkoušejte místo ST_Relate ST_Intersects
+.. tip:: Vyzkoušejte místo :pgiscmd:`ST_Relate` funkci :pgiscmd:`ST_Intersects`
 
-optimalizovaná verze
+.. note:: **Optimalizovaná verze**
 
-.. code-block:: sql
+   .. code-block:: sql
 
-   SELECT * FROM
-   (
-      SELECT u.*, v.geom_p
-      FROM ulice u,
-      vesmirne_zrudice v
-      WHERE ST_Buffer(v.geom_p, 250, 100) && u.geom
-   ) a 
-   WHERE ST_Relate(geom, ST_Buffer(geom_p, 250, 100), 'T********');
+      SELECT * FROM
+      (
+	 SELECT u.*, v.geom_p
+	 FROM ulice u,
+	 vesmirne_zrudice v
+	 WHERE ST_Buffer(v.geom_p, 250, 100) && u.geom
+      ) a 
+      WHERE ST_Relate(geom, ST_Buffer(geom_p, 250, 100), 'T********');
 
-nebo na základě vzdálenosti.
+* *Výběr na základě vzdálenosti*
 
 .. code-block:: sql
 
@@ -283,30 +287,30 @@ Součet ploch v určitém okruhu
 -----------------------------
 
 *Nemáte dostatek agentů v terénu, nejspíše se nepodaří neutralizovat
- všechna vejce, seřaďte body podle počtu budov v ohrožené zóně, aby
- bylo možné minimalizovat škody.*
+všechna vejce, seřaďte body podle počtu budov v ohrožené zóně, aby
+bylo možné minimalizovat škody.*
 
 Zadání
 ^^^^^^
 
 Vyberte budovy v okruhu 250 metrů kolem bodů z tabulky
-*vesmirne_zrudice*, zjistěte počet u každého bodu. Zjistěte plochu
-průniku u každého bodu. Zjistěte celkovou plochu všech zasažených
+:dbtable:`vesmirne_zrudice`, zjistěte počet u každého bodu. Zjistěte
+plochu průniku u každého bodu a celkovou plochu všech zasažených
 podlaží.
 
 Postup
 ^^^^^^
 
-Nahrajeme do databáze budovy.
+Nahrajeme do databáze `budovy
+<http://training.gismentors.eu/geodata/postgis/stav_objekty.dump>`_.
 
-.. notecmd:: načtení dat z PGDump
+.. notecmd:: Načtení dat z PGDump
 
    .. code-block:: bash
 
-      wget http://46.28.111.140/gismentors/skoleni/data_postgis/stav_objekty.dump
-      psql -f stav_objekty.dump pokusnik
+      pg_restore -d pokusnik stav_objekty.dump
 
-Indexy už v tabulce jsou.
+   Indexy už v tabulce jsou.
 
 .. code-block:: sql
 
@@ -332,7 +336,7 @@ Ale máme chybky v topologii
 
    SELECT * FROM budovy WHERE NOT ST_IsValid(originalnihranice) ;
 
-Chyby můžeme opravit, nebo použít *ST_MakeValid* rovnou v dotazu.
+Chyby můžeme opravit nebo použít :pgiscmd:`ST_MakeValid` rovnou v dotazu.
 
 .. code-block:: sql
 
@@ -366,11 +370,10 @@ Chyby můžeme opravit, nebo použít *ST_MakeValid* rovnou v dotazu.
       WHERE ST_Relate(ST_Buffer(geom_p, 250, 100), originalnihranice, '2********')
    )b
    GROUP BY id
-   ORDER BY SUM(ST_Area(prunik)) DESC
-   ;
+   ORDER BY SUM(ST_Area(prunik)) DESC;
 
 
-U mnoha budov ovšem nemáme polygon, ale pouze definiční bod.
+.. note:: U mnoha budov ovšem nemáme polygon, ale pouze definiční bod.
 
 .. tip:: Navrhněte, jak upravit dotaz tak, aby se použily definiční
          body u budov, u kterých nemáme geometrii. Pro výpočet plochy
@@ -380,12 +383,14 @@ Nejbližší bod 2
 ---------------
 
 *U každého místa najděte nejbližší přístupové místo pro hasiče a
- záchranku mimo kontaminovanou zonu.*
+záchranku mimo kontaminovanou zónu.*
 
 Zadání
 ^^^^^^
 
-V tabulce adresy jsou i body přístupových míst pro hasiče a záchranou
-službu. Navrhněte možné postupy, jak najít ke každému bodu nejližší
-přístupový bod pro hasiče a nejbližší přístupový bod pro záchranku,
-který je vzdálen více než 250 metrů od bodu.
+V tabulce :dbtable:`adresy` jsou i body přístupových míst pro hasiče a
+záchranou službu. Navrhněte možné postupy, jak najít ke každému bodu
+nejbližší přístupový bod pro hasiče a záchranku, který je vzdálen více
+než 250 metrů od bodu.
+
+.. todo::

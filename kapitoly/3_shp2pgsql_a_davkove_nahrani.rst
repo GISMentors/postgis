@@ -127,6 +127,7 @@ přímo k databázi.
       export SHAPE_ENCODING="cp1250"
       ogr2ogr -f PostgreSQL PG:dbname=pokusnik -a_srs 'EPSG:5514' Ulice_cp1250.shp \
 	 -nlt MULTILINESTRING \
+	 -lco 'GEOMETRY_NAME=geom' \
 	 -nln ukol_1.ulice
 
 V prvním řádku uvedeme kódování atributových dat vstupního souboru.
@@ -190,6 +191,7 @@ je tento nástroj dosupný, např. GNU/Linux.
 
       export PG_USE_COPY=YES
       ogr2ogr -f PGDump /dev/stdout -a_srs 'EPSG:5514' Ulice_cp1250.shp \
+      -lco 'GEOMETRY_NAME=geom' \
       -nlt MULTILINESTRING -nln ukol_1.ulice_3 \
       | sed 's/Kaštanová/Jírovcová/g' \
       | psql pokusnik 2> err
@@ -320,7 +322,7 @@ mohou výužít funkce PostGISu, viz příklad níže.
            ) linie
            FROM 
            (
-              SELECT wkb_geometry AS geom FROM ulice --LIMIT 1
+              SELECT geom AS geom FROM ulice --LIMIT 1
            ) ok
         ) podklad,
         (
