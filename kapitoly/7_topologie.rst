@@ -205,6 +205,26 @@ prvků.
 
    UPDATE parcely SET topo = toTopoGeom(originalnihranice, 'topo_parcely', 1);
 
+.. note:: Sestavení topologie z jednoduchých geoprvků je poměrně
+          časově náročná činnost. Funkce :pgiscmd:`toTopoGeom` není z
+          nejrychlejších (na testovacím stroji trvalo sestavení
+          topologie parcel **více než 17 hod!!!**). Navíc je velmi náchylná
+          na topologické chyby na vstupu a často skončí chybou.
+
+.. noteadvanced:: Pro sestavení topologii můžete použít jako externí
+                  nástroj `GRASS GIS
+                  <http://www.gismentors.cz/skoleni/grass-gis/>`_. Následuje
+                  zkracený návod. Detaily tohoto řešení jsou nad rámec
+                  tohoto kurz a spadají spíše do kurzu `GRASS GIS pro
+                  pokročilé
+                  <http://www.gismentors.cz/skoleni/grass-gis/#pokrocily>`_.
+
+		  .. todo::
+		     
+		  .. code-block:: bash
+
+		     ...
+
 Užitečné odkazy
 ---------------
 

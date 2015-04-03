@@ -61,9 +61,15 @@ Režim IN-DB
    Tento problém můžeme např. obejít parametrem :option:`-Y`, který
    pošle do PGDump příkaz :sqlcmd:`COPY` namísto :sqlcmd:`INSERT`.
 
+   Přidáme ještě užitečný přepínač :option:`-C`, který nastaví omezení
+   na importovana data. Jinak by například byl ignorován souřadnicový
+   systém a pod.
+
    .. code-block:: bash
 
-      raster2pgsql -s 5514 -Y dmt.tif ukol_1.dmt | psql pokusnik 2>err
+      raster2pgsql -s 5514 -Y -C dmt.tif ukol_1.dmt | psql pokusnik 2>err
+
+     
 
 Režim IN-DB
 ~~~~~~~~~~~
@@ -76,7 +82,11 @@ jsou tedy fyzicky uložena *mimo* databázi.
 
    .. code-block:: bash
 
-      raster2pgsql -s 5514 -R `pwd`/dmt.tif ukol_1.dmt_link | psql pokusnik 2>err
+      raster2pgsql -s 5514 -R -C `pwd`/dmt.tif ukol_1.dmt_link | psql pokusnik 2>err
+
+   Cesta k soubor musí být uplná, jinak nebude link korektní. My jsme
+   si pomohly unixovým příkazem :program:`pwd`, který vrátí cestu k
+   aktuálnímu adresáři, ve kterém jsou umístěna importovaná data.
 
 Základní metadata
 -----------------
@@ -87,4 +97,95 @@ dvou formách jako **IN-DB** (tabulka :dbtable:`ukol_1.dmt`) a
 
 .. code-block:: sql
 
-   SELECT r_table_schema,r_table_name,out_db FROM raster_columns;
+   SELECT r_table_schema,r_table_name,srid,out_db FROM raster_columns;
+
+::
+   
+   r_table_schema | r_table_name | srid | out_db 
+  ----------------+--------------+------+--------
+   ukol_1         | dmt          | 5514 | {f}
+   ukol_1         | dmt_link     | 5514 | {t}
+
+Tabulka :dbtable:`raster_columns` ukrývá další užitečné informace.
+
+.. code-block:: sql
+		
+   SELECT scale_x,scale_y,blocksize_x,blocksize_y,same_alignment,
+    regular_blocking,num_bands,pixel_types,nodata_values,ST_AsText(extent) as extent
+    FROM raster_columns where r_table_name = 'dmt';
+
+::
+
+   scale_x          | 25
+   scale_y          | -25
+   blocksize_x      | 19615
+   blocksize_y      | 11119
+   same_alignment   | t
+   regular_blocking | f
+   num_bands        | 1
+   pixel_types      | {16BUI}
+   nodata_values    | {65535}
+   extent           | POLYGON((4470075 3113850,4960450 3113850,4960450 2835875,4470075 2835875,4470075 3113850))
+
+.. note:: Záporná hodnota ``scale_y`` naznačuje orientaci rastru ze
+          severu na jih.
+
+Kde je:
+
+.. table::
+   :class: noborder
+
+   +----------------------+-------------------------------------------------------+
+   | ``scale_x``          | prostorové rozlišení ve směru osy x                   |
+   +----------------------+-------------------------------------------------------+
+   | ``scale_y``          | prostorové rozlišení ve směru osy y                   |
+   +----------------------+-------------------------------------------------------+
+   | ``blocksize_x``      | velikost dlaždice ve směru osy x                      |
+   +----------------------+-------------------------------------------------------+
+   | ``blocksize_y``      | velikost dlaždice ve směru osy y                      |
+   +----------------------+-------------------------------------------------------+
+   | ``same_alignment``   | mají všechny dlaždice stejné zarovnání                |
+   +----------------------+-------------------------------------------------------+
+   | ``regular_blocking`` | mají všchny dlaždice stejný rozměr a nepřekrývají se  |
+   +----------------------+-------------------------------------------------------+
+   | ``num_bands``        | počet kanálů                                          |
+   +----------------------+-------------------------------------------------------+
+   | ``pixel_types``      | datový typ buněk kanálů                               |
+   +----------------------+-------------------------------------------------------+
+   | ``nodata_values``    | hodnota pro no-data jednotlivých kanálů               |
+   +----------------------+-------------------------------------------------------+
+   | ``extent``           | minimální ohraničující obdélník datové vrstvy         |
+   +----------------------+-------------------------------------------------------+
+
+.. note:: Porovnáme-li velikost dlaždice (``blocksize_x`` a
+	  ``blocksize_y``) a velikost vstupního rastru (například
+	  pomocí nástroje knihovny GDAL :program:`gdalinfo`, tak
+	  dojdeme, že se rastr naimportoval jako jedna dlaždice.
+
+	  .. code-block:: bash
+
+	     gdalinfo dmt.tif -noct
+
+	  Pro rozdělení rastrových dat při importu do více dlaždic
+	  slouží parametr :option:`-t` (``<šířka>x<výška>``) programu
+	  :program:`raster2pgsql`.
+
+	  .. notecmd:: Rozdělení dat do více dlaždic při importu
+		       
+	     Velikost dlaždice zvolíme ``400x400px``.
+	     
+	     .. code-block:: bash
+
+		raster2pgsql -s 5514 -Y -C -t 400x400 dmt.tif ukol_1.dmt_tiled | psql pokusnik 2>err
+
+	     Rastr se v tomto případě naimportuje jako 1400 dlaždic.
+	     
+	     .. code-block:: sql
+
+		SELECT COUNT(*) FROM ukol_1.dmt_tiled;
+	     
+
+Užitečné odkazy
+---------------
+
+* http://freegis.fsv.cvut.cz/gwiki/PostGIS_Raster

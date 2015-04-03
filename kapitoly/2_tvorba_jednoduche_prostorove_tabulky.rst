@@ -238,6 +238,8 @@ souřadnicovém systému se SRID *5514*.
 
 Do vytvořené tabulky vložíme data jedním z dříve uvedených způsobů.
 
+.. todo:: Zmínit :dbtable:`geometry_columns`.
+
 Vytváříme geometrii prvků
 =========================
 
