@@ -9,9 +9,9 @@ jeho konečným umístěním do databáze bychom nejspíš označili termínem*
 **ETL**. *Pro standardní formáty s úspěchem můžeme využít utility
 knihovny* `GDAL <http://gdal.org>`_, *jmenovitě* :ref:`ogr2ogr`, *pro
 import* :wikipedia-en:`Esri shapefile` *můžeme využít loader*
-:ref:`shp2pgsql` *instalovaný spolu s PostGISem.*
+:ref:`import-shp2pgsql` *instalovaný spolu s PostGISem.*
 
-.. _shp2pgsql:
+.. _import-shp2pgsql:
 
 shp2pgsql
 ---------
