@@ -1,13 +1,11 @@
 Rastrová data
 =============
 
-.. todo:: nedokonceno
-
 Podporu pro práci s rastrovými daty poskytuje PostGIS až od verze 2.0
 a to v rámci rozšíření `PostGIS Raster
 <http://postgis.net/docs/using_raster_dataman.html>`_.
 
-.. note:: PostGIS Raster je součástí rozšíření ``postgis``, není
+.. note:: **PostGIS Raster** je součástí rozšíření ``postgis``, není
           potřeba ho zvlášt přidávat.
 
 Rastrová data mohou být spravována ve dvou formách jako:

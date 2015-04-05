@@ -21,7 +21,9 @@ Přenos dat
 Pohledy a materializované pohledy
 ---------------------------------
 
+.. todo::
+   
 Vlastní funkce
 --------------
 
-* R
+.. todo::

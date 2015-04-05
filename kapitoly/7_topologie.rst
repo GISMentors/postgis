@@ -1,8 +1,6 @@
 Topologie
 =========
 
-.. todo:: nedokonceno
-
 *PostGIS vznikl jako projekt implementující standard OGC* `Simple
 Features <http://www.opengeospatial.org/standards/sfa>`_ *pro práci s
 vektorovými daty ve formě jednoduchých prvků. Od verze 2.0 nicméně
@@ -260,10 +258,50 @@ prvků.
 		     
 		  .. code-block:: bash
 
-		     ...
+                     ...
 
+Zadání
+^^^^^^
+
+Najděte parcely, které sousedí s parcelou, ve které se nachází vejce
+s označením ``id=15``.
+
+Řešení
+^^^^^^
+
+.. code-block:: sql
+
+   SET search_path TO ukol_1, topology, public;
+
+   SELECT (ST_GetFaceEdges('topo_parcely_732583', f.face_id)).edge FROM
+   (             
+    SELECT face_id FROM topo_parcely_732583.face AS f JOIN
+     vesmirne_zrudice AS v ON v.id=15 AND v.geom_p && f.mbr AND
+     ST_Within(v.geom_p, ST_GetFaceGeometry('topo_parcely_732583', f.face_id))
+   ) AS f;
+
+   
+   SELECT id, kmenovecislo || '/' || pododdelenicisla AS parcela
+    FROM parcely_732583
+    WHERE (topo).id IN
+    (
+     SELECT CASE WHEN ee.edge < 0 THEN left_face ELSE right_face END
+      FROM topo_parcely_732583.edge AS e JOIN
+      (             
+       SELECT (ST_GetFaceEdges('topo_parcely_732583', f.face_id)).edge FROM
+       (             
+        SELECT face_id FROM topo_parcely_732583.face AS f JOIN
+         vesmirne_zrudice AS v ON v.id=15 AND v.geom_p && f.mbr AND
+         ST_Within(v.geom_p, ST_GetFaceGeometry('topo_parcely_732583', f.face_id))
+       ) AS f
+      ) AS ee
+     ON abs(ee.edge) = e.edge_id
+    );
+
+                
 Užitečné odkazy
 ---------------
 
+* `Funkce rozšíření Topology <http://postgis.net/docs/Topology.html>`_
 * http://freegis.fsv.cvut.cz/gwiki/PostGIS_Topology
 * http://grasswiki.osgeo.org/wiki/PostGIS_Topology
