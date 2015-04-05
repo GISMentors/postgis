@@ -48,7 +48,7 @@ Režim IN-DB
 
    .. code-block:: bash
 
-      raster2pgsql -s 5514 dmt.tif ukol_1.dmt | psql pokusnik 2>err
+      raster2pgsql -s 3035 dmt.tif ukol_1.dmt | psql pokusnik 2>err
 
 .. note:: Tento přikaz nicméně může skončit chybou typu
 
@@ -67,7 +67,7 @@ Režim IN-DB
 
    .. code-block:: bash
 
-      raster2pgsql -s 5514 -Y -C dmt.tif ukol_1.dmt | psql pokusnik 2>err
+      raster2pgsql -s 3035 -Y -C dmt.tif ukol_1.dmt | psql pokusnik 2>err
 
      
 
@@ -82,7 +82,7 @@ jsou tedy fyzicky uložena *mimo* databázi.
 
    .. code-block:: bash
 
-      raster2pgsql -s 5514 -R -C `pwd`/dmt.tif ukol_1.dmt_link | psql pokusnik 2>err
+      raster2pgsql -s 3035 -R -C `pwd`/dmt.tif ukol_1.dmt_link | psql pokusnik 2>err
 
    Cesta k soubor musí být uplná, jinak nebude link korektní. My jsme
    si pomohly unixovým příkazem :program:`pwd`, který vrátí cestu k
@@ -103,8 +103,8 @@ dvou formách jako **IN-DB** (tabulka :dbtable:`ukol_1.dmt`) a
    
    r_table_schema | r_table_name | srid | out_db 
   ----------------+--------------+------+--------
-   ukol_1         | dmt          | 5514 | {f}
-   ukol_1         | dmt_link     | 5514 | {t}
+   ukol_1         | dmt          | 3035 | {f}
+   ukol_1         | dmt_link     | 3035 | {t}
 
 Tabulka :dbtable:`raster_columns` ukrývá další užitečné informace.
 
@@ -176,7 +176,7 @@ Kde je:
 	     
 	     .. code-block:: bash
 
-		raster2pgsql -s 5514 -Y -C -t 400x400 dmt.tif ukol_1.dmt_tiled | psql pokusnik 2>err
+		raster2pgsql -s 3035 -Y -C -t 400x400 dmt.tif ukol_1.dmt_tiled | psql pokusnik 2>err
 
 	     Rastr se v tomto případě naimportuje jako 1400 dlaždic.
 	     
@@ -185,7 +185,56 @@ Kde je:
 		SELECT COUNT(*) FROM ukol_1.dmt_tiled;
 	     
 
+Příklad
+-------
+
+*Vejce vesmírných oblud v nadmořské výšce na XXX metrů jsou
+oslabena. Využijte toho a zlikvidujte je.*
+
+Zadání
+^^^^^^
+
+Určete nadmořskou výšku bodů s výskytem vajec na základě rastru DMT. Vyberte body s nadmořskou výškou větší než 300 metrů.
+
+Řešení
+^^^^^^
+
+Geometrie tabulky :dbtable:`vesmirne_zrudnice` je v systému S-JTSK
+(:epsg:`5514`), rastrová data v ETRS-89 (:epsg:`3035`). V rámci řešení
+tedy musíme počítat s transformaci dat do společného souřadnicového
+systému pomocí funkce :pgiscmd:`ST_Transform`.
+
+.. code-block:: sql
+
+   -- nastavevíme cestu
+   SET search_path TO ukol_1, public;
+
+   SELECT v.id,ST_Value(r.rast,v.geom) FROM dmt AS r CROSS JOIN
+    (SELECT id,ST_Transform(geom_p, 3035) AS geom FROM vesmirne_zrudice) AS v;
+
+   -- optimalizovaná verze dotazu (dmt -> dmt_tiled)
+   SELECT v.id,ST_Value(r.rast,v.geom) FROM dmt_tiled AS r JOIN
+    (SELECT id,ST_Transform(geom_p, 3035) AS geom FROM vesmirne_zrudice) AS v ON
+    ST_Intersects(r.rast,v.geom);
+
+Výsledek uložíme do nového sloupečku v tabulce
+:dbtable:`vesmirne_zrudnice` a vybereme body s nadmořskou výškou větší než 300 metrů.
+
+.. code-block:: sql
+
+   ALTER TABLE vesmirne_zrudice ADD COLUMN vyska FLOAT;
+
+   UPDATE vesmirne_zrudice SET vyska = value FROM
+   (             
+    SELECT v.id AS vid,ST_Value(r.rast,v.geom) AS value FROM dmt_tiled AS r JOIN
+     (SELECT id,ST_Transform(geom_p, 3035) AS geom FROM vesmirne_zrudice) AS v ON
+     ST_Intersects(r.rast,v.geom)
+   ) AS v WHERE id = vid;
+
+   SELECT id FROM vesmirne_zrudice WHERE vyska > 300;
+    
 Užitečné odkazy
 ---------------
 
 * http://freegis.fsv.cvut.cz/gwiki/PostGIS_Raster
+* `Funkce rozšíření PostGIS Topology <http://postgis.net/docs/RT_reference.html>`_
