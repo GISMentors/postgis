@@ -147,11 +147,140 @@ Dotaz můžeme pustit přímo z db manageru QGISu.
 
 .. figure:: ../images/jtsk_grid.png
 
+Druhá ze zajímavých vlastností :sqlcmd:`CTE` je způsob, jakými jsou
+optimalizovány. Každá :sqlcmd:`CTE` je totiž optimalizována zvlášť.
+Toho se dá využít při optimalizaci dotazů.
+
+CTE můžeme libovolně řetězit a navzájem dotazovat. To se dá dobře
+použít, když budeme chtít postupně redukovat množinu dotazovaných
+prvků pomocí stále přesnějších (a tím pádem výpočetně náročnějších)
+dotazů. S pomocí CTE je možné dotáhnout pravidlo `výpočetně náročné
+operace provádějte s nejmenším možným počtem prvků`.
+
+Dejme tomu, že chceme zjistit výměru průniků budov s pozemky určenými
+k plnění funkce lesa v Praze.
+
+.. code-block:: sql
+
+   SET SEARCH_PATH TO ukol_1, public;
+
+   EXPLAIN ANALYZE
+   WITH zpochr_26 AS ( --PUPFL
+      SELECT *
+      FROM parcely
+      WHERE zpusobochranykod = 26
+   )
+   , bud AS ( --filtr na boundingbox
+      SELECT *
+      FROM budovy b
+      WHERE EXISTS (
+         SELECT 1 FROM zpochr_26 z
+         WHERE z.originalnihranice && b.originalnihranice
+      )
+   ), prunik AS
+   (
+      SELECT ST_CollectionExtract(
+            ST_Intersection(
+            ST_UNION(z.originalnihranice)
+            , ST_Union(b.originalnihranice)
+         ), 3
+      ) geom
+      FROM bud b, zpochr_26 z
+      WHERE b.originalnihranice && z.originalnihranice
+      GROUP BY z.ogc_fid
+   )
+
+   SELECT sum(ST_Area(geom)) from prunik;
+
+   --srovnani
+
+   EXPLAIN ANALYZE
+   SELECT sum(ST_Area(
+         ST_Intersection(
+            p.originalnihranice, b.originalnihranice
+         )
+      )
+   )
+   FROM parcely p, budovy b
+   WHERE p.zpusobochranykod = 26
+   AND ST_Intersects(p.originalnihranice, b.originalnihranice)
+
+
+
+Tento příklad ukazuje, že ani mazané použití CTE nemusí být výhodnější,
+než použití jednoduchého dotazu. Je to proto, že se jedná o jednoduchý
+dotaz, který optimalizátor může správně uchopit. U složitější situace
+to může být naopak. Problematické je navíc použití klauzule :sqlcmd:`EXISTS`.
+
+
+.. code-block:: sql
+
+   SET SEARCH_PATH TO ukol_1, public;
+
+   WITH zpochr_26 AS ( --PUPFL
+      SELECT *
+      FROM parcely
+      WHERE zpusobochranykod = 26
+   )
+   , bud AS ( --filtr na boundingbox
+      SELECT z.originalnihranice a, b.originalnihranice b
+      FROM budovy b, zpochr_26 z
+      WHERE z.originalnihranice && b.originalnihranice
+   )
+
+   SELECT ST_Area(ST_Union(ST_Intersection(a,b))) FROM bud;
+
+
+Každopádně :pgiscmd:`ST_Intersects` umí využívat operátory a potažmo indexy,
+takže v tomto konkrétním případě má stále navrch.
+
+.. code-block:: sql
+
+   SET SEARCH_PATH TO ukol_1, public;
+
+   EXPLAIN ANALYZE
+   SELECT sum(ST_Area(
+         ST_Intersection(
+            p.originalnihranice, b.originalnihranice
+         )
+      )
+   )
+   FROM parcely p, budovy b
+   WHERE p.zpusobochranykod = 26
+   AND ST_Relate(p.originalnihranice, b.originalnihranice, '2********')
+
+
+
 Anonymní blok kódu
 ==================
 
-Nerelační typy
-==============
+:pgsqlcmd:`Anonymní blok kódu <sql-do>` umožňuje spouštět dávku v PL/pgSQL mimo
+funkce.
+
+Ukázka z přákladu výše ukazuje, jak pustit ve smyčce vytvoření pěti set náhodných
+bublin.
+
+.. code-block:: sql
+
+   DO $$
+      DECLARE i int;
+      BEGIN
+         FOR i in 1..500 LOOP
+            INSERT INTO supiny(geom)
+            SELECT (ST_Dump(
+                  supiny(
+                     ST_Buffer(
+                        ST_Point(
+                           random() * 100
+                           , random() * 100
+                     ), (random() * 10) + 10
+                     , 25
+                  )
+               )
+            )).geom;
+         END LOOP;
+      END
+      $$;
 
 Pohledy
 =======
