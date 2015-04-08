@@ -247,18 +247,20 @@ prvků.
           často skončí chybou.
 
 .. noteadvanced:: Pro sestavení topologii můžete použít jako externí
-                  nástroj `GRASS GIS
-                  <http://www.gismentors.cz/skoleni/grass-gis/>`_. Následuje
-                  zkracený návod. Detaily tohoto řešení jsou nad rámec
-                  tohoto kurz a spadají spíše do kurzu `GRASS GIS pro
-                  pokročilé
-                  <http://www.gismentors.cz/skoleni/grass-gis/#pokrocily>`_.
+   nástroj `GRASS GIS
+   <http://www.gismentors.cz/skoleni/grass-gis/>`_. Následuje
+   zkracený návod. Detaily tohoto řešení jsou nad rámec
+   tohoto kurz a spadají spíše do kurzu `GRASS GIS pro
+   pokročilé
+   <http://www.gismentors.cz/skoleni/grass-gis/#pokrocily>`_.
 
-		  .. todo::
-		     
-		  .. code-block:: bash
+   .. code-block:: bash
 
-                     v.in.ogr in=PG:dbname=pokusnik layer=ukol_1.parcely out=parcely  --o
+      v.in.ogr in=PG:dbname=pokusnik layer=ukol_1.parcely out=parcely
+      v.out.postgis -l in=parcely out=PG:dbname=pokusnik out_layer=parcely_topo
+
+   Na testovacím stroji trvala tato operace XX min (v
+   porovnání se 17 hodinami snesitelnější čas).
 
 Zadání
 ^^^^^^
