@@ -41,7 +41,8 @@ jste v transakci, nemusíte se bát, že něco pokazíte, dokud
 neodkliknete COMMIT. Můžete tedy provést změny, otestovat pár dotazů,
 jestli se všechno chová jak má a teprve pak potvrdit změny v databázi.
 
-.. todo:: Doplnit odkaz na multigenerační architekturu.
+Vzájemná izolace transakcí při současném zápisu je realizovaná
+prostřednictvím `multigenerační architektury <http://postgres.cz/wiki/Slovník#MVCC>`_.
 
 Věnujte dostatečnou pozornost návrhu struktur
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

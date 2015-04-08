@@ -387,7 +387,7 @@ Při migraci do položky s geometrií se CAST provede automaticky.
 .. tip:: Zobrazte si tabulku ve svém oblíbeném GIS desktopu.
 
 
-.. figure:: ../images/fig_001.svg
+.. figure:: ../images/fig_001.png
     :align: center
 
     Jako podklad jsou použité pražské ulice

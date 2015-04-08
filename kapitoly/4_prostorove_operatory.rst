@@ -27,7 +27,7 @@ QGISem.
    SELECT adresnibod FROM ukol_1.adresy 
     WHERE adresnibod && 'LINESTRING(-739719.43 -1046851.61,-735806.08 -1043755.06)'::geometry;
 
-.. figure:: ../images/fig_002.svg
+.. figure:: ../images/fig_002.png
     :align: center
     
     Adresní body vybrané pomocí MMO linie.
