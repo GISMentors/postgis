@@ -244,14 +244,20 @@ geometrii vstupních prvků.
 Agregační funkce
 ----------------
 
-.. todo::
+Sloučí geometrii z více záznamů do jednoho.
 
-:ST_Dump, ST_Collect, ST_UnaryUnion: Různé typy sjednocení.
+:pgiscmd:`ST_Collect`, :pgiscmd:`ST_UnaryUnion`
 
-:ST_MakeLine: Vytvoří linii z množiny bodů.
+         Různé typy sjednocení.
+
+:pgiscmd:`ST_MakeLine`
+
+         Vytvoří linii z množiny bodů.
 
 Další funkce
 ------------
+
+Výběr z oblíbených funkcí.
 
 ST_IsValid a ST_MakeValid
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -271,3 +277,16 @@ Mění typ geometrie z jednoduché na *multigeometrii*.
 .. code-block:: sql
 
    SELECT ST_AsText(ST_Multi('LINESTRING(1 1,5 5)'::geometry));
+
+
+ST_Dump
+^^^^^^^
+
+:pgiscmd:`ST_Dump` rozpustí "multi" geometrii, nebo `geometrycollection` na jednotlivé komponenty.
+Vrací typ record s geometrií a cestou ke geometrii v `geometrycollection`.
+
+ST_CollectionExtract
+^^^^^^^^^^^^^^^^^^^^
+
+:pgiscmd:`ST_CollectionExtract` vyfiltruje z :sqlcmd:`GEOMETRYCOLLECTION` bodové, liniové, 
+nebo plošné prvky.
