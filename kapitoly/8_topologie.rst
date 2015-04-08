@@ -258,7 +258,7 @@ prvků.
 		     
 		  .. code-block:: bash
 
-                     ...
+                     v.in.ogr in=PG:dbname=pokusnik layer=ukol_1.parcely out=parcely  --o
 
 Zadání
 ^^^^^^

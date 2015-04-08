@@ -1,10 +1,8 @@
 A co dál?
 =========
 
-.. todo::
-
-Přenos dat
-----------
+Přenos dat mezi databázemi
+--------------------------
 
 .. notecmd:: Export vybrané tabulky do formátu PGDump
 
@@ -18,8 +16,8 @@ Přenos dat
 
       pg_restore -d pokusnik -x -O stav_objekty.dump
 
-Doporučená konfigurace
-----------------------
+Doporučená konfigurace PostgreSQL
+---------------------------------
 
 ::
 
@@ -29,13 +27,3 @@ Doporučená konfigurace
    maintenance_work_mem = 32MB (default is 16MB)
    max_stack_depth = 4MB       (default is 2MB)
    checkpoint_segments = 24    (default is 3)
-
-Pohledy a materializované pohledy
----------------------------------
-
-.. todo::
-   
-Vlastní funkce
---------------
-
-.. todo::
