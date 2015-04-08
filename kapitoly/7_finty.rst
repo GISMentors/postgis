@@ -2,6 +2,33 @@
 Efektivní práce
 ===============
 
+Pohledy
+=======
+
+:pgsqlcmd:`Pohled <sql-createview>` v databázi je v podstatě dotaz, který se
+tváří jako tabulka. Můžeme mu nastavit práva a dotazovat ho. Výhodou pohledů
+je, že pracují s tabulkami se stejnými právy, jaká měl jejich tvůrce. Můžeme
+tedy pomocí pohledů zpřístupnit uživateli obsah tabulek, které mu nechceme
+ukázat celé.
+
+Pohledy můžeme zobrazit v QGISu, pakliže obsahují grafickou složku. Můžeme si
+tedy, připravit dotazy, které nás zajímají a pracovat s nimi, aniž bychom museli
+výsledky analýz ukládat do nových tabulek.
+
+
+.. code-block:: sql
+
+   SET SEARCH_PATH TO ukol_1, public;
+
+   CREATE OR REPLACE VIEW parcely_podle_gridu AS
+   SELECT row_number() over() id1
+   , p.*, grid.id grid_id
+   FROM parcely p, jtsk_grid grid
+   WHERE p.definicnibod && grid.geom;
+
+
+.. figure:: ../images/parcely_dle_gridu.png
+
 UDF funkce
 ==========
 
@@ -282,5 +309,57 @@ bublin.
       END
       $$;
 
-Pohledy
-=======
+Využít se dá s výhodou, když provádíme průnik prvků dvou obsáhlejších tabulek.
+
+
+.. code-block:: sql
+
+   SET SEARCH_PATH TO ukol_1, public;
+
+   BEGIN;
+
+   CREATE TABLE prunik (
+      ogc_fid int, 
+      geom geometry(POLYGON, 5514)
+   );
+
+   DO $$
+      DECLARE r prunik; --record podle tabulky prunik
+      g geometry;
+      r2 record;
+
+      BEGIN
+         FOR r IN SELECT ogc_fid, (ST_Dump(originalnihranice)).geom geom 
+            FROM budovy 
+            WHERE ST_IsValid(originalnihranice)
+            LOOP
+            RAISE NOTICE 'zpracovávám ogc_fid %', r.ogc_fid;
+            g := ST_Multi(
+               ST_CollectionExtract(
+                  ST_Intersection(
+                     r.geom, ST_Union(ST_MakeValid(originalnihranice))
+                  ), 3
+               )
+            )
+            FROM parcely
+            WHERE originalnihranice && r.geom;
+
+            FOR r2 IN SELECT (ST_Dump(g)).geom LOOP
+
+               IF ST_GeometryType(r2.geom) = 'ST_Polygon' THEN
+                  r.geom := r2.geom;
+                  INSERT INTO prunik VALUES(r.*);
+               END IF;
+
+            END LOOP;
+
+
+
+         END LOOP;
+      END
+      $$;
+
+      SELECT count(*) FROM prunik;
+
+   ROLLBACK;
+
