@@ -210,10 +210,8 @@ Topologii si sestavíme pouze na vzorku parcel.
     ALTER TABLE parcely_732583 ADD PRIMARY KEY (ogc_fid);            
 
    -- a prostorové indexy
-   CREATE INDEX parcely_732583_definicnibod_geom_idx ON
-    parcely_732583 USING gist (definicnibod);
-   CREATE INDEX parcely_732583_originalnihranice_geom_idx ON
-    parcely_732583 USING gist (originalnihranice);
+   CREATE INDEX ON parcely_732583 USING gist (definicnibod);
+   CREATE INDEX ON parcely_732583 USING gist (originalnihranice);
                 
 Vytvoříme nové schéma a atribut pro topologii.
 
