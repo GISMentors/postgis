@@ -238,7 +238,22 @@ souřadnicovém systému se SRID *5514*.
 
 Do vytvořené tabulky vložíme data jedním z dříve uvedených způsobů.
 
-.. todo:: Zmínit :dbtable:`geometry_columns`.
+.. tip:: Přehled atributů s geometrií v databázi poskytuje tabulka
+   (pohled) :dbtable:`geometry_columns`.
+
+   .. code-block:: sql
+
+      SELECT * FROM geometry_columns;
+
+   ::
+
+      f_table_catalog   | pokusnik
+      f_table_schema    | ukol_1
+      f_table_name      | vesmirne_zrudice
+      f_geometry_column | geom_p
+      coord_dimension   | 2
+      srid              | 5514
+      type              | POINT
 
 Vytváříme geometrii prvků
 =========================

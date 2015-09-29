@@ -95,6 +95,22 @@ tabulku nejprve odstraní).
          může dojít k degradaci dat, tudíž ho má smysl použít jen
          pokud příjemce dat vyžaduje výslovně tento formát.
 
+.. noteadvanced:: Příklad jednoduchého skriptu pro dávkový
+   import souborů ve formátu Esri Shapefile z
+   aktuálního adresáře
+
+   .. code-block:: bash
+                                  
+       #!/bin/sh
+
+       for f in *.shp; do
+           echo $f
+           shp2pgsql -d -D $f ukol_1.${f%%.shp} 2>/dev/null | \
+            psql pokusnik >/dev/null 2>err 
+       done
+
+       exit 0
+      
 .. _ogr2ogr:
             
 ogr2ogr
@@ -218,6 +234,9 @@ Poznámky k dalším formátům
 :program:`ogr2ogr` pracuje. Předvedeme si, jak snadno nahrát soubor
 ve formátu :wikipedia-en:`GML <Geography Markup Language>`.
 
+GML
+~~~
+
 .. notecmd:: Nahrání GML pomocí ogr2ogr
 
    Data ke stažení `zde <http://training.gismentors.eu/geodata/postgis/adres_mista.gml.gz>`_.
@@ -229,6 +248,30 @@ ve formátu :wikipedia-en:`GML <Geography Markup Language>`.
       adres_mista.gml.gz \
       -nln ukol_1.adresy | \
       psql pokusnik 2> err
+
+VFR
+~~~
+
+.. notecmd:: Nahrání Výměnného formátu RÚIAN (VFR) pomocí ogr2ogr
+
+   Nejprve vytvoříme nové schéma
+
+   .. code-block:: bash
+
+      psql gismentors -h training.gismentors.eu -U skoleni -W -c "create schema ltm"
+   
+   A poté naimportujeme data vybrané obce (Litoměřice - 564567)
+
+   .. code-block:: bash
+
+      ogr2ogr -f PostgreSQL \
+      "PG:dbname=gismentors host=training.gismentors.eu user=skoleni password=XXX active_schema=ltm" \
+      /vsicurl/http://vdp.cuzk.cz/vymenny_format/soucasna/20150331_OB_564567_UKSH.xml.gz
+                   
+   Bližší informace: http://freegis.fsv.cvut.cz/gwiki/RUIAN
+                                   
+WFS
+~~~
 
 V :program:`ogr2ogr` je možné pracovat i s webovými službami,
 například můžeme načíst katastrální území z `WFS ČÚZK
