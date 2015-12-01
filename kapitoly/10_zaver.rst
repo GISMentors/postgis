@@ -16,14 +16,15 @@ Přenos dat mezi databázemi
 
       pg_restore -d pokusnik -x -O stav_objekty.dump
 
-Doporučená konfigurace PostgreSQL
----------------------------------
+..
+  Doporučená konfigurace PostgreSQL
+  ---------------------------------
 
-::
+  ::
 
-   shared_buffers = 128MB      (default is 24MB)
-   temp_buffers = 32MB         (default is 8MB)
-   work_mem = 8MB              (default is 1MB)
-   maintenance_work_mem = 32MB (default is 16MB)
-   max_stack_depth = 4MB       (default is 2MB)
-   checkpoint_segments = 24    (default is 3)
+  shared_buffers = 128MB      (default is 24MB)
+  temp_buffers = 32MB         (default is 8MB)
+  work_mem = 8MB              (default is 1MB)
+  maintenance_work_mem = 32MB (default is 16MB)
+  max_stack_depth = 4MB       (default is 2MB)
+  checkpoint_segments = 24    (default is 3)

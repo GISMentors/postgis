@@ -29,13 +29,15 @@ výsledky analýz ukládat do nových tabulek.
 
 .. figure:: ../images/parcely_dle_gridu.png
 
+   Výsledek pohledu - obarvení parcel podle gridu.
+
 UDF funkce
 ==========
 
-Funkce vytváříme příkazem :pgsqlcmd:`CREATE FUNCTION 
+Funkce UDF (User Defined Function) vytváříme příkazem :pgsqlcmd:`CREATE FUNCTION 
 <sql-createfunction>`. Funkce může být napsaná přímo v jazyce `SQL`, v 
-procedurálním jazyce PostgreSQL `PL/pgSQL`, případně v jednom z jazyků,
-které podopruje PostgreSQL.
+procedurálním jazyce PostgreSQL `PL/pgSQL`, případně v jakémkoliv jazyce,
+který podporuje PostgreSQL.
 
 Ukažme si jednoduchý příklad funkce, která vrací kolik procent polygonu
 je zakryto druhým polygonem.
@@ -121,15 +123,17 @@ polygon oříznutý o části, které jsou zakryté polygony v tabulce šupiny.
 
 
 .. figure:: ../images/supiny.png
+   :class: middle
 
+   Výsledek volání funkce supiny.
 
 
 Common table expression
 =======================
 
-:pgsqlcmd:`Common table expression <queries-with>`. Má hned několik 
+:pgsqlcmd:`Common table expression <queries-with>` (CTE) má hned několik 
 zajímavých vlastností. Tou první je možnost rekurze. To je možné využít
-například při generování čtvercové sítě, nebo generování hierarchických
+například při generování čtvercové sítě nebo generování hierarchických
 struktur.
 
 Použití rekruzivního :sqlcmd:`CTE` si předvedeme v následujícím příkladu.
@@ -165,17 +169,20 @@ Použití rekruzivního :sqlcmd:`CTE` si předvedeme v následujícím příklad
       ), 5514
    )::geometry(POLYGON, 5514) geom FROM x, y;
 
-.. noteadvanced:: Místo rekurzivního cte lze v tomto příkladu použít
-   generate_series s týmž výsledkem.
-
-Dotaz můžeme pustit přímo z db manageru QGISu.
+.. noteadvanced:: Místo rekurzivního CTE lze v tomto příkladu použít
+   *generate_series* s týmž výsledkem.
 
 .. figure:: ../images/db_manager_cte.png
+   :class: middle
 
+   Dotaz můžeme pustit přímo z db manageru QGISu.
+            
 .. figure:: ../images/jtsk_grid.png
 
-Druhá ze zajímavých vlastností :sqlcmd:`CTE` je způsob, jakými jsou
-optimalizovány. Každá :sqlcmd:`CTE` je totiž optimalizována zvlášť.
+   Výsledek - vytvořený grid v S-JTSK.
+
+Druhá ze zajímavých vlastností CTE je způsob, jakými jsou
+optimalizovány. Každá CTE je totiž optimalizována zvlášť.
 Toho se dá využít při optimalizaci dotazů.
 
 CTE můžeme libovolně řetězit a navzájem dotazovat. To se dá dobře
@@ -219,7 +226,7 @@ k plnění funkce lesa v Praze.
 
    SELECT sum(ST_Area(geom)) from prunik;
 
-   --srovnani
+   -- srovnaní
 
    EXPLAIN ANALYZE
    SELECT sum(ST_Area(
@@ -232,9 +239,7 @@ k plnění funkce lesa v Praze.
    WHERE p.zpusobochranykod = 26
    AND ST_Intersects(p.originalnihranice, b.originalnihranice)
 
-
-
-Tento příklad ukazuje, že ani mazané použití CTE nemusí být výhodnější,
+Tento příklad ukazuje, že ani pokročilé použití CTE nemusí být výhodnější
 než použití jednoduchého dotazu. Je to proto, že se jedná o jednoduchý
 dotaz, který optimalizátor může správně uchopit. U složitější situace
 to může být naopak. Problematické je navíc použití klauzule :sqlcmd:`EXISTS`.
@@ -284,7 +289,7 @@ Anonymní blok kódu
 :pgsqlcmd:`Anonymní blok kódu <sql-do>` umožňuje spouštět dávku v PL/pgSQL mimo
 funkce.
 
-Ukázka z přákladu výše ukazuje, jak pustit ve smyčce vytvoření pěti set náhodných
+Ukázka z příkladu výše ukazuje, jak pustit ve smyčce vytvoření pěti set náhodných
 bublin.
 
 .. code-block:: sql

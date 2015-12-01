@@ -32,8 +32,8 @@ oindexovaná.
        "adresy_hasici_geom_idx" gist (hasici)
        "adresy_zachranka_geom_idx" gist (zachranka)
 
-S ohledem na to, že pracujeme s body, vystačíme si s :doc:`operátory
-<4_prostorove_operatory>`.
+S ohledem na to, že pracujeme s body, vystačíme si s
+:doc:`prostorovými operátory <4_prostorove_operatory>`.
 
 .. code-block:: sql
 
@@ -233,11 +233,11 @@ Rozbor
 ^^^^^^
 
 .. note:: V tabulce :dbtable:`ulice` nám nejspíš bude chybět
-	  index. Zkontrolujeme ho (``\d``) a pokud tam není, tak ho vytvoříme.
+   index. Zkontrolujeme ho (``\d``) a pokud tam není, tak ho vytvoříme.
 
    .. code-block:: sql
 		
-      CREATE INDEX ulice_geom_idx ON ulice USING gist (geom);
+      CREATE INDEX ON ulice USING gist (geom);
 
 Ulice v okruhu 250 metrů můžeme vybrat buď pomocí *obalové zóny* anebo
 na základě *vzdálenosti*.
@@ -294,14 +294,14 @@ Zadání
 ^^^^^^
 
 Vyberte budovy v okruhu 250 metrů kolem bodů z tabulky
-:dbtable:`vesmirne_zrudice`, zjistěte počet u každého bodu. Zjistěte
-plochu průniku u každého bodu a celkovou plochu všech zasažených
-podlaží.
+:dbtable:`vesmirne_zrudice`, zjistěte pro každý bod jejich
+počet. Dále určete plochu průniku u každého bodu a celkovou plochu všech
+zasažených podlaží.
 
 Postup
 ^^^^^^
 
-Nahrajeme do databáze `budovy
+Nahrajeme do databáze datovou vrstvu `budov
 <http://training.gismentors.eu/geodata/postgis/stav_objekty.dump>`_.
 
 .. notecmd:: Načtení dat z PGDump
@@ -330,7 +330,7 @@ Nahrajeme do databáze `budovy
    ) a
    WHERE ST_Relate(ST_Buffer(geom_p, 250, 100), originalnihranice, '2********');
 
-Ale máme chybky v topologii
+Data ale obsahující chyby ve validnosti geometrií.
 
 .. code-block:: sql
 

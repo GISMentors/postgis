@@ -7,8 +7,8 @@ dat. Data obvykle nahráváme ze souborových formátů, případně z
 webových služeb. Řetězec úkonů mezi uchopením nějakého zdroje dat a
 jeho konečným umístěním do databáze bychom nejspíš označili termínem*
 **ETL**. *Pro standardní formáty s úspěchem můžeme využít utility
-knihovny* `GDAL <http://gdal.org>`_, *jmenovitě* :ref:`ogr2ogr`, *pro
-import* :wikipedia-en:`Esri shapefile` *můžeme využít loader*
+knihovny* `GDAL <http://gdal.org>`_, *jmenovitě* :ref:`ogr2ogr`. *Pro
+import* :wikipedia-en:`Esri Shapefile` *můžeme využít loader*
 :ref:`import-shp2pgsql` *instalovaný spolu s PostGISem.*
 
 .. _import-shp2pgsql:
@@ -23,8 +23,8 @@ formátu na standardní výstup. Je tedy možné, v případě potřeby,
 upravit výstup z této utility například unixovým nástrojem
 :program:`sed` či případně uložit do souboru a ručně zeditovat.
 
-:program:`shp2pgsql` umí jak data přidat do již existující tabulky,
-   tak potřebnou tabulku vytvořit. Lze také pouze vytvořit na
+:program:`shp2pgsql` umí data přidat do již existující tabulky,
+tak potřebnou tabulku vytvořit. Lze také pouze vytvořit na
 základě dat prázdnou tabulku a samotná data do ní
 nenahrávat. Více v `manuálu
 <http://postgis.net/docs/using_postgis_dbmanagement.html#shp2pgsql_usage>`_.
@@ -150,20 +150,21 @@ V prvním řádku uvedeme kódování atributových dat vstupního souboru.
 
 .. tip:: V případě, že bychom chtěli použít pro import jiné kódování,
          než je UTF8, nastavíme kódování pro PostgreSQL do proměnné
-         prostředí **PGCLIENTENCODING**.
+         prostředí :envvar:`PGCLIENTENCODING`.
 
 .. warning:: Příkaz *export* funguje pod Linuxem, ve Windows se
              proměnné prostředí nastavují `jinak
              <http://ss64.com/nt/syntax-variables.html>`_.
 
-.. tip:: Proměnnou prostředí :envvar:`SHAPE_ENCODING` můžeme použít i
-         v případě, že chceme použít při výstupu do **Esri Shapefile**
+.. tip:: Proměnnou prostředí :envvar:`SHAPE_ENCODING` použijeme v
+         případě, že chceme použít při výstupu do *Esri Shapefile*
          jiné kódování, než je UTF8.
 
 Parametr :option:`-f` nastaví výstupní formát na *PostgreSQL*,
 :option:`PG:` nastaví `parametry připojení k databázi
 <http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html>`_. Lze
-také nastavit např. aktivní schéma.
+také nastavit např. aktivní schéma - tj. schéma, do kterého budou
+vstupní data importována.
 
 .. tip:: U dávkového nahrávání je výhodné nastavit si heslo do
          `souboru s autentizací
@@ -215,7 +216,7 @@ je tento nástroj dosupný, např. GNU/Linux.
 V prvním řádku nastavíme proměnnou prostředí
 :envvar:`PG_USE_COPY`. Tím řekneme, že data mají být přenesena jako
 :sqlcmd:`COPY tabname FROM STDIN`, namísto řady :sqlcmd:`INSERT`
-statementů. Stejným způsobem by fungoval i **PostgreSQL** driver.
+statementů. Stejným způsobem by fungoval i *PostgreSQL* driver.
 
 Parametry na dalším řádku již známe. Jedná se o formát, následuje
 název výstupního souboru (v našem případě odesíláme na stdout),
@@ -225,7 +226,7 @@ nepřináší nic nového. Nakonec nahradíme pomocí sedu "Kaštanová" za
 
 .. important:: PostgreSQL driver může mít problém vytvořit tabulku s
                více geometrickými sloupci, potom nezbývá než použít
-               PGDump driver, nebo vytvořit tabulku ručně.
+               PGDump driver nebo vytvořit tabulku ručně.
 
 Poznámky k dalším formátům
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -291,11 +292,11 @@ například můžeme načíst katastrální území z `WFS ČÚZK
       -nln ukol_1.katatest
 
 .. noteadvanced:: Ve WFS bývá nastaven limit na maximální počet
-                  prvků. V praxi není možné obvykle stáhnout větší
-                  objem dat. Můžeme však stahovat prvky po jednom. Z
-                  `číselníku katastrálních území
-                  <http://www.cuzk.cz/CUZK/media/CiselnikyISKN/SC_SEZNAMKUKRA_DOTAZ/SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip>`_
-                  vybereme katastry Prahy.
+   prvků. V praxi není možné obvykle stáhnout větší
+   objem dat. Můžeme však stahovat prvky po jednom. Z
+   `číselníku katastrálních území
+   <http://www.cuzk.cz/CUZK/media/CiselnikyISKN/SC_SEZNAMKUKRA_DOTAZ/SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip>`_
+   vybereme katastrální území Prahy.
 
    .. notecmd:: Dávkového nahrání dat z WFS
 
@@ -330,10 +331,11 @@ například můžeme načíst katastrální území z `WFS ČÚZK
 Zobrazení dat
 -------------
 
-Data si můžeme zobratit například v QGISu. Pokročilejší uživatelé
-mohou výužít funkce PostGISu, viz příklad níže.
+Data si můžeme zobrazit a dále s nimi pracovat například v QGISu, viz
+:skoleni:`školení pro začátečníky <postgis-zacatecnik>`. Pokročilejší
+uživatelé mohou výužít funkce PostGISu, viz příklad níže.
 
-.. noteadvanced:: Na závěr si naše data zobrazíme v **SVG**.
+.. noteadvanced:: Na závěr si naše data zobrazíme ve formátu *SVG*.
 
    .. code-block:: sql
 

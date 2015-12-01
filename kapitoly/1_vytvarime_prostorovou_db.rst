@@ -1,16 +1,17 @@
 Vytváříme prostorovou databázi
 ==============================
 
-Je nezbytné, aby byl PostGIS instalován na témže stroji, na které běží
-databázový server. K tomu poslouží balíčky v balíčkovacím systému vaší
-distribuce.
+Je nezbytné, aby byl PostGIS nainstalován na témže stroji, na kterém
+běží databázový server. K tomu poslouží balíčky v balíčkovacím systému
+vaší distribuce. Návod pro operační systém Windows :skoleni:`zde
+<postgis-zacatecnik/kapitoly/7_instalace>`.
 
-.. note:: V případě PostGISu, i samotného PostgreSQL je výhodné
-          používat nejnovější verze s ohledem na to, že odráží trendy
-          v rychle se vyvíjejícím oboru. Novější verze obsahují velice
-          užitečné *featury*, které často odráží aktuální
-          požadavky. Proto je rozumné toto zohlednit při volbě
-          distribuce pro provoz vašeho databázového serveru.
+.. note:: V případě PostGIS a PostgreSQL je výhodné používat
+          nejnovější verze s ohledem na to, že odráží trendy v rychle
+          se vyvíjejícím oboru. Novější verze obsahují velice užitečné
+          *featury*, které často odráží aktuální požadavky. Proto je
+          rozumné toto zohlednit při volbě distribuce pro provoz
+          vašeho databázového serveru.
 
 Tvorba prostorové databáze
 --------------------------
@@ -23,8 +24,8 @@ Tvorba pomocí rozšíření
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 *Od PostgreSQL verze 9.1* můžeme vytvořit prostorovou databázi
- příkazem ``CREATE EXTENSION``, viz `podrobný návod pro PostGIS 2.1
- <http://postgis.net/docs/manual-2.1/postgis_installation.html#create_new_db_extensions>`_.
+příkazem ``CREATE EXTENSION``, viz `podrobný návod pro PostGIS 2.1
+<http://postgis.net/docs/manual-2.1/postgis_installation.html#create_new_db_extensions>`_.
 
 Postup instalace PostGIS pomocí *CREATE EXTENSION*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -48,16 +49,6 @@ viz příklad níže.
 
    ALTER EXTENSION postgis UPDATE TO "2.1.0";
 
-
-.. note:: V případě potřeby pracovat s topologickými vektorovými daty
-   či s daty rastrovými přidáme související extenze.
-             
-   .. code-block:: sql
-   
-      CREATE EXTENSION postgis_topology;
-      CREATE EXTENSION postgis_raster;
-                   
-
 Tvorba pomocí skriptů
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -70,35 +61,32 @@ postup pro PostGIS 2.1
 
 .. notecmd:: Dohledání instalačních skriptů PostGIS
 
-	.. code-block:: bash
+   .. code-block:: bash
 
-		locate postgis.sql
+      locate postgis.sql
 
-        ::
+   ::
 
-           /usr/share/postgresql/contrib/postgis-2.1/postgis.sql
-           /usr/share/postgresql/contrib/postgis-2.1/rtpostgis.sql
-           /usr/share/postgresql/contrib/postgis-2.1/uninstall_postgis.sql
-           /usr/share/postgresql/contrib/postgis-2.1/uninstall_rtpostgis.sql
-
+      /usr/share/postgresql/contrib/postgis-2.1/postgis.sql
+      /usr/share/postgresql/contrib/postgis-2.1/rtpostgis.sql
+      /usr/share/postgresql/contrib/postgis-2.1/uninstall_postgis.sql
+      /usr/share/postgresql/contrib/postgis-2.1/uninstall_rtpostgis.sql
 
 .. notecmd:: Instalace PostGIS pomocí skriptů
 
-             PostGIS nainstalujeme a naplníme tabulku souřadnicových
-             systémů základní sadou předpřipravených :abbr:`SRS (Spatial
-             Reference Systems)`.
+   PostGIS nainstalujeme a naplníme tabulku souřadnicových
+   systémů základní sadou předpřipravených :abbr:`SRS (Spatial
+   Reference Systems)`.
    
-	.. code-block:: bash
+   .. code-block:: bash
+                   
+      psql -d db_s_postgis -f postgis.sql
+      psql -d db_s_postgis -f spatial_ref_sys.sql
 
-		psql -d db_s_postgis -f postgis.sql
-		psql -d db_s_postgis -f spatial_ref_sys.sql
-
-
-
-.. warning:: V základní sadě není obsažena nejnovější definici
+.. warning:: V základní sadě nemusí být obsažena nejnovější definice
              souřadnicového systému S-JTSK (:epsg:`5514`), ale pouze
-             jeho starší verze. Tento systém je třeba :ref:`doplnit
-             ručně <epsg-5514>`.
+             jeho starší verze. Tento souřadnicový systém je třeba
+             :ref:`doplnit ručně <epsg-5514>`.
 
 V tuto chvíli již máme vytvořenu plně funkční prostorovou databázi pro
 práci s vektorovými daty ve formě tzv. *simple features*.
@@ -125,7 +113,7 @@ Pokud kopírujeme databázi, kopírujeme ji se vším všudy, je-li v ní
 nahrán PostGIS, kopírujeme ji i s ním.
 
 .. important:: To samé platí, pochopitelně, i pro zálohování pomocí
-               pg_dump. Proto je dobré u prostorových databází
+               *pg_dump*. Proto je dobré u prostorových databází
                vytvářet pro pracovní data samostatné schéma a
                neukládat tato data do *public*. Kromě záležitostí
                souvisejících s nastavováním práv a pod. totiž snadno
@@ -138,8 +126,7 @@ nahrán PostGIS, kopírujeme ji i s ním.
 PostgreSQL umožňuje kopírovat databázi pomocí parametru
 :option:`template`.
 
-Buď v :program:`psql` (nebo :program:`pgAdminIII` - který je ovšem pro
-"uplakánky"):
+Buď v :program:`psql` nebo :program:`pgAdminIII`:
 
 .. code-block:: sql
 
@@ -153,26 +140,27 @@ Nebo pomocí příkazu `createdb`:
 
 		createdb moje_nova_databaze -T predem_pripravena_predloha
 
-Toho se využívalo u verzí PostgreSQL starších než 9.1 k tomu, že si
-správce databáze na serveru vytvořil prázdnou databázi s PostGISem
-jako šablonu pro další databáze tak, aby se vyhnul otravnému
-vypisování skriptů.
+.. note:: Toho se využívalo u verzí PostgreSQL starších než 9.1 k
+          tomu, že si správce databáze na serveru vytvořil prázdnou databázi s
+          PostGISem jako šablonu pro další databáze tak, aby se vyhnul otravnému
+          vypisování skriptů.
 
-Ovšem i u novějších verzí PostgreSQL má tato technika svoje
-opodstatnění. Obvykle v případě, že provádíme v databázi nějaké další
-upravy (přidané vlastní SRS ve *spatial_ref_sys*, přidané funkce,
-zásahy do kódování atp.)
+          Ovšem i u novějších verzí PostgreSQL má tato technika svoje
+          opodstatnění. Obvykle v případě, že provádíme v databázi nějaké další
+          upravy (přidané vlastní SRS ve *spatial_ref_sys*, přidané funkce,
+          zásahy do kódování atp.)
 
 Přidáváme vlastní SRS
 ---------------------
 
-*Postgisu slouží k ukládání informací o souřadnicových systémech
- tabulka* :dbtable:`spatial_ref_sys` *v ní jsou uloženy definice
- souřadnicových systémů. Primárním klíčem této tabulky je SRID. Do
- PostGISu není možné vkládat geometrii v souřadnicových systémech,
- které nejsou uvedeny v tabulce spatial_ref_sys. Tuto tabulku je ovšem
- možno editovat, záznamy s definicemi upravovat, případně vkládat své
- vlastní.*
+Informace o souřadnicových systémech ukládá PostGIS v tabulce
+:dbtable:`spatial_ref_sys`. Primárním klíčem této tabulky je SRID.
+
+.. note:: Do PostGISu není možné vkládat geometrii v souřadnicových
+          systémech, které nejsou uvedeny v tabulce
+          :dbtable:`spatial_ref_sys`. Tuto tabulku je ovšem možno
+          editovat, záznamy s definicemi upravovat, případně vkládat
+          své vlastní.
 
 Běžný datař se obvykle domnívá, že souřadnicové systémy se ho
 netýkají, že to je ten druh neštěstí, který obvykle potkává
@@ -180,7 +168,7 @@ jiné lidi. To může a nemusí být pravda. Pokud budete pracovat s daty,
 které jsou definovány v témže souřadnicovém systému, jak v
 originálních datech, tak v databázi a případě při publikaci dat a
 tento souřadnicový systém je již obsažen v tabulce
-:dbtable:`spatial_ref_sys`, nemusí Vás souřadnicové systémy nijak
+:dbtable:`spatial_ref_sys`, nemusí vás souřadnicové systémy nijak
 zvlášť zajímat. Pokud ovšem budete zpracovávat data v různých
 souřadnicových systémech a budete je chtít v databázi kombinovat, tak
 se jim nevyhnete.
@@ -204,7 +192,7 @@ se jim nevyhnete.
                   se souřadnicovým systémem S-JTSK používáme vždy
                   geometry.
 
-V defaultní sadě souřadných systémů schází nejnovější definice
+V výchozí sadě souřadnicových systémů může chybět nejnovější definice
 souřadnicového systému S-JTSK :EPSG:`5514`, proto si ho do databáze
 doplníme.
 

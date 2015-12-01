@@ -1,15 +1,39 @@
-Úvod
-====
+.. only:: latex
 
-.. image:: images/postgis-logo.png
-	   :width: 140px
-	   :align: left
+   #####
+   Obsah
+   #####
 
+.. only:: html
+
+   `GISMentors <http://gismentors.cz>`_ | Školení `GRASS GIS
+   <http://gismentors.cz/skoleni/grass-gis>`_ | `QGIS
+   <http://gismentors.cz/skoleni/qgis>`_ | `PostGIS
+   <http://gismentors.cz/skoleni/postgis>`_ | `GeoPython
+   <http://gismentors.cz/skoleni/geopython>`_
+   
+   ****
+   Úvod
+   ****
+
+.. only:: html
+          
+   .. image:: images/postgis-logo.png
+              :width: 140px
+              :align: left
+                 
 **PostGIS** je rozšíření objektově-relačního databázového systému
 :wikipedia:`PostgreSQL` pro podporu geografických objektů. PostGIS
 implementuje specifikaci `Simple Features
 <http://www.opengeospatial.org/standards/sfa>`_ konsorcia
 :wikipedia:`Open Geospatial Consortium`.
+
+.. only:: latex
+
+   .. figure:: images/postgis-logo.png
+      :scale-latex: 40
+
+      Logo projektu PostGIS
 
 Kromě podpory práce s vektorovými daty v podobě jednoduchých geoprvků
 (simple features) podporuje PostGIS 2.0 i vektorová data v
@@ -19,13 +43,25 @@ jejich využití v prostorovém SQL v souvislosti s daty vektorovými.
 PostGIS je multiplatformní a plně funkční na platformách jako
 GNU/Linux, MS Windows či Mac OSX.
 
-Vstupní znalost
----------------
+.. index::
+   pair: datové sady; ke stažení
+
+.. notedata::
+
+   Datová sada je stažitelná pro PostgreSQL ve `formátu dump
+   <http://training.gismentors.eu/geodata/postgis/gismentors.dump>`_
+   (525 MB). Blížší informace o importu ve :skoleni:`školení pro
+   začátečníky <postgis-zacatecnik/kapitoly/7_instalace>`, na které
+   toto školení do jisté míry navazuje.
+
+.. warning:: :red:`Toto je pracovní verze školení, která je aktuálně
+             ve vývoji!`
+
+**Vstupní znalost**
 
 * Uživatel zná základy :wikipedia:`SQL`
 
-Výstupní dovednost
-------------------
+**Výstupní dovednost**
 
 * Uživatel zvládne naimportovat data do PostGIS a to i dávkově
 * Uživatel zvládne exportovat data z PostGIS do jiných GIS formátů
@@ -35,24 +71,22 @@ Výstupní dovednost
 * Uživatel je schopen provádět prostorové dotazy
 * Uživatel zvládá samostatně řešit jednoduché analýzy v PostGIS
 
-Požadavky
----------
+**Požadavky**
 
 * PC s OS GNU/Linux (např. `OSGeoLive <http://live.osgeo.org>`_),
-  `PostgreSQL <http://www.postgresql.org>`_, `QGIS
-  <http://www.qgis.org>`_ a připojení k internetu, volitelně
-  `pgAdminIII <http://www.pgadmin.org/>`_, `LibreOffice
+  `PostgreSQL <http://www.postgresql.org>`_ a připojení k internetu,
+  volitelně `pgAdmin <http://www.pgadmin.org/>`_, `LibreOffice
   <http://www.libreoffice.org/>`_
-* Alternativně přístup na server přes :program:`ssh`, na kterém běží
-  PostgreSQL, na klientovi :program:`psql`. Data stačí prohlížet přes
-  webový prohlížeč (webový QGIS)
+* Alternativně přístup na server přes *ssh*, na kterém běží
+  PostgreSQL, na klientovi *psql*. Data stačí prohlížet přes
+  webový prohlížeč (webový QGIS).
+* `QGIS <http://www.qgis.org>`_ ideálně 2.8
 * `PostGIS 2.0 <http://www.postgis.net>`_ a vyšší
-* `pracovní data <http://training.gismentors.eu/geodata/postgis/>`_
 
-Obsah
-=====
+.. only:: html
 
-.. warning:: Toto je pracovní verze školení, která je aktuálně ve vývoji!
+   Obsah
+   =====
 
 .. toctree::
    :maxdepth: 3
@@ -69,8 +103,12 @@ Obsah
    kapitoly/9_rastry
    kapitoly/10_zaver
 
+*******
+Dodatky
+*******
+
 O dokumentu
------------
+===========
 
 Text dokumentu je licencován pod `Creative Commons
 Attribution-ShareAlike 4.0 International License
@@ -83,7 +121,7 @@ Attribution-ShareAlike 4.0 International License
 *Verze textu dokumentu:* |release| (sestaveno |today|)
 
 Autoři
-^^^^^^
+------
 
 Za `GISMentors <http://www.gismentors.cz/>`_:
 
@@ -91,14 +129,14 @@ Za `GISMentors <http://www.gismentors.cz/>`_:
 * `Martin Landa <http://www.gismentors.cz/mentors/landa>`_ ``<martin.landa opengeolabs.cz>``
 
 Text dokumentu
-^^^^^^^^^^^^^^
+--------------
 
 .. only:: latex
 
    Online HTML verze textu školení je dostupná na adrese:
 
-   * http://training.gismentors.eu/postgis
+   * http://training.gismentors.eu/postgis-pokrocily
 
 Zdrojové texty školení jsou dostupné na adrese:
 
-* https://github.com/GISMentors/postgis
+* https://github.com/GISMentors/postgis-pokrocily

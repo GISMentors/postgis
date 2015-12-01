@@ -5,7 +5,7 @@ Podporu pro práci s rastrovými daty poskytuje PostGIS až od verze 2.0
 a to v rámci rozšíření `PostGIS Raster
 <http://postgis.net/docs/using_raster_dataman.html>`_.
 
-.. note:: **PostGIS Raster** je součástí rozšíření ``postgis``, není
+.. note:: *PostGIS Raster* je součástí rozšíření ``postgis``, není
           potřeba ho zvlášt přidávat.
 
 Rastrová data mohou být spravována ve dvou formách jako:
@@ -16,9 +16,10 @@ Rastrová data mohou být spravována ve dvou formách jako:
 Nahraní rastrových dat do databáze
 ----------------------------------
 
-Podobně jako u :doc:`vektorových dat <3_shp2pgsql_a_davkove_nahrani>`
-lze data nahrát pomocí specializovaného nástroje, který je součástí
-PostGISu :program:`raster2pgsql`.
+Podobně jako u vektorových dat, viz kapitola
+:doc:`3_shp2pgsql_a_davkove_nahrani`, lze data nahrát pomocí
+specializovaného nástroje, který je součástí PostGISu a to
+:program:`raster2pgsql`.
 
 .. important:: Knihovna GDAL formát PostGIS Raster podporuje nicméně v
                současnosti neumožnuje konverzi dat z jiných formátu to
@@ -26,7 +27,7 @@ PostGISu :program:`raster2pgsql`.
 
 Nejprve si stáhneme testovací data `DMT
 <http://training.gismentors.eu/geodata/eu-dem/dmt.zip>`_ (digitální
-model terénu) a soubor dekomprimujeme ``unzip dmt.zip``.
+model terénu), soubor dekomprimujeme ``unzip dmt.zip``.
 
 .. _import-raster2pgsql:
 
@@ -37,7 +38,7 @@ Příkaz `raster2pgsql
 <http://postgis.net/docs/using_raster_dataman.html#RT_Raster_Loader>`_
 funguje obdobně jako :ref:`import-shp2pgsql` pro vektorová data ve
 formátu Esri Shapefile. Pomocí tohoto nástroje lze rastrová data do
-PostGISu jak v režimu **IN-DB** i **OUT-OF-DB**.
+PostGISu naimportovat v obou režimech **IN-DB** i **OUT-OF-DB**.
 
 Režim IN-DB
 ~~~~~~~~~~~
@@ -69,8 +70,8 @@ Režim IN-DB
 
      
 
-Režim IN-DB
-~~~~~~~~~~~
+Režim OUT-OF-DB
+~~~~~~~~~~~~~~~
 
 V tomto režimu nedochází k importu vstupních dat do PostGISu, ale
 pouze k vytvoření odkazu z databáze na původní data. Rastrová data
@@ -82,8 +83,8 @@ jsou tedy fyzicky uložena *mimo* databázi.
 
       raster2pgsql -s 3035 -R -C `pwd`/dmt.tif ukol_1.dmt_link | psql pokusnik 2>err
 
-   Cesta k soubor musí být uplná, jinak nebude link korektní. My jsme
-   si pomohly unixovým příkazem :program:`pwd`, který vrátí cestu k
+   Cesta k soubor musí být uplná, jinak nebude link korektní. Pomohli
+   jsem si unixovým příkazem :program:`pwd`, který vrátí cestu k
    aktuálnímu adresáři, ve kterém jsou umístěna importovaná data.
 
 Základní metadata
@@ -186,13 +187,14 @@ Kde je:
 Příklad
 -------
 
-*Vejce vesmírných oblud v nadmořské výšce na XXX metrů jsou
+*Vejce vesmírných oblud v nadmořské výšce nad 300 metrů jsou
 oslabena. Využijte toho a zlikvidujte je.*
 
 Zadání
 ^^^^^^
 
-Určete nadmořskou výšku bodů s výskytem vajec na základě rastru DMT. Vyberte body s nadmořskou výškou větší než 300 metrů.
+Určete nadmořskou výšku bodů s výskytem vajec na základě rastru
+DMT. Vyberte body s nadmořskou výškou větší než 300 metrů.
 
 Řešení
 ^^^^^^

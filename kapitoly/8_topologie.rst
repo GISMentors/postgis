@@ -6,19 +6,14 @@ Features <http://www.opengeospatial.org/standards/sfa>`_ *pro práci s
 vektorovými daty ve formě jednoduchých prvků. Od verze 2.0 nicméně
 umožnuje práci s vektorovými daty také v topologické formě.*
 
-.. warning:: Podporováno od verze PostGIS 2.0 a vyšší
-
 Rozšíření pro topologická vektorová data nahrajeme příkazem:
 
 .. code-block:: sql
    
-   CREATE EXTENSION postgis_topology;
+  CREATE EXTENSION postgis_topology;
 
 Topologický datový model
 ------------------------
-
-Podrobné informace k tomuto tématu `zde
-<http://geo.fsv.cvut.cz/~gin/uzpd/uzpd.pdf#146>`_.
 
 Rozdíl mezi datovým modelem jednoduchých geoprvků (simple features) a
 topologickým modelem si ukážeme na případě dvou sousedících polygonů.
@@ -31,7 +26,7 @@ Jednoduché prvky
 .. figure:: ../images/postgis-polygon-example.png
    :class: small
 
-   Dva sousedící polygony v modelu simple features
+   Dva sousedící polygony jako jednoduché geoprvky.
 
 ::
 
@@ -55,8 +50,8 @@ technické normy SQL/MM (`ISO 13249-3:2006
 Model pracuje s třemi základními *topologickými primitivy*:
 
 * uzly (*nodes*) 
-* hrany (*edges*) 
-* stěny (*faces*) 
+* hranami (*edges*) 
+* stěnami (*faces*) 
 
 Kompozice znázorněná na :ref:`obrázku výše <priklad-polygony-sf>` bude
 v topologickém modelu PostGISu popsána:
@@ -68,10 +63,14 @@ v topologickém modelu PostGISu popsána:
 .. figure:: ../images/postgis-topo-polygon-example.png
    :class: small
 
-   Dva sousedící polygony v topologickém modelu
+   Dva sousedící polygony z :num:`#priklad-polygony-sf` v topologickém
+   modelu.
 
 Ve výsledku bude tedy společná hranice polygonů :fignote:`A` a
 :fignote:`B` uložena pouze jednou a to jako hrana :fignote:`E1`.
+
+.. tip:: Podrobné informace k tomuto tématu `zde
+         <http://geo.fsv.cvut.cz/~gin/uzpd/uzpd.pdf#146>`_.
 
 Příklad
 ^^^^^^^
@@ -169,8 +168,8 @@ Topologická primitiva jsou uloženy v tabulkách topologického schématu :dbta
    -- seznam stěn
    SELECT face_id,ST_AsText(mbr) from topo_p2.face;        
 
-Kontrola data
--------------
+Kontrola konzistence dat
+------------------------
 
 Pro kontrolu topologické konzistence můžete použít dvě funkce
 :pgiscmd:`TopologySummary` a :pgiscmd:`ValidateTopology`. První z nich
@@ -244,13 +243,12 @@ prvků.
           je navíc velmi náchylná na topologické chyby na vstupu a
           často skončí chybou.
 
-.. noteadvanced:: Pro sestavení topologii můžete použít jako externí
+.. noteadvanced:: Pro sestavení topologie můžete použít jako externí
    nástroj `GRASS GIS
-   <http://www.gismentors.cz/skoleni/grass-gis/>`_. Následuje
-   zkracený návod. Detaily tohoto řešení jsou nad rámec
-   tohoto kurz a spadají spíše do kurzu `GRASS GIS pro
-   pokročilé
-   <http://www.gismentors.cz/skoleni/grass-gis/#pokrocily>`_.
+   <http://www.gismentors.cz/skoleni/grass-gis/>`_. Následuje zkracený
+   návod. Detaily tohoto řešení jsou nad rámec tohoto školení a
+   spadají spíše do školení :skoleni:`GRASS GIS pro pokročilé
+   <grass-gis-pokrocily>`.
 
    .. code-block:: bash
 
@@ -260,6 +258,8 @@ prvků.
    Na testovacím stroji trvala tato operace XX min (v
    porovnání se 17 hodinami snesitelnější čas).
 
+   .. todo:: Doplnit čas.
+                             
 Zadání
 ^^^^^^
 

@@ -1,13 +1,15 @@
 Úvod
 ====
 
-**PostGIS** rozšiřuje možnosti relační databáze *PostgreSQL* o
-ukládání, správu a dotazování geografické (prostorové) informace. Po
-instalaci PostGISu do databáze jsou dostupné nové operátory, funkce,
-typy a relace. Pomocí PostGISu je možné zpracovávat jak vektorová,
-tak rastrová data. Nad vektorovými daty lze dokonce vybudovat
-topologii a dotazovat se na ni. Nejobvyklejším využitím je ovšem
-práce s jednoduchými prvky, tzv. *simple features.*
+**PostGIS** rozšiřuje možnosti relační databáze `PostgreSQL
+<http://www.postgresql.org>`_ o ukládání, správu a dotazování
+geografické (prostorové) informace. Po instalaci rozšíření PostGIS do
+databáze jsou dostupné nové operátory, funkce, typy a relace. Pomocí
+PostGISu je možné zpracovávat jak vektorová, tak rastrová data. Nad
+vektorovými daty lze dokonce vybudovat topologii a dotazovat se na
+ni. Nejobvyklejším využitím je ovšem práce s jednoduchými prvky,
+tzv. *simple features*, viz :skoleni:`školení pro začátečníky
+<postgis-zacatecnik/kapitoly/1_uvod#prostorova_db>`.
 
 Obecná doporučení
 -----------------
@@ -59,25 +61,25 @@ Je třeba si uvědomit, že PostgreSQL je objektově relační databázový
 systém (systém pro řízení báze dat). Ukládání dat do databáze se v
 mnohém liší od ukládání dat do souborů. K dosažení maximální
 efektivity je třeba PostgreSQL správně nastavit. Rozdíl v rychlosti
-mezi správně nastavenou databází a defaultním nastavením klidně může
-být o několik řádů. PostgreSQL se nastavuje jednak s ohledem na
+mezi správně nastavenou databází a výchozím nastavením může
+být klidně o několik řádů. PostgreSQL se nastavuje jednak s ohledem na
 hardware a jednak i s ohledem na požadované využití (předpokládaný
 počet paralelně připojených uživatelů, velikost tabulek
 atd.). Nastavení se provádí ručně a je netriviální. Pokud uděláte
 zásadní chybu, hrozí havárie a to včetně rizika poškození dat. Pokud
-se na to necítíte nebo nevíte přesně co děláte, je rozumné nechat si
+se na to necítíte nebo nevíte přesně co děláte, je rozumné si nechat
 poradit.
 
 Základní úvod do problematiky je možné nabýt třeba `zde
-<http://www.linuxexpres.cz/praxe/optimalizace-postgresql>`_ .
+<http://www.linuxexpres.cz/praxe/optimalizace-postgresql>`_.
 
 Naučte se používat psql
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Psql je konzolový klient pro PostgreSQL, přestože působí poněkud
 spartánsky, jedná se o nástroj se kterým je možné dosáhnout největší
-efektivity. Specialitou jsou metacommandy. Použití psql v bashi je
-velice mocná kombinace.
+efektivity. Specialitou jsou tzv. metapříkazy. Použití psql v
+příkazové řádce či skriptech je velice mocná kombinace.
 
 Kdy je výhodnější použít jiný nástroj
 -------------------------------------
@@ -86,9 +88,8 @@ Je třeba si uvědomit, že PostGIS není analytický nástroj, ale
 rozšíření databáze. Přestože v něm jde vyřešit drtivá většina úloh, se
 kterými se můžeme ve své praxi setkávat, ne vždy se jedná o řešení
 nejjednodušší, nejelegantnější a nejsprávnější. Vzhledem k tomu, že
-PostGIS samotný pracuje se `Simple Features
-<http://www.opengeospatial.org/standards/sfa>`_, tj. jednoduchými
-geoprvky (ačkoliv existuje i rozšíření Topology), je využití PostGISu
-pro analytické úlohy do jisté míry limitováno možnostmi jednoduchých
+PostGIS samotný pracuje se *simple features*, tj. jednoduchými geoprvky
+(ačkoliv existuje i rozšíření :doc:`Topology <8_topologie>`), je využití PostGISu pro
+analytické úlohy do jisté míry limitováno možnostmi jednoduchých
 prvků. Dost velká omezení přináší také práce s velkými (co do množství
 lomových bodů) prvky nebo prvky hodně členitými.

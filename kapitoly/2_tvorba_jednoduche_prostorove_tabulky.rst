@@ -41,7 +41,7 @@ Oddělovačem je tabulátor.
    <http://grasswiki.osgeo.org/wiki/Openoffice.org_with_SQL_Databases#Converting_Excel.2C_CSV.2C_..._to_PostgreSQL.2FMySQL.2F..._via_OO-Base>`_
    (to je, mimochodem, velice užitečná technika, pokud někdy budete
    potřebovat do PostgreSQL převést větší množství dat z MS Excel,
-   jako jsou číselníky ČUZK, data se statistického úřadu
+   jako jsou číselníky ČÚZK, data se statistického úřadu
    apod). Tabulku můžeme otevřít v QGISu a ze souřadnic rovnou
    vytvořit geometrii, uložit do formátu Esri Shapefile a použít pro
    import do PostGISu nástroj ``shp2pgsql``, který je součástí
@@ -63,7 +63,7 @@ Tabulku vytvoříme klasicky, příkazem :sqlcmd:`CREATE TABLE`.
 
    CREATE TABLE ukol_1.vesmirne_zrudice(id INT PRIMARY KEY, x FLOAT, y FLOAT);
 
-.. note:: Je vhodné, pokud má tabulka primární klíč celočíslený
+.. note:: Je vhodné, pokud má tabulka celočíslený primární klíč 
    (datový typ *INTEGER*). Pokud je primární klíč jiného datového typu
    nebo dokonce chybí úplně, tak některé programy nemusí s tabulkou
    pracovat korektně.  Například u dat `VFK
@@ -157,10 +157,10 @@ Metacommand \\copy
 ------------------
 
 Příkaz ``\copy`` funguje podobně jako :sqlcmd:`COPY`, ovšem s tím
-rozdílem, že kopírujete data z počítače na kterém je spuštěno
-:program:`psql` a pod právy uživatele, který pustil
-:program:`psql`. Pokud tedy chcete naplnit tabulky daty, které máte na
-svém počítači, je toto nejefektivnější postup.
+rozdílem, že kopírujete data z počítače, na kterém je spuštěno
+:program:`psql` a pod právy uživatele, který jej spustil. Pokud tedy
+chcete naplnit tabulky daty, které máte na svém počítači, je toto
+nejefektivnější postup.
 
 .. warning:: ``\copy`` je metacommand :program:`psql`, nikoliv SQL
              dotaz, funguje tedy pouze v :program:`psql`, není možné s
@@ -179,7 +179,7 @@ kompatibility součástí i novějších verzí.
 
 Krom samotného přidání sloupce s typem ``geometry`` se vytvoří
 *constrainty*, neboli omezení, na geometrický typ, dimenzi prvků a
-souřadnicový systém. V praxi to obnáší dvě podstatné věci. Tou první
+souřadnicových systém. V praxi to obnáší dvě podstatné věci. Tou první
 je, jak by se dalo očekávat omezení vkládaných prvků na prvky
 splňující určitá kritéria (typ, SRID, počet dimenzí). Což zamezí tomu,
 aby Vám nezodpovědný uživatel vyrobil v databázi nepořádek, případně
@@ -196,25 +196,27 @@ abyste si ho tam v záchvatu kreativity vyrobili sami.
    se zmínit, že v některých, avšak velice vzácných, případech má
    použití takové tabulky své opodstatnění. Jedním z nich je tvorba
    databázového modelu, kde potřebujete kombinovat v jedné tabulce
-   data různých geometrických typů, nebo dat v různých souřadných
+   data různých geometrických typů, nebo dat v různých souřadnicových
    systémech. Databáze potom slouží jako úložiště a data jí opouštějí
    (například ve formátu GeoJSON) pomocí specifických procedur, kdy
    jsou potřebné informace doplněny a aparát na udržování
    geometrických metadat je tedy zbytečný. Dalším případem mohou být
    NOSQL databáze, kde vrstva v klasickém, relačním, pojetí pozbývá
    smyslu. Nicméně jedná se o případy specifické, ojedinělé a
-   pokročilé, rozhodně nad rámec tohoto kurzu.
+   pokročilé, rozhodně nad rámec tohoto školení.
 
 .. noteadvanced:: Ve verzích PostGIS nižších než 2.0 nebyl
-                  :dbtable:`geometry_columns` pohled, ale tabulka. Při
-                  přidání pohledů na data nebo při ruční registraci
-                  tabulek bylo třeba do ní záznamy přidávat ručně. To
-                  v aktuálních verzích PostGISu odpadá.
+                  :dbtable:`geometry_columns` definován jako pohled,
+                  ale jako regulérní tabulka. Při přidání pohledů na
+                  data nebo při ruční registraci nových tabulek či
+                  sloupců s prostorovými daty bylo třeba do ní záznamy
+                  přidávat manuálně. To v aktuálních verzích PostGISu
+                  odpadá.
 
 Sloupců s geometrií můžeme do tabulky přidat prakticky libovolné
 množství. Například k tabulce budov můžeme přidat sloupec s polygony
 pro obrys a s body pro definiční bod. Jedná se určitě o lepší řešení,
-než obojí uložit do jednoho sloupce do typu GEOMETRY COLLECTION.
+než obojí uložit do jednoho sloupce do typu *GEOMETRY COLLECTION*.
 
 Přidání sloupce z geometrií
 ---------------------------
@@ -226,7 +228,9 @@ geometrický typ *POINT*.
 
    ALTER TABLE ukol_1.vesmirne_zrudice ADD COLUMN geom_p geometry(point, 5514);
                 
-.. note:: Nebo pomocí funkce ``AddGeometryColumn()`` (v PostGIS verze 1.x je to jediný způsob)
+.. note:: Nebo pomocí funkce ``AddGeometryColumn()`` (v PostGIS verze
+   1.x je to jediný způsob). Tento způsob již ale ve verzi
+   PostGIS 2.0 a vyšší postrádá smysl.
                           
    .. code-block:: sql
                    
@@ -235,6 +239,8 @@ geometrický typ *POINT*.
 Do tabulky :dbtable:`vesmirne_zrudice` ve schématu :dbtable:`ukol_1`
 jsme přidali sloupec :dbcolumn:`geom_p` s 2D bodovými prvky v
 souřadnicovém systému se SRID *5514*.
+
+.. note:: SRID ve většině případů odpovídá EPSG kódu.
 
 Do vytvořené tabulky vložíme data jedním z dříve uvedených způsobů.
 
@@ -405,7 +411,7 @@ Při migraci do položky s geometrií se CAST provede automaticky.
 .. figure:: ../images/fig_001.png
     :align: center
 
-    Jako podklad jsou použité pražské ulice
+    Jako podklad jsou použité pražské ulice.
 
 .. _geometrie-trigger:
 
@@ -450,7 +456,15 @@ výše). Obvykle používáme GIST index.
 
    CREATE INDEX vesmirne_zrudice_geom_p_geom_idx ON vesmirne_zrudice USING gist (geom_p);
 
-.. note:: Zda je tabulka indexovaná (a další podrobnosti o tabulce) zjistíme v :program:`psql` pomocí metacomandu ``\d+``:
+.. tip:: Při definování indexu můžete vynechat jeho název. V tomto
+   případě si jej PostgreSQL doplní sám.
+
+   .. code-block:: sql
+
+      CREATE INDEX ON vesmirne_zrudice USING gist (geom_p);
+
+.. note:: Zda je tabulka indexovaná (a další podrobnosti o tabulce)
+   zjistíme v :program:`psql` pomocí metacomandu ``\d+``:
 
    .. code-block:: sql
 

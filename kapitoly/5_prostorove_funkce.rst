@@ -11,7 +11,7 @@ Výpočet plochy, obvodu, délky a dalších charakteristik geometrie
 ----------------------------------------------------------------
 
 Asi nejzákladnější informace, kterou můžeme o plošném prvku (polygonu)
-zjistit je její výměru. Kromě základního zadání "zjisti, jak velkou
+zjistit je její výměru. Kromě typického zadání "zjisti, jak velkou
 mají Vomáčkovi zahrádku" je nezbytná pro provedení pokročilejších úloh
 typu "vyber obce, jejichž rozloha leží alespoň z osmdesáti procent v
 národním parku atp".
@@ -25,7 +25,7 @@ Jedná se o následující funkce:
 	 Délka linie lomené čáry
 
 :pgiscmd:`ST_Area`
-	 Výpočet výměnry polygonu
+	 Výpočet výměry polygonu
 
 :pgiscmd:`ST_Perimeter`
 	 Vrací obvod polygonu
@@ -149,8 +149,8 @@ nepovažujeme za směrodatnou.
 
 Tuto funkcionalitu v PostGISu zajištuje funkce :pgiscmd:`ST_Relate`.
 Funkci můžeme použít ve dvou tvarech. Pokud zadáme jako třetí argument
-matici průniku (i s využitím "divokých karet") tak funkce funkce vrací
-hodnoty true/false podle toho zda jsou všechny podmínky v matici
+matici průniku (i s využitím "divokých karet"), tak funkce vrací
+hodnoty true/false podle toho, zda jsou všechny podmínky v matici
 splněny. Případně funkci můžeme použít jen se dvěma argumenty,
 geometriemi. Potom funkce vrací matici průniku, případně můžeme přidat
 argument pro číslo pro pravidlo uzlů hranice.
@@ -282,11 +282,12 @@ Mění typ geometrie z jednoduché na *multigeometrii*.
 ST_Dump
 ^^^^^^^
 
-:pgiscmd:`ST_Dump` rozpustí "multi" geometrii, nebo `geometrycollection` na jednotlivé komponenty.
-Vrací typ record s geometrií a cestou ke geometrii v `geometrycollection`.
+:pgiscmd:`ST_Dump` rozpustí "multi" geometrii, nebo
+*GEOMETRYCOLLECTION* na jednotlivé komponenty.  Vrací typ record s
+geometrií a cestou ke geometrii v *GEOMETRYCOLLECTION*.
 
 ST_CollectionExtract
 ^^^^^^^^^^^^^^^^^^^^
 
-:pgiscmd:`ST_CollectionExtract` vyfiltruje z :sqlcmd:`GEOMETRYCOLLECTION` bodové, liniové, 
-nebo plošné prvky.
+:pgiscmd:`ST_CollectionExtract` vyfiltruje z *GEOMETRYCOLLECTION*
+bodové, liniové, nebo plošné prvky.
