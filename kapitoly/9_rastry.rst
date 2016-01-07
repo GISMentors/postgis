@@ -237,4 +237,4 @@ Užitečné odkazy
 ---------------
 
 * http://freegis.fsv.cvut.cz/gwiki/PostGIS_Raster
-* `Funkce rozšíření PostGIS Topology <http://postgis.net/docs/RT_reference.html>`_
+* `Funkce rozšíření PostGIS Raster <http://postgis.net/docs/RT_reference.html>`_
