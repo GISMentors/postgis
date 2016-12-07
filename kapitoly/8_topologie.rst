@@ -197,8 +197,7 @@ parcel na uzemí Hlavního města Prahy.
     ALTER TABLE parcely_732583 ADD PRIMARY KEY (ogc_fid);            
 
    -- a prostorové indexy
-   CREATE INDEX ON parcely_732583 USING gist (definicnibod);
-   CREATE INDEX ON parcely_732583 USING gist (originalnihranice);
+   CREATE INDEX ON parcely_732583 USING gist (geom);
                 
 Vytvoříme nové schéma a atribut pro topologii.
 
@@ -208,27 +207,25 @@ Vytvoříme nové schéma a atribut pro topologii.
    SELECT CreateTopology('topo_parcely_732583', 5514);
 
    -- topologický atribut
-   SELECT AddTopoGeometryColumn('topo_parcely_732583', 'ukol_1',
+   SELECT AddTopoGeometryColumn('topo_parcely_732583', 'topo_test',
     'parcely_732583', 'topo', 'POLYGON');
 
 .. tip:: Souřadnicový systém pro topologické schéma můžeme odvodit
          dynamicky pomocí funkce ``find_srid``,
-         např. ``find_srid('ukol_1', 'parcely_732583', 'originalnihranice')``.
+         např. ``find_srid('topo_test', 'parcely_732583', 'geom')``.
 
 Nakonec se pokusíme topologii sestavit z naimportovaných jednoduchých
 prvků.
 
 .. code-block:: sql
 
-   UPDATE parcely_732583 SET topo = toTopoGeom(originalnihranice, 'topo_parcely_732583', 1);
+   UPDATE parcely_732583 SET topo = toTopoGeom(geom, 'topo_parcely_732583', 1);
 
 .. note:: Sestavení topologie z jednoduchých geoprvků je poměrně
           časově náročná činnost. Na výše uvedeném katastrálním území
-          může trvat až několik minut. Na testovacím stroji trvalo
-          sestavení topologie parcel pro celé území Hlavního města
-          Prahy **více než 17 hodin!!!**. Funkce :pgiscmd:`toTopoGeom`
-          je navíc velmi náchylná na topologické chyby na vstupu a
-          často skončí chybou.
+          může trvat až několik minut. Funkce :pgiscmd:`toTopoGeom` je
+          navíc velmi náchylná na topologické chyby na vstupu a často
+          skončí chybou.
 
 .. noteadvanced:: Pro sestavení topologie můžete použít jako externí
    nástroj `GRASS GIS
@@ -241,30 +238,23 @@ prvků.
 
       v.in.ogr in=PG:dbname=pokusnik layer=ukol_1.parcely out=parcely
       v.out.postgis -l in=parcely out=PG:dbname=pokusnik out_layer=parcely_topo
-
-   Na testovacím stroji trvala tato operace XX min (v
-   porovnání se 17 hodinami snesitelnější čas).
-
-   .. todo:: Doplnit čas.
                              
 Zadání
 ^^^^^^
 
-Najděte parcely, které sousedí s parcelou, ve které se nachází vejce
-s označením ``id=15``.
+Najděte parcely, které sousedí s parcelou, ve které se nachází adresní
+bod s označením ``kod=22560840``.
 
 Řešení
 ^^^^^^
 
 .. code-block:: sql
 
-   SET search_path TO ukol_1, topology, public;
-
    SELECT (ST_GetFaceEdges('topo_parcely_732583', f.face_id)).edge FROM
    (             
     SELECT face_id FROM topo_parcely_732583.face AS f JOIN
-     vesmirne_zrudice AS v ON v.id=15 AND v.geom_p && f.mbr AND
-     ST_Within(v.geom_p, ST_GetFaceGeometry('topo_parcely_732583', f.face_id))
+     ruian_praha.adresnimista AS a ON a.kod=22560840 AND a.geom && f.mbr AND
+     ST_Within(a.geom, ST_GetFaceGeometry('topo_parcely_732583', f.face_id))
    ) AS f;
 
    
@@ -274,13 +264,13 @@ s označením ``id=15``.
     (
      SELECT CASE WHEN ee.edge < 0 THEN left_face ELSE right_face END
       FROM topo_parcely_732583.edge AS e JOIN
-      (             
-       SELECT (ST_GetFaceEdges('topo_parcely_732583', f.face_id)).edge FROM
-       (             
-        SELECT face_id FROM topo_parcely_732583.face AS f JOIN
-         vesmirne_zrudice AS v ON v.id=15 AND v.geom_p && f.mbr AND
-         ST_Within(v.geom_p, ST_GetFaceGeometry('topo_parcely_732583', f.face_id))
-       ) AS f
+      (
+	SELECT (ST_GetFaceEdges('topo_parcely_732583', f.face_id)).edge FROM
+	(
+	   SELECT face_id FROM topo_parcely_732583.face AS f JOIN
+           ruian_praha.adresnimista AS a ON a.kod=22560840 AND a.geom && f.mbr AND
+           ST_Within(a.geom, ST_GetFaceGeometry('topo_parcely_732583', f.face_id))
+         ) AS f
       ) AS ee
      ON abs(ee.edge) = e.edge_id
     );
