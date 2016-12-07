@@ -184,26 +184,14 @@ topologických primitiv.
 Praktická ukázka
 ----------------
 
-Pokusíme se sestavit topologii pro parcely na uzemí Hlavního města
-Prahy. Nejprve si stáhneme `data
-<http://training.gismentors.eu/geodata/postgis/parcely.dump>`_ a
-naimportujeme do PostGISu.
-
-.. notecmd:: Import datové vrstvy parcel
-
-   .. code-block:: bash
-
-      pg_restore -d pokusnik parcely.dump
-
-Topologii si sestavíme pouze na vzorku parcel.
+Z důvodu časové náročnosti si topologii sestavíme pouze na vzorku
+parcel na uzemí Hlavního města Prahy.
 
 .. code-block:: sql
 
-   -- nejprve nastavíme vyhledávací cestu
-   SET search_path TO ukol_1, topology, public;
-   
+   -- vybereme část parcel na území Hl. města Prahy
    CREATE TABLE parcely_732583 AS
-    SELECT * FROM parcely WHERE katastralniuzemikod = 732583;
+    SELECT * FROM ruian_praha.parcely WHERE katastralniuzemikod = 732583;
 
    -- přídáme primární klíč
     ALTER TABLE parcely_732583 ADD PRIMARY KEY (ogc_fid);            
@@ -215,7 +203,6 @@ Topologii si sestavíme pouze na vzorku parcel.
 Vytvoříme nové schéma a atribut pro topologii.
 
 .. code-block:: sql
-
    
    -- topologické schéma
    SELECT CreateTopology('topo_parcely_732583', 5514);
