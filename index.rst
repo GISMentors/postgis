@@ -101,7 +101,8 @@ GNU/Linux, MS Windows či Mac OSX.
    kapitoly/7_finty
    kapitoly/8_topologie
    kapitoly/9_rastry
-   kapitoly/10_zaver
+   kapitoly/10_routing
+   kapitoly/11_zaver
 
 *******
 Dodatky
