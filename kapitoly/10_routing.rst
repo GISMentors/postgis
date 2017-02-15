@@ -2,8 +2,8 @@ Síťové analýzy
 ==============
 
 Síťové analýzy (tzv. routing) zajišťuje v prostředí PostGIS nadstavba
-označovaná jako `pgRouting <http://pgrouting.org/>`__. Nadstavba se v
-databázi aktivuje příkazem:
+označovaná jako `pgRouting <http://pgrouting.org/>`__. Tuto nadstavbu
+v databázi aktivujeme příkazem:
 
 .. code-block:: sql
 
@@ -13,7 +13,7 @@ Příprava dat
 ------------
 
 Jako podkladová data použijeme data OpenStreetMap pro území Hlavního
-města Praha. Tato data stáhneme přes tzv. Overpass API. Území je dáno
+města Prahy. Data stáhneme přes tzv. Overpass API. Území je dáno
 minimálním ohraničujícím obdélníkem (bbox), který můžeme zjistit
 např. ze stránek http://boundingbox.klokantech.com (formát CSV).
 
@@ -46,7 +46,8 @@ Po importu se ve výstupním schématu objeví následující tabulky:
     ways_vertices_pgr | the_geom          |               2 | 4326 | POINT
     ways              | the_geom          |               2 | 4326 | LINESTRING
 
-.. note:: Jak je vidět tak jsou data transformována do WGS-84
+.. note:: Jak je vidět tak jsou data transformována do
+          :skoleni:`WGS-84 <open-source-gis/soursystemy/wgs84.html>`
           (:epsg:`4326`), geometrie je uložena ve sloupci
           :dbcolumn:`the_geom`. Pro zachování konzistence v databáze
           jej přejmenujeme na :dbcolumn:`geom`.
@@ -61,7 +62,7 @@ Nalezení optimální cesty
 ------------------------
 
 Algoritmus nalezení optimální cesty je implementován v pgRouting ve
-třech variantách:
+dvou variantách:
 
 * `pgr_dijkstra
   <http://docs.pgrouting.org/latest/en/src/dijkstra/doc/pgr_dijkstra.html>`__,
@@ -70,9 +71,9 @@ třech variantách:
   <http://docs.pgrouting.org/latest/en/src/astar/doc/pgr_astar.html#description>`__,
   viz :wikipedia-en:`A* search algorithm`
 
-V následujících příkladech se bude pohybovat v okolí Fakulty stavební
-ČVUT v Praze, kde školení GISMentors většinou probíhají:
-http://www.openstreetmap.org/#map=16/50.1029/14.3912
+.. note:: V následujících příkladech se bude pohybovat v okolí Fakulty stavební
+   ČVUT v Praze, kde školení GISMentors většinou probíhají:
+   http://www.openstreetmap.org/#map=16/50.1029/14.3912
 
 Příklad - chodec
 ^^^^^^^^^^^^^^^^
@@ -80,11 +81,11 @@ Příklad - chodec
 Nejkratší trasa (jeden chodec)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Chodec se pohybuje ze stanice metra Dejvická (``osm_id: 2911015007``) k
-budově Fakulty stavební ČVUT v Praze (``osm_id: 2905257304``). Hledáme
-nejkratší trasu, nákladem tedy bude *délka* segmentů trasy. Chodec se
-může pohybovat ve všech směrech (budeme pracovat s neorientovaným
-grafem).
+Chodec se pohybuje ze stanice metra Dejvická (``osm_id: 2911015007``)
+k budově Fakulty stavební ČVUT v Praze (``osm_id:
+2905257304``). Hledáme nejkratší trasu, nákladem tedy bude *délka*
+segmentů trasy. Chodec se může pohybovat v obou směrech (budeme
+pracovat s neorientovaným grafem).
 
 Zjistíme ID uzlů v rámci grafu:
 
@@ -110,7 +111,6 @@ algoritmus vyžaduje definovat celkem čtyři atributy:
 * target - identifikátor koncového uzlu
 * cost - atribut nákladů
 
-
 .. code-block:: sql
                 
    SELECT * FROM pgr_dijkstra('
@@ -131,10 +131,9 @@ algoritmus vyžaduje definovat celkem čtyři atributy:
       24 |       24 |  1164 |  31277 |  6.8521529463256e-05 |  0.00684939507573181
       25 |       25 | 10824 |     -1 |                    0 |  0.00691791660519507
 
-Náklady jsou počítány v mapových jednotkách souřadnicového
-systému, v tomto případě stupních. Délku v metrech získáme
-pomocí atributu :dbcolumn:`length_m`. Příklad výpočtu
-celkové délky nalezené trasy:
+Náklady jsou počítány v mapových jednotkách souřadnicového systému, v
+tomto případě stupních. Délku v metrech je uložena v atributu
+:dbcolumn:`length_m`. Příklad výpočtu celkové délky nalezené trasy:
 
 .. code-block:: sql
                           
@@ -152,7 +151,7 @@ celkové délky nalezené trasy:
    ------------------
    578.522948228576
 
-Geometrie trasy získáte spojením výsledku hledání optimální trasy s
+Geometrii trasy získáte spojením výsledku hledání optimální trasy s
 původní tabulkou:
 
 .. code-block:: sql
@@ -175,7 +174,7 @@ původní tabulkou:
 .. note:: Pro hledání optimální trasy lze použít funkci `pgr_astar
   <http://docs.pgrouting.org/latest/en/src/astar/doc/pgr_astar.html#description>`__,
   která pracuje s geografickou informací uzlů hran grafu. To umožňuje
-   ve výpočtu preferovat hrany, které jsou blíže cíle trasy.
+  ve výpočtu preferovat hrany, které jsou blíže cíle trasy.
 
   .. code-block:: sql
 
@@ -188,7 +187,6 @@ původní tabulkou:
       FROM ways',
      1594, 10824, directed := false);
 
-   
 Nejkratší trasa (více chodců, jeden cíl)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -223,7 +221,8 @@ Hradčanská (``osm_id: 1990839852``) a nádraží Dejvice (``osm_id:
 
 .. figure:: ../images/route-multi.png
 
-   Vizualizace nalezených nejkratších cest (cíl je znázorněn zelenou barvou).
+   Vizualizace nalezených nejkratších cest (cíl je znázorněn zelenou
+   barvou).
 
 Nejrychlejší trasa (více chodců a cílů)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -301,7 +300,7 @@ Příklad - automobil
 
 Na rozdíl od chodce uvažujeme náklady ve směru (:dbcolumn:`cost`) a
 proti směru (:dbcolumn:`reverse_cost`) hrany. V případě obousměrných
-komunikací jsou oba náklady kladné, přičemž se mohou lišit. U
+komunikací jsou oba náklady kladné, přičemž se ale mohou lišit. U
 jednosměrných komunikací jeden z nákladů nabývá záporné hodnoty.
 
 V našem případě se bude vozidlo pohybovat z Letiště Václava Havla
@@ -330,9 +329,9 @@ Nejkratší trasa
 Nejrychlejší trasa
 ~~~~~~~~~~~~~~~~~~
 
-Před samotných výpočtem pro jednotlivé typy komunikací nastavíme
-odpovídající maximální dovolené rychlosti. Na základě toho bude poté
-určeny náklady pohybu v časových jednotkách. Náklady v atribut
+Před samotným výpočtem pro jednotlivé typy komunikací nastavíme
+odpovídající maximální dovolené rychlosti. Na základě toho budou poté
+určeny náklady pohybu v časových jednotkách. Náklady v atributu
 :dbcolumn:`cost_s` jsou uvedeny v sekundách.
 
 Příklad úpravy časových nákladu podle typu komunikace:
@@ -363,7 +362,8 @@ Příklad úpravy časových nákladu podle typu komunikace:
    LEFT JOIN ways AS b
    ON (a.edge = b.gid) ORDER BY seq;
 
-.. tip:: Po penalizaci bude nejkratší trasa pro automobil věrohodnější:
+.. tip:: Po zavedení penalizace bude nejkratší trasa pro automobil
+         věrohodnější:
 
    .. code-block:: sql
                    
@@ -387,7 +387,7 @@ Příklad úpravy časových nákladu podle typu komunikace:
 
    Porovnání nejkratší (červeně) a nejrychlejší (modře) trasy z
    Letiště Václava Havla na Hlavní nádraží. Společná část trasy je
-   znázorněn fialovou barvou.
+   znázorněna fialovou barvou.
    
 Další materiály
 ---------------
