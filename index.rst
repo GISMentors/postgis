@@ -80,7 +80,7 @@ GNU/Linux, MS Windows či Mac OSX.
 * Alternativně přístup na server přes *ssh*, na kterém běží
   PostgreSQL, na klientovi *psql*. Data stačí prohlížet přes
   webový prohlížeč (webový QGIS).
-* `QGIS <http://www.qgis.org>`_ ideálně 2.8
+* `QGIS <http://www.qgis.org>`_ minimálně 2.14
 * `PostGIS 2.0 <http://www.postgis.net>`_ a vyšší
 
 .. only:: html

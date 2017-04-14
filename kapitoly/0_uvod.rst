@@ -20,15 +20,30 @@ věci. Domníváme se nicméně, že stojí za to si je připomenout.
 Indexujte
 ^^^^^^^^^
 
-U mnoha věcí platí, že než je dělat špatně, je lepší nedělat je
-vůbec. Na indexy se výše uvedené nevztahuje. I špatný index je obvykle
-lepší, než nic. Pokud nebudete používat indexy, je skoro jedno, jestli
+Indexujte, pokud nebudete používat indexy, je skoro jedno, jestli
 budete ukládat data do databáze, nebo jen tak, do textových
 souborů. Index si můžeme představit jako rejstřík u knihy, pokud kniha
 nemá rejstřík, jediný způsob, jak najít nějakou informaci, je pročítat
 knihu, dokud požadované údaje nenajdeme.  U PostgreSQL navíc (až na
 výjimky) platí, že musí načíst z datové stránky celý záznam, aby se
 dobralo hodnoty konkrétní položky.
+
+Od jakého množství záznamů se vyplatí tabulky indexovat záleží na mnoha věcech.
+Na typu dat, výkonu hardware, nastavení PostgreSQL. Při velké míře zobecnění se
+dá říct, že indexovat má cenu tabulky od velikosti několika tisíc záznamů.
+
+Geometrické hodnoty indexujte `GiST indexem
+<https://www.postgresql.org/docs/current/static/gist.html>`_. Číselné hodnoty a
+řetězce obvykle pomocí `b-tree indexu
+<https://www.postgresql.org/docs/9.6/static/indexes-types.html>`_.
+
+.. noteadvanced:: Zda byl index použit v konkrétním dotazu můžeme zjistit pomocí
+                  klauzule `EXPLAIN
+                  <https://www.postgresql.org/docs/current/static/sql-explain.html>`_,
+                  která zobrazí prováděcí plán. Kolikrát byl index skutečně
+                  použit zjistíme dotazem do systémového katalogu
+                  `pg_stat_all_indexes
+                  <https://www.postgresql.org/docs/current/static/monitoring-stats.html#PG-STATIO-ALL-INDEXES-VIEW>`_.
 
 Používejte transakce
 ^^^^^^^^^^^^^^^^^^^^
@@ -43,8 +58,12 @@ jste v transakci, nemusíte se bát, že něco pokazíte, dokud
 neodkliknete COMMIT. Můžete tedy provést změny, otestovat pár dotazů,
 jestli se všechno chová jak má a teprve pak potvrdit změny v databázi.
 
-Vzájemná izolace transakcí při současném zápisu je realizovaná
-prostřednictvím `multigenerační architektury <http://postgres.cz/wiki/Slovník#MVCC>`_.
+Na druhou stranu je ovvšem třeba pamatovat na to, že neukončená transakce může
+zamknout tabulky a znemožnit ostatním uživatelům efektivně pracovat s databází.
+
+.. noteadvanced:: Vzájemná izolace transakcí při současném zápisu je realizovaná
+                  prostřednictvím `multigenerační architektury
+                  <http://postgres.cz/wiki/Slovník#MVCC>`_.
 
 Věnujte dostatečnou pozornost návrhu struktur
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -72,6 +91,12 @@ poradit.
 
 Základní úvod do problematiky je možné nabýt třeba `zde
 <http://www.linuxexpres.cz/praxe/optimalizace-postgresql>`_.
+
+.. note:: Základní nastavení PostgreSQL po instalaci je obvykle velice šetrné ke
+          zdrojům, na úkor výkonu. Je to proto, aby bylo možné PostgreSQL pustit
+          i na nevýkonném počítači bez rizika havárie systému. Základní
+          nastavení je možné provést pomocí nástroje `pgTune <http://pgfoundry.org/projects/pgtune/>`_,
+          které přizpůsobí nastavení PostgreSQL výkonu Vašeho hardware.
 
 Naučte se používat psql
 ^^^^^^^^^^^^^^^^^^^^^^^
