@@ -49,6 +49,20 @@ viz příklad níže.
 
    ALTER EXTENSION postgis UPDATE TO "2.1.0";
 
+.. noteadvanced:: V případě, že máme databázi přemigrovanou z nějaké starší
+                  verze, kdy postgis nebyl instalován prostřednictvím extenze,
+                  je možné požít dotaz :sqlcmd:`CREATE EXTENSION postgis FROM
+                  unpackaged`. Což předpokládá, že máte postgis v odpovídající
+                  verzi, v opačném případě se to nemusí podařit. Jinou možností,
+                  jak přiřadit funkce k extenzi je dotaz :sqlcmd:`ALTER
+                  EXTENSION postgis ADD ...`.
+
+Instalace rozšíření pomocí extenze také umožňuje nahrát rozšíření do vybraného
+schéma (defaultně je to obvykle public), což může být praktické, pokud budete
+chtít zálohovat databázi pomocí `pg_dump
+<https://www.postgresql.org/docs/current/static/app-pgdump.html>`_ bez postgisu
+a budete chtít, z nějakého důvodu, ukládat do *public* nějaká svá data.
+
 Tvorba pomocí skriptů
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -150,6 +164,13 @@ Nebo pomocí příkazu `createdb`:
           upravy (přidané vlastní SRS ve *spatial_ref_sys*, přidané funkce,
           zásahy do kódování atp.)
 
+U vytváření prostorové databáze podle *TEMPLATE* je ale dobré vědět, že ssebou
+nese určitá omezení. Jedním z těch podstatných je nastavení *LOCALES*, které je
+možné použít pouze s :sqlcmd:`TEMPLATE template0`. Pokud tedy chcete pracovat s
+daty, která obsahují interpunkci, nebo nějaké národní sady znaků, je třeba
+udělat již předlohu se správným *LC_COLLATE* a *LC_CTYPE*, jinak nebudou některé
+funkce (například *lower*, *upper*, *unaccent*) fungovat správně.
+
 Přidáváme vlastní SRS
 ---------------------
 
@@ -173,8 +194,8 @@ zvlášť zajímat. Pokud ovšem budete zpracovávat data v různých
 souřadnicových systémech a budete je chtít v databázi kombinovat, tak
 se jim nevyhnete.
 
-.. note:: Zde se nabízí lákavá možnost transformovat si prvky "vedle
-          sebe". To však není obvykle výhodné řešení. Při každé
+.. note:: Zde se nabízí lákavá možnost transformovat si prvky před importem.
+          To však nemusí být vždy nejvýhodnější řešení. Při každé
           transformaci totiž ztrácíme přesnost. Data se zkreslují,
           degenerují. Výjimku pochopitelně tvoří případy, kdy
           požadovanou transformaci nejsme schopní v databázi provést s
