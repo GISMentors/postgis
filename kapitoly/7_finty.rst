@@ -368,3 +368,5 @@ Využít se dá s výhodou, když provádíme průnik prvků dvou obsáhlejšíc
 
    ROLLBACK;
 
+LATERAL
+=======

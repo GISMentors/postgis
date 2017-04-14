@@ -53,7 +53,7 @@ bodu vesmírných vajec s ``id=1``.
      (
       SELECT geom_p, adresnibod FROM adresy a JOIN vesmirne_zrudice v 
       ON v.id = 1 
-      AND a.adresnibod && ST_Buffer(v.geom_p, 250)
+      AND a.adresnibod && ST_Expand(v.geom_p, 250)
      ) data
      WHERE ST_Distance(adresnibod, geom_p) <= 250;
 

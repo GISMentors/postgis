@@ -145,35 +145,6 @@ K výběru nejbližšího bodu ke každému z bodů můžeme použít několik c
 .. code-block:: sql
 
    BEGIN;
-   
-   CREATE TABLE ukol_1.outp (id int, kod numeric(30), vzdalenost float);
-   
-   DO $$DECLARE r record;
-   BEGIN
-      FOR r IN
-      SELECT id, geom_p
-      FROM  vesmirne_zrudice v 
-    LOOP
-      INSERT INTO outp 
-      SELECT r.id, kod, r.geom_p<->a.adresnibod 
-      FROM adresy a 
-      ORDER BY r.geom_p<->a.adresnibod
-      LIMIT 1;
-    END LOOP;
-   END$$;
-   
-   SELECT * FROM outp;
-   
-   ROLLBACK;
-
-.. tip:: Srovnejte výše uvedené dotazy pomocí :sqlcmd:`EXPLAIN ANALYZE`.
-
-Řešení
-^^^^^^
-
-.. code-block:: sql
-
-   BEGIN;
 
    SET search_path to ukol_1, public;
 
@@ -216,6 +187,24 @@ K výběru nejbližšího bodu ke každému z bodů můžeme použít několik c
    ORDER BY id;
 
    ROLLBACK;
+
+* Obvykle bývá pro podobné úlohy velice efektivní použití klauzule `LATERAL
+  <https://www.postgresql.org/docs/current/static/queries-table-expressions.html#QUERIES-LATERAL>`_.
+
+.. code-block:: sql
+
+   EXPLAIN ANALYZE
+   SELECT * FROM vesmirne_zrudice v
+   , LATERAL (
+      SELECT * FROM adresy a
+      ORDER BY a.adresnibod<->v.geom_p
+      LIMIT 1
+   ) nejblizsi_bod;
+
+.. note:: LATERAL lze použít i v JOINU.
+
+
+.. tip:: Srovnejte výše uvedené dotazy pomocí :sqlcmd:`EXPLAIN ANALYZE`.
 
 Výběr podle obalové zóny
 ------------------------
