@@ -45,7 +45,7 @@ Oddělovačem je tabulátor.
    apod). Tabulku můžeme otevřít v QGISu a ze souřadnic rovnou
    vytvořit geometrii, uložit do formátu Esri Shapefile a použít pro
    import do PostGISu nástroj ``shp2pgsql``, který je součástí
-   instalace PostGIS. To se hodí obzvlášť pokud dostanete od někoho
+   instalace PostGIS. To se hodí, obzvlášť pokud dostanete od někoho
    data opsané ručně z GPS navigace v minutách a vteřinách. QGIS umí
    načíst tato data rovnou a ušetříte si poměrně otravné
    přepočítávání. Nicméně nejpřímější cesta jak dostat textovou
@@ -77,7 +77,7 @@ Tabulku vytvoříme klasicky, příkazem :sqlcmd:`CREATE TABLE`.
 COPY
 ----
 
-Příkaz `COPY <http://www.postgresql.org/docs/9.4/static/sql-copy.html>`_ může vypadat například takto
+Příkaz `COPY <http://www.postgresql.org/docs/current/static/sql-copy.html>`_ může vypadat například takto
 
 .. code-block:: sql
                 
@@ -94,7 +94,7 @@ exotickém formátování, vyplatí se vyzkoušet, jestli se nám
 nepodaří je nakopírovat přímo příkazem :sqlcmd:`COPY`, než
 začnete používat specializované programy na přeformátování.
 
-.. notecmd:: Příklad kreativního využití :sqlcmd:`COPY` pro přenos dat mezi dvěma databázovými servery
+.. notecmd:: Příklad využití :sqlcmd:`COPY` pro přenos dat mezi dvěma databázovými servery
 
    .. code-block:: bash
 
@@ -318,6 +318,19 @@ Nebo také:
 .. code-block:: sql
 
    SELECT ST_GeomFromWKB('\x01010000005c6d862194ea26c13a56efaf97ce2fc1');
+
+.. tip:: Elegantnějším a nepochybně přehlednějším způsobem zápisu, než je
+   spojování řetězců je využití funkce `format
+   <https://www.postgresql.org/docs/current/static/functions-string.html#FUNCTIONS-STRING-FORMAT>`_.
+
+   .. code-block:: sql
+
+      SELECT format(
+         'POINT(%s %s)'
+         , x
+         , y
+      )::geometry
+      FROM vesmirne_zrudice;
 
 ST_AsText
 ---------
