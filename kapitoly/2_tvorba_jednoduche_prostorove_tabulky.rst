@@ -112,6 +112,11 @@ začnete používat specializované programy na přeformátování.
                   uživatelem, pod kterým běží databázový server a je
                   nutné, aby tomu odpovídalo nastavení práv.
 
+                  .. code-block:: bash
+
+                     \copy ukol_1.vesmirne_zrudice (id, x, y)
+                     FROM program 'wget -qO- http://training.gismentors.eu/geodata/postgis/body.csv'
+
 Nás ovšem bude zajímat kopírování ze souboru do tabulky. Příkaz
 :sqlcmd:`COPY`, jakkoliv je skvělý, má jedno omezení. Kopíruje totiž
 soubor, který je umístěn na databázovém serveru a jako uživatel, pod
