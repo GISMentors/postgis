@@ -162,13 +162,13 @@ V prvním řádku uvedeme kódování atributových dat vstupního souboru.
 
 Parametr :option:`-f` nastaví výstupní formát na *PostgreSQL*,
 :option:`PG:` nastaví `parametry připojení k databázi
-<http://www.postgresql.org/docs/9.4/interactive/libpq-connect.html>`_. Lze
+<http://www.postgresql.org/docs/current/interactive/libpq-connect.html>`_. Lze
 také nastavit např. aktivní schéma - tj. schéma, do kterého budou
 vstupní data importována.
 
 .. tip:: U dávkového nahrávání je výhodné nastavit si heslo do
          `souboru s autentizací
-         <http://www.postgresql.org/docs/9.4/static/libpq-pgpass.html>`_.
+         <http://www.postgresql.org/docs/current/static/libpq-pgpass.html>`_.
 
 Parametr :option:`-a_srs` slouží k nastavení výstupního souřadnicovýho
 systému, v tomto případě nastavíme souřadnicový systém na
@@ -267,7 +267,7 @@ VFR
 
       ogr2ogr -f PostgreSQL \
       "PG:dbname=gismentors host=training.gismentors.eu user=skoleni password=XXX active_schema=ltm" \
-      /vsicurl/http://vdp.cuzk.cz/vymenny_format/soucasna/20150331_OB_564567_UKSH.xml.gz
+      /vsicurl/http://vdp.cuzk.cz/vymenny_format/soucasna/20170331_OB_564567_UKSH.xml.gz
                    
    Bližší informace: http://freegis.fsv.cvut.cz/gwiki/RUIAN
                                    
