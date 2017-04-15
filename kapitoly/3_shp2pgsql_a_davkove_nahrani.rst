@@ -161,14 +161,13 @@ V prvním řádku uvedeme kódování atributových dat vstupního souboru.
          jiné kódování, než je UTF8.
 
 Parametr :option:`-f` nastaví výstupní formát na *PostgreSQL*,
-:option:`PG:` nastaví `parametry připojení k databázi
-<http://www.postgresql.org/docs/current/interactive/libpq-connect.html>`_. Lze
+:option:`PG:` nastaví :pgsqlcmd:`parametry připojení k databázi
+<libpq-connect>`. Lze
 také nastavit např. aktivní schéma - tj. schéma, do kterého budou
 vstupní data importována.
 
 .. tip:: U dávkového nahrávání je výhodné nastavit si heslo do
-         `souboru s autentizací
-         <http://www.postgresql.org/docs/current/static/libpq-pgpass.html>`_.
+         :pgsqlcmd:`souboru s autentizací <libpq-pgpass>`.
 
 Parametr :option:`-a_srs` slouží k nastavení výstupního souřadnicovýho
 systému, v tomto případě nastavíme souřadnicový systém na

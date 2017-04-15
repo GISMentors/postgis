@@ -72,8 +72,7 @@ K výběru nejbližšího bodu ke každému z bodů můžeme použít několik c
       LIMIT 1
    ) FROM vesmirne_zrudice;
 
-* Common table expression s `window funkcí
-  <http://www.postgresql.org/docs/current/static/tutorial-window.html>`_
+* Common table expression s :pgsqlcmd:`window funkcí <tutorial-window>`
 
 .. code-block:: sql
 
@@ -139,8 +138,7 @@ K výběru nejbližšího bodu ke každému z bodů můžeme použít několik c
    ) a
    WHERE rn = 1;
 
-* Případně můžeme použít `anonymní blok kódu
-  <http://www.postgresql.org/docs/current/static/sql-do.html>`_
+* Případně můžeme použít :pgsqlcmd:`anonymní blok kódu <sql-do>`
 
 .. code-block:: sql
 
@@ -271,6 +269,36 @@ na základě *vzdálenosti*.
    ) a
    WHERE ST_Distance(geom, geom_p) <= 250;
 
+* *Pomocí ST_DWithin a LATERAL*
+
+.. code-block:: sql
+
+   EXPLAIN ANALYZE
+   SELECT u.* FROM
+   ulice u
+   , LATERAL (
+      SELECT * FROM
+      vesmirne_zrudice v
+      WHERE ST_DWithin(geom, geom_p, 250)
+      LIMIT 1
+   ) v;
+
+* *Výběr na základě vzdálenosti s předvýběrem podle MOO*
+
+.. code-block:: sql
+
+   EXPLAIN ANALYZE
+   SELECT * FROM
+   (
+      SELECT u.*, v.geom_p
+      FROM ulice u,
+      vesmirne_zrudice v
+      WHERE ST_Expand(v.geom_p, 250) && u.geom 
+   ) a
+   WHERE ST_Distance(geom, geom_p) <= 250;
+
+.. tip:: Zamyslete se, které dotazy by mohly vracet jednu ulici vícekrát.
+
 
 Součet ploch v určitém okruhu
 -----------------------------
@@ -368,18 +396,20 @@ Chyby můžeme opravit nebo použít :pgiscmd:`ST_MakeValid` rovnou v dotazu.
          body u budov, u kterých nemáme geometrii. Pro výpočet plochy
          můžete použít zastavěnou plochu.
 
+.. tip:: Navrhněte optimalizaci dotazu.
+
 Nejbližší bod 2
 ---------------
 
-*U každého místa najděte nejbližší přístupové místo pro hasiče a
-záchranku mimo kontaminovanou zónu.*
+*U každého místa najděte nejbližší hasičskou stanici mimo kontaminovanou zónu.*
 
 Zadání
 ^^^^^^
 
-V tabulce :dbtable:`adresy` jsou i body přístupových míst pro hasiče a
-záchranou službu. Navrhněte možné postupy, jak najít ke každému bodu
-nejbližší přístupový bod pro hasiče a záchranku, který je vzdálen více
-než 250 metrů od bodu.
+V tabulce :dbtable:`osm.pozarni_stanice` jsou body pro hasičské stanice.
+Navrhněte dotaz, ke každému bodu z tabulky :dbtable:`vesmirne_zrudice` najde
+nejbližší hasičskou stanici, která leží dále, než čtvrt kilometru.
+
+.. tip:: Navrhněte různá řešení, srovnejte jejich rychlost a vracené záznamy.
 
 .. todo::
