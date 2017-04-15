@@ -77,7 +77,7 @@ Tabulku vytvoříme klasicky, příkazem :sqlcmd:`CREATE TABLE`.
 COPY
 ----
 
-Příkaz `COPY <http://www.postgresql.org/docs/current/static/sql-copy.html>`_ může vypadat například takto
+Příkaz :pgsqlcmd:`COPY <sql-copy>` může vypadat například takto
 
 .. code-block:: sql
                 

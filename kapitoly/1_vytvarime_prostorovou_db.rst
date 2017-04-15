@@ -59,8 +59,7 @@ viz příklad níže.
 
 Instalace rozšíření pomocí extenze také umožňuje nahrát rozšíření do vybraného
 schéma (defaultně je to obvykle public), což může být praktické, pokud budete
-chtít zálohovat databázi pomocí `pg_dump
-<https://www.postgresql.org/docs/current/static/app-pgdump.html>`_ bez postgisu
+chtít zálohovat databázi pomocí :pgsqlcmd:`pg_dump <app-pgdump>` bez postgisu
 a budete chtít, z nějakého důvodu, ukládat do *public* nějaká svá data.
 
 Tvorba pomocí skriptů

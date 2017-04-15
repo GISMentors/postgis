@@ -30,6 +30,27 @@ výsledky analýz ukládat do nových tabulek.
 .. figure:: ../images/parcely_dle_gridu.png
 
    Výsledek pohledu - obarvení parcel podle gridu.
+   
+Materializované pohledy
+=======================
+
+:pgsqlcmd:`Materializovaný pohled <sql-creatematerializedview>` je v mnoha
+ohledech podobný jako pohled. Liší se jednou zásadní věcí, dotázaná data jsou
+skutečně uložena, podobně, jako když vytvoříte tabulku z výsledku dotazu. Data
+jsou tím pádem statická a nemění se při změně zdrojových dat. Na druhou stranu
+takto uložená data jsou vrácena ihned, v případě složitého a výpočetně náročného
+dotazu může být výsledek vrácen mnohonásobně rychleji.
+
+Na rozdíl od prostého uložení výsledku dotazu do tabulky si materializovaný
+pohled s sebou nese i původní dotaz ze kterého byl vytvořen. Je možné ho obnovit
+příkatem :pgsqlcmd:`REFRESH MATERIALIZED VIEW <sql-refreshmaterializedview>`.
+
+.. tip:: Materializovaný pohled lze indexovat, podobně jako tabulku.
+
+
+.. important:: Při obnovení materializovaného pohledu musíte mít stejně
+   nastavený search_path jako při jeho tvorbě. To s sebou může nést problémy
+   například při obnově databáze ze zálohy vytvořené pomocí pg_dump.
 
 UDF funkce
 ==========
@@ -370,3 +391,6 @@ Využít se dá s výhodou, když provádíme průnik prvků dvou obsáhlejšíc
 
 LATERAL
 =======
+
+GROUP BY pdle primárního klíče
+==============================
