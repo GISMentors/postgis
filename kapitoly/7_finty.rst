@@ -392,5 +392,257 @@ Využít se dá s výhodou, když provádíme průnik prvků dvou obsáhlejšíc
 LATERAL
 =======
 
-GROUP BY pdle primárního klíče
-==============================
+Použití LATERAL je poměrně oblíbené mezi uživateli PostGIS. Může být použito v
+klauzuli :sqlcmd:`FROM`, nebo :sqlcmd:`JOIN`. Relace (může se jednat o tabulku,
+pohled, materializovaný pohled, případně funkci vracející recordset, jako třeba
+:sqlcmd:`ST_Dump`) se dotazuje zvlášť pro každý záznam hlavní tabulky. Obzvláště
+výhodné je její použití s LIMIT u výpočetně náročných podmínek.
+
+Například pokud chceme najít všechny katastry, na kterých je alespoň jedno
+maloplošné chráněné území. Chceme se vyvarovat toho, aby bylo vybráno
+katastrální území, na kterém je více než jedno katastrální území vícekrát neý
+jednou.
+
+Použijeme tabulku :dbtable:`ruian.katastralniuzemi` a tabulku
+:dbtable:`ochrana_uzemi.maloplosna_uzemi`.
+
+Klasické je použití klauzule :sqlcmd:`EXIST`
+
+.. code-block:: sql
+
+   EXPLAIN ANALYZE
+   SELECT *
+   FROM ruian.katastralniuzemi
+   WHERE EXISTS (
+      SELECT True
+      FROM ochrana_uzemi.maloplosna_uzemi
+      WHERE ST_Intersects(maloplosna_uzemi.geom, katastralniuzemi.geom)
+   );
+
+S využitím :sqlcmd:`LATERAL`
+
+.. code-block:: sql
+
+   EXPLAIN ANALYZE
+   SELECT *
+   FROM ruian.katastralniuzemi
+   , LATERAL (
+      SELECT True
+      FROM ochrana_uzemi.maloplosna_uzemi
+      WHERE ST_Intersects(maloplosna_uzemi.geom, katastralniuzemi.geom)
+      LIMIT 1
+   ) xx;
+
+.. tip:: Upravte dotaz tak, aby vybral pouze katastrální území, na kterých je
+         více než pět maloplošných ZCHÚ.
+
+
+GROUP BY podle primárního klíče
+===============================
+
+Pokud použijeme v klauzuli :sqlcmd:`GROUP BY` primární klíč, umožní dotaz vybrat
+všechny podřízené položky. To je užitečné, pokud chceme vybrat pouze unikátní
+záznamy.
+
+Pokud provedeme :sqlcmd:`JOIN` katastrálních území a maloplošných ZCHÚ, budeme
+mít ve výsledku pro každé KÚ tolik záznamů, s kolika MZCHÚ má nenulový průnik.
+
+.. code-block:: sql
+
+   SELECT
+   katastralniuzemi.kod
+   , count(*)
+   FROM ruian.katastralniuzemi
+   JOIN ochrana_uzemi.maloplosna_uzemi
+   ON ST_Intersects(katastralniuzemi.geom, maloplosna_uzemi.geom)
+   GROUP BY katastralniuzemi.kod
+   HAVING count(*) > 1
+   ;
+
+Pokud v klauzuli :sqlcmd:`GROUP BY` použijeme primární klíč a v :sqlcmd:`SELECT`
+dáme pouze záznamy této tabulky a agregační funkce, dostaneme unikátní záznamy.
+
+.. code-block:: sql
+
+   SELECT
+   katastralniuzemi.*
+   , count(*)
+   FROM ruian.katastralniuzemi
+   JOIN ochrana_uzemi.maloplosna_uzemi
+   ON ST_Intersects(katastralniuzemi.geom, maloplosna_uzemi.geom)
+   GROUP BY katastralniuzemi.ogc_fid;
+
+Klastrování
+===========
+
+Ve verzi posgisu 2.3.0 a vyšší už je možné najít funkce na klastrování,
+například :pgiscmd:`ST_ClusterKMeans`. Je to však horká novinka a nese s sebou
+některé nevýhody (například výsledek vracený jako *GEOMETRY COLLECTION* může
+působit problémy u velkých vrácených klastrů.
+
+Vyzkoušíme si některé, z výše uvedených postupů, na ukázce klastrování. Jedná se
+o poměrně typickou úlohu, na kterou můžete narazit například v souvislosti s
+potřebou zobrazit velké množství prvků na aplikaci.
+
+Zadání
+^^^^^^
+
+Z bodů v tabulce :dbtable:`ruian_praha.adresnimista` vytvořte skupiny tak, aby
+mezi body byla vzdálenost menší, než třicet metrů a zároven nebyl žádný bod
+nepatřící do skupiny blíže, než třicet metrů k libovolnému bodu ve skupině.
+
+Řešení
+^^^^^^
+
+.. code-block:: sql
+
+
+   CREATE INDEX ON ruian_praha.adresnimista USING btree(psc);
+
+   BEGIN;
+
+   ALTER TABLE ruian_praha.adresnimista ADD grupa int;
+
+   DO $$
+      DECLARE
+      _grupa int := 1;
+      r record;
+      _ogc_fid int;
+      BEGIN
+         LOOP
+            _ogc_fid := ogc_fid
+            FROM ruian_praha.adresnimista
+            WHERE psc = 14000
+            AND grupa IS NULL
+            LIMIT 1;
+
+            RAISE NOTICE '%', _ogc_fid;
+
+            IF _ogc_fid IS NULL THEN exit; END IF;
+
+            WITH recursive klastr AS (
+               SELECT ogc_fid FROM
+               ruian_praha.adresnimista
+               WHERE ogc_fid = _ogc_fid
+               UNION
+               SELECT 
+               a.ogc_fid 
+               FROM ruian_praha.adresnimista a
+               , LATERAL (
+                  SELECT True
+                  FROM 
+                  (
+                     SELECT * 
+                     FROM klastr 
+                     JOIN ruian_praha.adresnimista a2 USING (ogc_fid)
+                     WHERE a.geom && ST_Expand(a2.geom, 30)
+                     AND a2.ogc_fid != a.ogc_fid
+                  ) bb
+                  WHERE (bb.geom <-> a.geom) <= 30
+                  LIMIT 1
+               ) filtr
+               WHERE a.psc = 14000
+            )
+            UPDATE ruian_praha.adresnimista
+            SET grupa = _grupa
+            WHERE ogc_fid IN (
+               SELECT ogc_fid FROM klastr)
+            ;
+
+            _grupa := _grupa + 1;
+
+         END LOOP;
+      END
+      $$;
+
+   COMMIT;
+
+Rozbor
+^^^^^^
+
+Kostrou dotazu je anonymní blok kódu, který obsahuje smyčku.
+
+.. code-block:: sql
+
+   DO $$
+      DECLARE
+      _grupa int := 1;
+      r record;
+      _ogc_fid int;
+      BEGIN
+         LOOP
+            _ogc_fid := ogc_fid
+            FROM ruian_praha.adresnimista
+            WHERE psc = 14000
+            AND grupa IS NULL
+            LIMIT 1;
+
+            RAISE NOTICE '%', _ogc_fid;
+
+            IF _ogc_fid IS NULL THEN exit; END IF;
+
+            UPDATE ruian_praha.adresnimista
+            SET grupa = _grupa
+            WHERE ogc_fid IN (
+               SELECT ogc_fid FROM klastr)
+            ;
+
+            _grupa := _grupa + 1;
+
+         END LOOP;
+      END
+      $$;
+
+Na začátku každého cyklu se načte hodnota primárního klíče záznamu, který má
+poštovní směrovací číslo 14000 (omezení na psč je kvůli rychlosti, bez něj by
+analýza trvala příliš dlouho a pro účely demonstrace to není třeba) a nemá
+vyplněné číslo skupiny. V případě, že je číslo grupy vyplněno u všech
+relevantních záznamů a tudíž je hodnota proměnné NULL, tak se smyčka přeruší.
+
+Na konci smyčky se aktualizuje číslo skupiny pro všechny prvky, které sdílejí
+skupinu s vybraným prvkem a číslo skupiny se navýší.
+
+.. note:: Klauzule :sqlcmd:`RAISE NOTICE` slouží k vypsání aktuální hodnoty
+          proměnné.
+
+Výběr prvků ve skupině je proveden pomocí rekurzivního :pgsqlcmd:`CTE
+<queries-with>`. K vybraným prvkům jsou přidány všechny prvky v zadané
+vzdálenosti. Aby nebyly přidávány znova tytéž prvky zajišťuje klauzule
+:sqlcmd:`UNION`, která přidává jen nové prvky (což ale znamená, že v každém
+cyklu jsou znova a znova vybírány ty samé prvky, což není uplně efektivní, dotaz
+by pravděpodobně bylo možné ještě zoptimalizovat). K filtrování je použit
+:sqlcmd:`LATERAL`, který je počítán zvlášť pro každý řádek. Do výběru je tedy
+přidán, každý řádek, pro který už ve výběru existuje alespoň jeden bod splňující
+podmínku. Předvýběr je proveden pomocí operátoru :sqlcmd:`&&` a funkce
+:sqlcmd:`ST_Expand`.
+
+.. code-block:: sql
+
+   WITH recursive klastr AS (
+      SELECT ogc_fid FROM
+      ruian_praha.adresnimista
+      WHERE ogc_fid = _ogc_fid
+      UNION
+      SELECT 
+      a.ogc_fid 
+      FROM ruian_praha.adresnimista a
+      , LATERAL (
+         SELECT True
+         FROM 
+         (
+            SELECT * 
+            FROM klastr 
+            JOIN ruian_praha.adresnimista a2 USING (ogc_fid)
+            WHERE a.geom && ST_Expand(a2.geom, 30)
+            AND a2.ogc_fid != a.ogc_fid
+         ) bb
+         WHERE (bb.geom <-> a.geom) <= 30
+         LIMIT 1
+      ) filtr
+      WHERE a.psc = 14000
+   )
+   UPDATE ruian_praha.adresnimista
+   SET grupa = _grupa
+   WHERE ogc_fid IN (
+      SELECT ogc_fid FROM klastr)
+   ;
