@@ -646,3 +646,21 @@ podmínku. Předvýběr je proveden pomocí operátoru :sqlcmd:`&&` a funkce
    WHERE ogc_fid IN (
       SELECT ogc_fid FROM klastr)
    ;
+
+Jednodušší řešení pomocí :pgiscmd:`ST_Dump`.
+
+.. code-block:: sql
+
+   SELECT 
+   a.*, path[1]
+   FROM ruian_praha.adresnimista a
+   , (
+      SELECT * FROM
+      (
+         SELECT (ST_Dump(ST_Union(ST_Buffer(a.geom, 15,50)))).*
+         FROM ruian_praha.adresnimista a
+         WHERE psc = 14000
+      ) x
+   ) b
+   WHERE psc = 14000
+   AND ST_Within(a.geom, b.geom);
