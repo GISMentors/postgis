@@ -275,6 +275,33 @@ bod s označením ``kod=22560840``.
      ON abs(ee.edge) = e.edge_id
     );
 
+.. code-block:: sql
+
+   WITH original_face_id AS(
+      SELECT
+      topology.getFaceByPoint('topo_parcely_732583', geom, 0) face_id
+      FROM ruian_praha.adresnimista WHERE kod = 22560840
+   )
+   , sousedni AS (
+      SELECT
+      CASE right_face
+         WHEN original_face_id.face_id THEN left_face
+         ELSE right_face
+      END face
+      FROM original_face_id
+      , topology.ST_GetFaceEdges('topo_parcely_732583', face_id)
+      JOIN topo_parcely_732583.edge ON edge_id = @edge
+   )
+   SELECT *
+   FROM topo_test.parcely_732583 p
+   JOIN topo_parcely_732583.relation r
+   ON (p.topo).id = r.topogeo_id
+   AND (p.topo).layer_id = r.layer_id
+   AND (p.topo).type = 3
+   WHERE r.element_id IN (
+      SELECT face
+      FROM sousedni
+   );
                 
 Užitečné odkazy
 ---------------
