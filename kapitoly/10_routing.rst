@@ -101,6 +101,51 @@ Zjistíme ID uzlů v rámci grafu:
     2911015007 |  1594
     2905257304 | 10824
 
+Výchozí a cílový bod můžeme také najít s využitím adresních míst RǓIAN.
+Dojde k vyhledání všech OSM bodů do vzdálenosti 10 m od zadané adresy.
+
+Nastavíme si cestu ke schématům.
+
+.. code-block:: sql
+   
+   SET search_path TO public,routing,ruian_praha;
+
+.. code-block:: sql
+
+   SELECT o.osm_id, o.id, a.gml_id FROM 
+   ruian_praha.adresnimista a, 
+   ruian_praha.ulice u, 
+   routing.ways_vertices_pgr o 
+   WHERE a.cisloorientacni = 1 AND u.nazev = 'Šolínova' 
+   AND a.ulicekod = u.kod 
+   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
+
+::
+
+      osm_id   |   id   |   gml_id    
+   ------------+--------+-------------
+      55320587 |  79643 | AD.22189076
+    1249805116 |  87127 | AD.22189076
+    1249805175 | 120172 | AD.22189076   
+    1249805047 | 149722 | AD.22189076
+ 
+.. code-block:: sql
+
+   SELECT o.osm_id, o.id, a.gml_id FROM 
+   ruian_praha.adresnimista a, 
+   ruian_praha.ulice u, 
+   routing.ways_vertices_pgr o 
+   WHERE a.cisloorientacni = 5 AND u.nazev = 'Technická' 
+   AND a.ulicekod = u.kod 
+   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
+
+::
+
+      osm_id   |   id   |   gml_id    
+   ------------+--------+-------------
+    2905214176 | 129632 | AD.22207996
+    2905214180 | 146959 | AD.22207996
+
 
 Nejkratší trasu nalezneme voláním funkce `pgr_dijkstra
 <http://docs.pgrouting.org/latest/en/src/dijkstra/doc/pgr_dijkstra.html>`__. Dijkstrův
@@ -388,6 +433,50 @@ Příklad úpravy časových nákladu podle typu komunikace:
    Porovnání nejkratší (červeně) a nejrychlejší (modře) trasy z
    Letiště Václava Havla na Hlavní nádraží. Společná část trasy je
    znázorněna fialovou barvou.
+
+Servisní síť
+~~~~~~~~~~~~
+
+Ćastou operací v síťových analýzách je výpočet servisní sítě.
+Zajímá nás kam je možné se v rámci sítě dostat do určitého času. 
+V tomto případě nastavíme 300 sekund.
+
+Ještě trochu upravíme penalty pro průchod. Budeme uvažovat, že
+můžeme jet kdekoli jen o něco málo pomaleji než po hlavních silnicích
+a zásadně zvýhodníme jen dálnice.
+
+.. code-block:: sql
+
+   UPDATE osm_way_classes SET penalty=1.2;
+   UPDATE osm_way_classes SET penalty=1.0 WHERE name IN ('secondary', 'secondary_link',
+                                                         'tertiary', 'tertiary_link');
+   UPDATE osm_way_classes SET penalty=1.0 WHERE name IN ('primary','primary_link');
+   UPDATE osm_way_classes SET penalty=1.0 WHERE name IN ('trunk','trunk_link');
+   UPDATE osm_way_classes SET penalty=0.8 WHERE name IN ('motorway','motorway_junction','motorway_link'); 
+
+.. code-block:: sql
+                
+   SELECT a.*, b.geom AS geom FROM pgr_drivingDistance('
+    SELECT gid AS id,
+    source,
+    target,
+    cost_s * penalty AS cost,
+    reverse_cost_s * penalty AS reverse_cost
+    FROM ways JOIN osm_way_classes
+    USING (class_id)',
+   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 250862),
+   300,
+   directed := true) AS a
+   LEFT JOIN ways AS b
+   ON (a.edge = b.gid) ORDER BY seq;
+
+      
+.. figure:: ../images/route-distance.png
+
+   Servisní síť z vybraného místa.
+
+Algoritmus má limity, které jsme zatím podrobně netestovali,
+přesto pro určení přibližného servisního území (sítě) může posloužit.
    
 Další materiály
 ---------------
