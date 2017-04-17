@@ -250,33 +250,6 @@ bod s označením ``kod=22560840``.
 
 .. code-block:: sql
 
-   SELECT (ST_GetFaceEdges('topo_parcely_732583', f.face_id)).edge FROM
-   (             
-    SELECT face_id FROM topo_parcely_732583.face AS f JOIN
-     ruian_praha.adresnimista AS a ON a.kod=22560840 AND a.geom && f.mbr AND
-     ST_Within(a.geom, ST_GetFaceGeometry('topo_parcely_732583', f.face_id))
-   ) AS f;
-
-   
-   SELECT id, kmenovecislo || '/' || pododdelenicisla AS parcela
-    FROM parcely_732583
-    WHERE (topo).id IN
-    (
-     SELECT CASE WHEN ee.edge < 0 THEN left_face ELSE right_face END
-      FROM topo_parcely_732583.edge AS e JOIN
-      (
-	SELECT (ST_GetFaceEdges('topo_parcely_732583', f.face_id)).edge FROM
-	(
-	   SELECT face_id FROM topo_parcely_732583.face AS f JOIN
-           ruian_praha.adresnimista AS a ON a.kod=22560840 AND a.geom && f.mbr AND
-           ST_Within(a.geom, ST_GetFaceGeometry('topo_parcely_732583', f.face_id))
-         ) AS f
-      ) AS ee
-     ON abs(ee.edge) = e.edge_id
-    );
-
-.. code-block:: sql
-
    WITH original_face_id AS(
       SELECT
       topology.getFaceByPoint('topo_parcely_732583', geom, 0) face_id
@@ -302,7 +275,173 @@ bod s označením ``kod=22560840``.
       SELECT face
       FROM sousedni
    );
+
+Praktická ukázka *Brloh u Drhovle*
+----------------------------------
+
+Topologickou funkcionalitu PostGISu můžeme s výhodou využít pro zaplochování a
+tvorbu polygonů u dat, kde máme síť hranic a centroidy. Typickým příkladem dat,
+která takto dostáváme jsou data ve formátech `vfk
+<http://www.cuzk.cz/Katastr-nemovitosti/Poskytovani-udaju-z-KN/Vymenny-format-KN/Vymenny-format-NVF.aspx>`_
+a `vkm
+<http://www.cuzk.cz/Katastr-nemovitosti/Poskytovani-udaju-z-KN/Vymenny-format-KN/Stary-vymenny-format/Stary-vymenny-format-cast-1.aspx>`_
+vydávané `Českým úřadem zeměměřickým a katastrálním <http://www.cuzk.cz/Uvod.aspx>`_.
+
+Další velice užitečnou možností využití funkcionalit topologie v PostGISu je
+topologická generalizace.
+
+Zadání
+^^^^^^
+
+Stáhnul jsem `vkm Brlohu u Drhovle <http://services.cuzk.cz/VKM/ku/20170401/632406.zip>`_
+a pomocí skriptu v bashi z vkm vybral linie hranic parcel a definiční body. Data
+jsou nahrána ve schématu :dbtable:`brloh_data`.
+
+Sestavte z dat polygony parcel. Vytvořte jednoduchou geometrii a topologickou
+geometrii. Proveďtě generalizaci hranic parcel a porovnejte výsledek
+generalizace jednoduché a topologické geometrie.
+
+Postup
+^^^^^^
+
+Nahrání liní do topologického schématu
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Nejdříve vytvoříme nové topologické schéma. Nazveme ho :dbtable:`brloh`.
+
+.. code-block:: sql
+
+   SELECT topology.CreateTopology('brloh', 5514, 0.01, false);
+
+Zvolíme *SRID* "5514" a centimetrovou přesnost. Poslední parametr funkce
+:pgiscmd:`CreateTopology` udává, že ve schématu nepočítáme se souřadnicí Z.
+
+.. note:: Všiměte si, že funkce nemá prefix "ST", není tedy součástí standartu.
+
+Přidáme všechny linie z tabulky :dbtable:`brloh_data.hranice` do topologie.
+
+.. code-block:: sql
+
+   SELECT topology.TopoGeo_AddLineString('brloh', geom, 0) from brloh_data.hranice;
+
+Zaplochujeme
+
+.. code-block:: sql
+
+   SELECT topology.Polygonize('brloh');
+
+.. note:: V novějších verzích PostGIS se stěny vytvoří automaticky.
+
+Nyní můžeme vytvořit pohled :dbtable:`parcely`, který přidá k definičním bodům
+polygony.
+
+.. code-block:: sql
+
+   CREATE VIEW parcely AS
+   SELECT debo.id, debo.label
+   , topology.ST_GetFaceGeometry(
+      'brloh', topology.GetFaceByPoint('brloh', geom, 0)
+   ) geom FROM debo;
+
+Případně můžeme geometrii k bodům doplnit přímo do tabulky.
+
+.. code-block:: sql
+
+   ALTER TABLE debo ADD geom_polygon geometry(POLYGON, 5514);
+   UPDATE debo
+   SET geom_polygon = topology.ST_GetFaceGeometry(
+      'brloh'
+      , topology.GetFaceByPoint('brloh', geom, 0)
+   );
+
+Z již vytvořené topologie můžeme vytvořit zpětně topogeometrie bez toho, abychom
+museli topografický sloupec vytvářet z již získané "jednoduché" geometrie.
+
+Nejdřív přidáme toposloupec,
+
+.. code-block:: sql
+
                 
+   SELECT topology.AddTopoGeometryColumn(
+      'brloh'
+      , 'brloh_data'
+      , 'debo'
+      , 'topo'
+      , 'POLYGON'
+   );
+
+Číslo vrstvy zjistíme dotazem do :dbtable:`topology.layer`.
+
+.. code-block:: sql
+
+   SELECT layer_id
+   FROM topology.layer
+   WHERE schema_name = 'brloh_data' AND table_name = 'debo';
+
+K vygenerování topogeometrie použijeme funkci :pgiscmd:`CreateTopoGeom`.
+
+.. code-block:: sql
+
+   UPDATE debo
+   SET topo = topology.CreateTopoGeom(
+      'brloh'
+      , 3 --polygonová vrstva
+      , 1 --id vrstvy
+      , ARRAY[
+         ARRAY[
+            topology.GetFaceByPoint('brloh', geom, 0) --face_id
+            , 3 --značí, že jde o face
+         ]
+      ]::topology.TopoElementArray
+   );
+
+Nyní můžeme zobrazit geometrii z topologie.
+
+.. code-block:: sql
+
+   SELECT id, label, topo::geometry FROM brloh_data.debo;
+
+Případně se přesvědčit, zda se geometrie z topologie shoduje s dříve uloženou
+geometrií.
+
+.. code-block:: sql
+
+   SELECT count(*)
+   FROM debo
+   WHERE NOT ST_Equals(geom_polygon, topo::geometry);
+
+Generalizace
+~~~~~~~~~~~~
+Nejdříve vyzkoušíme generalizaci jednoduché geometrie. Použijeme funkci
+:pgiscmd:`ST_SimplifyPreserveTopology`, která na rozdíl od
+:pgiscmd:`ST_Simplify` dohlíží i na validitu vrácených prvků.
+
+.. code-block:: sql
+
+   SELECT id, st_simplifypreservetopology(geom_polygon, 5) geom
+   FROM brloh_data.debo;
+
+Výsledek si mohu zobrazit v Qgis.
+
+.. figure:: ../images/simplify.png
+   :class: middle
+
+   Výsledek generalizace jednoduchých prvků zobrazený v Qgis
+
+Z obrázku je celkem jasně patrné, že v důsledku toho, že každý prvek byl
+generalizován samostatně vznikla řada překryvů a mezer.
+
+Vyzkoušíme to samé v topologii pomocí funkce :pgiscmd:`TP_ST_Simplify`.
+
+.. code-block:: sql
+
+   SELECT id, topology.st_simplify(topo, 15) geom FROM brloh_data.debo;
+
+.. figure:: ../images/simplify_topo.png
+   :class: middle
+
+   Výsledek generalizace v topologii zobrazený v Qgis
+
 Užitečné odkazy
 ---------------
 
