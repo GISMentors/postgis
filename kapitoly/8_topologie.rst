@@ -442,6 +442,41 @@ Vyzkoušíme to samé v topologii pomocí funkce :pgiscmd:`TP_ST_Simplify`.
 
    Výsledek generalizace v topologii zobrazený v Qgis
 
+Vrácený výsledek naprosto přesně odpovídá nezjednodušeným geometriím. Je to
+proto, že se generalizují jednotlivé hrany a zde použité hrany mají všechny
+právě dva body a nelze je tedy zjednodušit. Je to důsledek importu z vkm.
+
+Smažeme tedy celé pracně vytvořené topologické schéma. A vytvoříme ho znova.
+
+.. code-block:: sql
+
+   SELECT topology.DropTopology('brloh');
+   SELECT topology.CreateTopology('brloh', 5514, 0.01, false);
+
+Tentokrát linie zunionujeme a rozpustíme pomocí :pgiscmd:`ST_Dump`. Navíc je
+třeba použít funkci :pgiscmd:`ST_LineMerge`, která propojí jednotlivé úseky v
+rámci multilinie.
+
+.. code-block:: sql
+
+   SELECT topology.TopoGeo_AddLineString('brloh', geom, 0)
+   FROM (
+      SELECT (ST_Dump(u_geom)).geom
+      FROM (
+         SELECT ST_LineMerge(ST_Union(geom)) u_geom
+         FROM brloh_data.hranice
+      ) uni
+   ) geoms;
+
+Dále budeme postupovat stejně.
+
+.. figure:: ../images/simplify_topo_2.png
+   :class: middle
+
+   Opravený výsledek generalizace v topologii zobrazený v Qgis.
+
+Původní hrany jsou vyznačeny světlou linkou.
+
 Užitečné odkazy
 ---------------
 
