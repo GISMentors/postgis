@@ -477,6 +477,79 @@ a zásadně zvýhodníme jen dálnice.
 
 Algoritmus má limity, které jsme zatím podrobně netestovali,
 přesto pro určení přibližného servisního území (sítě) může posloužit.
+
+Cesta obchodního cestujícího
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Vyjíždíme z Dejvic (id: 12333). Chceme se cestou zastavit na výstavišti v Holešovicích (id: 7436),
+v Europarku (id: 144884) a na Andělu (id: 116748) a pak dojet zpátky do Dejvic. Algoritimus naplánuje 
+cestu tak, abychom navštívili každé místo pouze jednou a urazili cestu
+s nejmenšími náklady. 
+
+Navržená cesta je přes Anděla, Europark, Holešovice.
+
+.. code-block:: sql
+
+   SELECT * FROM pgr_TSP(
+       $$
+       SELECT * FROM pgr_dijkstraCostMatrix(
+           'SELECT gid as id, source, target, cost, reverse_cost FROM ways',
+           (SELECT array_agg(id) FROM ways_vertices_pgr WHERE id IN (12333, 7436, 144884, 116748)),
+           directed := false
+       )
+       $$,
+       start_id := 12333,
+       randomize := false
+   );
+
+   ::
+
+    seq |  node  |        cost        |      agg_cost      
+   -----+--------+--------------------+--------------------
+      1 |  12333 | 0.0484455749225172 |                  0
+      2 | 116748 |  0.148717683986367 | 0.0484455749225172
+      3 | 144884 |  0.133988564693275 |  0.197163258908885
+      4 |   7436 | 0.0443240851172554 |   0.33115182360216
+      5 |  12333 |                  0 |  0.375475908719415
+
+
+
+K dispozici je také výpočet cesty obchodního cestujícího, která
+využívá pouze euklidovský prostor. Tento výpočet je sice méně přesný,
+ale měl by být o dost rychlejší, zejména v případě většího počtu míst.
+Rychlost jsme netestovali.
+
+Navržená cesta je přes Anděla, Holešovice a Europark. Tedy jinak než
+v případě předchozího algoritmu.
+
+.. code-block:: sql
+
+   SELECT * FROM pgr_eucledianTSP('SELECT *
+   FROM (
+     SELECT DISTINCT id AS source_id,
+                       ST_X(geom) AS x,
+                       ST_Y(geom) AS y FROM ways_vertices_pgr
+             WHERE id IN (12333, 7436, 144884, 116748)
+   ) t
+   ORDER BY
+   CASE source_id
+     WHEN 12333 THEN 1 
+     WHEN 7436 THEN 2
+     WHEN 144884 THEN 3
+     WHEN 116748 THEN 4  
+    END');
+
+   ::
+
+     seq | node |         cost          |      agg_cost      
+    -----+------+-----------------------+--------------------
+       1 |    1 |    0.0382006302085469 |                  0
+       2 |    4 |    0.0462512161967639 | 0.0382006302085469
+       3 |    2 |     0.117270931512459 | 0.0844518464053108
+       4 |    3 | 4.64686056594346e-310 |   0.20172277791777
+       5 |    1 |                     0 |   0.20172277791777
+
+
    
 Další materiály
 ---------------
