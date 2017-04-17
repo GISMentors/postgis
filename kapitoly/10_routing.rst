@@ -505,7 +505,8 @@ Navržená cesta je přes Anděla, Europark, Holešovice.
        randomize := false
    );
 
-   ::
+
+::
 
     seq |  node  |        cost        |      agg_cost      
    -----+--------+--------------------+--------------------
@@ -544,7 +545,8 @@ v případě předchozího algoritmu.
      WHEN 116748 THEN 4  
     END');
 
-   ::
+
+::
 
      seq | node |         cost          |      agg_cost      
     -----+------+-----------------------+--------------------
