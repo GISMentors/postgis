@@ -101,6 +101,51 @@ Zjistíme ID uzlů v rámci grafu:
     2911015007 |  1594
     2905257304 | 10824
 
+Výchozí a cílový bod můžeme také najít s využitím adresních míst RǓIAN.
+Dojde k vyhledání všech OSM bodů do vzdálenosti 10 m od zadané adresy.
+
+Nastavíme si cestu ke schématům.
+
+.. code-block:: sql
+   
+   SET search_path TO public,routing,ruian_praha;
+
+.. code-block:: sql
+
+   SELECT o.osm_id, o.id, a.gml_id FROM 
+   ruian_praha.adresnimista a, 
+   ruian_praha.ulice u, 
+   routing.ways_vertices_pgr o 
+   WHERE a.cisloorientacni = 1 AND u.nazev = 'Šolínova' 
+   AND a.ulicekod = u.kod 
+   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
+
+::
+
+      osm_id   |   id   |   gml_id    
+   ------------+--------+-------------
+      55320587 |  79643 | AD.22189076
+    1249805116 |  87127 | AD.22189076
+    1249805175 | 120172 | AD.22189076   
+    1249805047 | 149722 | AD.22189076
+ 
+.. code-block:: sql
+
+   SELECT o.osm_id, o.id, a.gml_id FROM 
+   ruian_praha.adresnimista a, 
+   ruian_praha.ulice u, 
+   routing.ways_vertices_pgr o 
+   WHERE a.cisloorientacni = 5 AND u.nazev = 'Technická' 
+   AND a.ulicekod = u.kod 
+   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
+
+::
+
+      osm_id   |   id   |   gml_id    
+   ------------+--------+-------------
+    2905214176 | 129632 | AD.22207996
+    2905214180 | 146959 | AD.22207996
+
 
 Nejkratší trasu nalezneme voláním funkce `pgr_dijkstra
 <http://docs.pgrouting.org/latest/en/src/dijkstra/doc/pgr_dijkstra.html>`__. Dijkstrův
@@ -388,6 +433,130 @@ Příklad úpravy časových nákladu podle typu komunikace:
    Porovnání nejkratší (červeně) a nejrychlejší (modře) trasy z
    Letiště Václava Havla na Hlavní nádraží. Společná část trasy je
    znázorněna fialovou barvou.
+
+Servisní síť
+------------
+
+Ćastou operací v síťových analýzách je výpočet servisní sítě.
+Zajímá nás kam je možné se v rámci sítě dostat do určitého času. 
+V tomto případě nastavíme 300 sekund.
+
+Ještě trochu upravíme penalty pro průchod. Budeme uvažovat, že
+můžeme jet kdekoli jen o něco málo pomaleji než po hlavních silnicích
+a zásadně zvýhodníme jen dálnice.
+
+.. code-block:: sql
+
+   UPDATE osm_way_classes SET penalty=1.2;
+   UPDATE osm_way_classes SET penalty=1.0 WHERE name IN ('secondary', 'secondary_link',
+                                                         'tertiary', 'tertiary_link');
+   UPDATE osm_way_classes SET penalty=1.0 WHERE name IN ('primary','primary_link');
+   UPDATE osm_way_classes SET penalty=1.0 WHERE name IN ('trunk','trunk_link');
+   UPDATE osm_way_classes SET penalty=0.8 WHERE name IN ('motorway','motorway_junction','motorway_link'); 
+
+.. code-block:: sql
+                
+   SELECT a.*, b.geom AS geom FROM pgr_drivingDistance('
+    SELECT gid AS id,
+    source,
+    target,
+    cost_s * penalty AS cost,
+    reverse_cost_s * penalty AS reverse_cost
+    FROM ways JOIN osm_way_classes
+    USING (class_id)',
+   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 250862),
+   300,
+   directed := true) AS a
+   LEFT JOIN ways AS b
+   ON (a.edge = b.gid) ORDER BY seq;
+
+      
+.. figure:: ../images/route-distance.png
+
+   Servisní síť z vybraného místa.
+
+Algoritmus má limity, které jsme zatím podrobně netestovali,
+přesto pro určení přibližného servisního území (sítě) může posloužit.
+
+Cesta obchodního cestujícího
+----------------------------
+
+Vyjíždíme z Dejvic (id: 12333). Chceme se cestou zastavit na výstavišti v Holešovicích (id: 7436),
+v Europarku (id: 144884) a na Andělu (id: 116748) a pak dojet zpátky do Dejvic. Algoritimus naplánuje 
+cestu tak, abychom navštívili každé místo pouze jednou a urazili cestu
+s nejmenšími náklady. 
+
+Využití vzdálenosti po síti
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Navržená cesta je přes Anděla, Europark, Holešovice.
+
+.. code-block:: sql
+
+   SELECT * FROM pgr_TSP(
+       $$
+       SELECT * FROM pgr_dijkstraCostMatrix(
+           'SELECT gid as id, source, target, cost, reverse_cost FROM ways',
+           (SELECT array_agg(id) FROM ways_vertices_pgr WHERE id IN (12333, 7436, 144884, 116748)),
+           directed := false
+       )
+       $$,
+       start_id := 12333,
+       randomize := false
+   );
+
+
+::
+
+    seq |  node  |        cost        |      agg_cost      
+   -----+--------+--------------------+--------------------
+      1 |  12333 | 0.0484455749225172 |                  0
+      2 | 116748 |  0.148717683986367 | 0.0484455749225172
+      3 | 144884 |  0.133988564693275 |  0.197163258908885
+      4 |   7436 | 0.0443240851172554 |   0.33115182360216
+      5 |  12333 |                  0 |  0.375475908719415
+
+
+Využití euklidovské vzdálenosti
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+K dispozici je také výpočet cesty obchodního cestujícího, která
+využívá pouze euklidovský prostor. Tento výpočet je sice méně přesný,
+ale měl by být o dost rychlejší, zejména v případě většího počtu míst.
+Rychlost jsme netestovali.
+
+Navržená cesta je přes Anděla, Holešovice a Europark. Tedy jinak než
+v případě předchozího algoritmu.
+
+.. code-block:: sql
+
+   SELECT * FROM pgr_eucledianTSP('SELECT *
+   FROM (
+     SELECT DISTINCT id AS source_id,
+                       ST_X(geom) AS x,
+                       ST_Y(geom) AS y FROM ways_vertices_pgr
+             WHERE id IN (12333, 7436, 144884, 116748)
+   ) t
+   ORDER BY
+   CASE source_id
+     WHEN 12333 THEN 1 
+     WHEN 7436 THEN 2
+     WHEN 144884 THEN 3
+     WHEN 116748 THEN 4  
+    END');
+
+
+::
+
+     seq | node |         cost          |      agg_cost      
+    -----+------+-----------------------+--------------------
+       1 |    1 |    0.0382006302085469 |                  0
+       2 |    4 |    0.0462512161967639 | 0.0382006302085469
+       3 |    2 |     0.117270931512459 | 0.0844518464053108
+       4 |    3 | 4.64686056594346e-310 |   0.20172277791777
+       5 |    1 |                     0 |   0.20172277791777
+
+
    
 Další materiály
 ---------------
