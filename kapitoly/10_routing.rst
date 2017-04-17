@@ -435,7 +435,7 @@ Příklad úpravy časových nákladu podle typu komunikace:
    znázorněna fialovou barvou.
 
 Servisní síť
-~~~~~~~~~~~~
+------------
 
 Ćastou operací v síťových analýzách je výpočet servisní sítě.
 Zajímá nás kam je možné se v rámci sítě dostat do určitého času. 
@@ -479,12 +479,15 @@ Algoritmus má limity, které jsme zatím podrobně netestovali,
 přesto pro určení přibližného servisního území (sítě) může posloužit.
 
 Cesta obchodního cestujícího
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------
 
 Vyjíždíme z Dejvic (id: 12333). Chceme se cestou zastavit na výstavišti v Holešovicích (id: 7436),
 v Europarku (id: 144884) a na Andělu (id: 116748) a pak dojet zpátky do Dejvic. Algoritimus naplánuje 
 cestu tak, abychom navštívili každé místo pouze jednou a urazili cestu
 s nejmenšími náklady. 
+
+Využití vzdálenosti po síti
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Navržená cesta je přes Anděla, Europark, Holešovice.
 
@@ -513,6 +516,8 @@ Navržená cesta je přes Anděla, Europark, Holešovice.
       5 |  12333 |                  0 |  0.375475908719415
 
 
+Využití euklidovské vzdálenosti
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 K dispozici je také výpočet cesty obchodního cestujícího, která
 využívá pouze euklidovský prostor. Tento výpočet je sice méně přesný,
