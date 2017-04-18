@@ -557,6 +557,79 @@ v případě předchozího algoritmu.
        5 |    1 |                     0 |   0.20172277791777
 
 
+Vytvoření sítě
+--------------
+
+Ne vždy je možné pracovat se sítí postavenou nad daty OSM. 
+Pokud máme vlastní síť můžeme se pokusit vybudovat graf nad ní.
+
+Příprava dat
+~~~~~~~~~~~~
+
+Pokud nemáme data připravena pro síťové analýzy, např. nám chybí nody
+v místech křížení silnic, pak je nutné před vlastním vybudováním grafu
+realizovat úpravu dat.
+
+K dispozici je funce pgr_nodeNetwork, která dokáže doplnit uzly do 
+křížení, případně dotáhnout linie k jiným liniím, v případě nedotahů.
+
+V případě, že funkce selže, jako v následjícím příkladu nad ulicemi Prahy,
+můžeme zkusit alternativní postup popsaný dále.
+
+.. code-block:: sql
+
+   SELECT pgr_nodeNetwork('ruian_praha.ulice', 1, 'ogc_fid', 'geom');
+   
+::
+  
+   ERROR:  line_locate_point: 1st arg isn't a line
+   CONTEXT:  SQL statement "create temp table inter_loc on commit drop as ( select * from (
+        (select l1id, l2id, st_linelocatepoint(line,source) as locus from intergeom)
+         union
+        (select l1id, l2id, st_linelocatepoint(line,target) as locus from intergeom)) as foo
+        where locus<>0 and locus<>1)"
+   PL/pgSQL function pgr_nodenetwork(text,double precision,text,text,text,text,boolean) line 191 at EXECUTE   
+   
+Jiný způsob je využití běžných nástrojů PostGIS a snaha o vytvoření multilinie agregací z 
+existující kolekce linií.
+
+.. code-block:: sql
+
+ CREATE TABLE ruian_praha.ulice_noded AS
+ SELECT d.path[1], geom FROM (
+   SELECT ST_UNION(geom) g FROM ruian_praha.ulice
+ ) dta
+ , ST_Dump(g) d;
+
+Vytvoření grafu
+~~~~~~~~~~~~~~~
+
+Před vytvořením grafu, který realizuje funkce pgr_createTopology je nutné
+přidat sloupce source a target, kam jsou zapsány identifikátory uzlů.
+
+Vhodné je také vytvořit primární klíč a indexovat geometrii.
+
+.. code-block:: sql
+
+ ALTER TABLE ruian_praha.ulice_noded ADD PRIMARY KEY (path);
+ CREATE INDEX ON ruian_praha.ulice_noded USING gist(geom);
+ ALTER TABLE ruian_praha.ulice_noded ADD COLUMN "source" integer;
+ ALTER TABLE ruian_praha.ulice_noded ADD COLUMN "target" integer;
+
+Graf se vytvoří pomocí funkce pgr_createTopology, kde se zadají názvy sloupců s geomnetrií,
+id a sloupce pro zápis id nodů (source, target). Hodnota 1 ve funkci představuje toleranci
+pro tvorbu grafu.
+ 
+.. code-block:: sql
+
+ SELECT pgr_createTopology('ruian_praha.ulice_noded', 1, 'geom', 'path', 'source', 'target');
+
+Na závěr je vhodné ohodnotit graf pomocí např. délky úseků.
+
+.. code-block:: sql
+
+ ALTER TABLE ruian_praha.ulice_noded ADD COLUMN length FLOAT;
+ UPDATE ruian_praha.ulice_noded SET length = ST_Length(geom);
    
 Další materiály
 ---------------
