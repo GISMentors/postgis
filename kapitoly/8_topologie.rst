@@ -294,8 +294,9 @@ Zadání
 ^^^^^^
 
 Stáhnul jsem `vkm Brlohu u Drhovle <http://services.cuzk.cz/VKM/ku/20170401/632406.zip>`_
-a pomocí skriptu v bashi z vkm vybral linie hranic parcel a definiční body. Data
-jsou nahrána ve schématu :dbtable:`brloh_data`.
+a pomocí skriptu v bashi z vkm vybral `linie hranic parcel a definiční body
+<http://training.gismentors.eu/geodata/postgis/brloh.sql>`_. Data jsou
+připravena k nahrání do schématu :dbtable:`brloh_data`.
 
 Sestavte z dat polygony parcel. Vytvořte jednoduchou geometrii a topologickou
 geometrii. Proveďtě generalizaci hranic parcel a porovnejte výsledek
