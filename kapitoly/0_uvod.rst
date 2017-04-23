@@ -53,7 +53,7 @@ však podstatně širší využítí. Obzvlášť pokud zasahujete do datových
 struktur s komplikovanými vazbami, může vám použití transakcí ušetřit
 mnoho práce s napravováním paseky v datech. Nemluvě o tom, že pokud
 jste v transakci, nemusíte se bát, že něco pokazíte, dokud
-neodkliknete COMMIT. Můžete tedy provést změny, otestovat pár dotazů,
+nespustíte COMMIT. Můžete tedy provést změny, otestovat pár dotazů,
 jestli se všechno chová jak má a teprve pak potvrdit změny v databázi.
 
 Na druhou stranu je ovvšem třeba pamatovat na to, že neukončená transakce může
