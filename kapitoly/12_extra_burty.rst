@@ -266,6 +266,8 @@ Paula Ramseyho.
    a postupným přidáváním prvků s tím, že se pro každý další prvek 
    provede výše uvedená metoda jen s jeho nejbližšími sousedy.
 
+.. noteadvanced:: Tuto úlohu je možné řešit také pomocí topologie.
+
 Hrátky s povodím Jizery
 -----------------------
 
