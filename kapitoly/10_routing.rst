@@ -211,29 +211,29 @@ původní tabulkou:
       length AS cost,
       x1, y1, x2, y2
       FROM ways',
-     1594, 10824, directed := false);
+     120249, 128574 directed := false);
 
 Nejkratší trasa (více chodců, jeden cíl)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Chodci se pohybují ze stanice metra Dejvická (``osm_id: 2911015007``),
-Hradčanská (``osm_id: 1990839852``) a nádraží Dejvice (``osm_id:
-4196659626``) k budově Fakulty stavební ČVUT v Praze (``osm_id:
-2905257304``).
+Chodci se pohybují ze stanice metra Hradčanská, vlakového nádraží
+Dejvice k budově Fakulty stavební ČVUT v Praze.
 
 .. code-block:: sql
 
-   SELECT osm_id, id FROM ways_vertices_pgr
-   WHERE osm_id IN (2911015007, 1990839852, 4196659626, 2905257304);
+   SELECT o.osm_id, o.id, a.gml_id FROM 
+   ruian_praha.adresnimista a, 
+   ruian_praha.ulice u, 
+   routing.ways_vertices_pgr o 
+   WHERE a.cislodomovni = 2558 AND a.cisloorientacni = 17 AND u.nazev = 'K Brusce' 
+   AND a.ulicekod = u.kod 
+   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
 
 ::
 
-      osm_id   |  id   
-   ------------+-------
-    2911015007 |   1594
-    1990839852 |  99683
-    4196659626 | 141866
-    2905257304 |  10824
+      osm_id   |   id   |   gml_id
+   ------------+--------+-------------
+     889215289 |  42531 | AD.22719881
 
 .. code-block:: sql
                 
@@ -243,35 +243,36 @@ Hradčanská (``osm_id: 1990839852``) a nádraží Dejvice (``osm_id:
     target,
     length AS cost
     FROM ways',
-   ARRAY[1594, 99683, 141866], 10824, directed := false);
+   ARRAY[42531, 120249], 128574, directed := false);
 
 .. figure:: ../images/route-multi.png
 
-   Vizualizace nalezených nejkratších cest (cíl je znázorněn zelenou
-   barvou).
+   Vizualizace nalezených nejkratších cest.
 
 Nejrychlejší trasa (více chodců a cílů)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Chodci vycházejí od budovy Fakulty stavební ČVUT v Praze (``osm_id:
-2905257304``) a ze stanice Hradčanská (``osm_id: 1990839852``). Cílem
-jsou nádraží Dejvice (``osm_id: 4196659626``) a tramvajová zastávka
-Hradčanské náměstí (``osm_id: 2825726603``). Rychlost pohybu chodců
-uvažujeme 1,2 m/s.
+Chodci vycházejí od budovy Fakulty stavební ČVUT v Praze a ze stanice
+Hradčanská. Cílem jsou vlakové nádraží Dejvice a tramvajová zastávka
+Hradčanské náměstí. Rychlost pohybu chodců uvažujeme 1,2 m/s.
 
 .. code-block:: sql
 
-   SELECT osm_id, id FROM ways_vertices_pgr
-   WHERE osm_id IN (2905257304, 4196659626, 1990839852, 2825726603);
+   SELECT o.osm_id, o.id, a.gml_id FROM 
+   ruian_praha.adresnimista a, 
+   ruian_praha.ulice u, 
+   routing.ways_vertices_pgr o 
+   WHERE a.cislodomovni = 37 AND a.cisloorientacni = 23 AND u.nazev = 'Malostranské náměstí' 
+   AND a.ulicekod = u.kod 
+   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
 
 ::
 
-      osm_id   |  id   
-   ------------+-------
-    2905257304 |  10824
-    4196659626 | 141866
-    1990839852 |  99683
-    2825726603 | 109998
+      osm_id   |   id   |   gml_id
+   ------------+--------+-------------
+    4763711106 | 22516  | AD.21694419
+     340112849 | 32791  | AD.21694419
+   
 
 .. code-block:: sql
                 
@@ -281,7 +282,7 @@ uvažujeme 1,2 m/s.
     target,
     length_m / 1.2 / 60 AS cost
     FROM ways',
-   ARRAY[10824, 99683], ARRAY[141866, 109998], directed := false);
+   ARRAY[128574, 42531], ARRAY[120249, 22516], directed := false);
 
 Časovou náročnost tras získáme následujícím příkazem (náklady v
 minutách):
@@ -294,17 +295,17 @@ minutách):
        target,
        length_m / 1.2 / 60 AS cost
        FROM ways',
-      ARRAY[10824, 99683], ARRAY[141866, 109998], directed := false)
+      ARRAY[128574, 42531], ARRAY[120249, 22516], directed := false)
       WHERE edge=-1 ORDER BY agg_cost;
 
    ::
 
        start_vid | end_vid |     agg_cost     
       -----------+---------+------------------
-           99683 |  141866 | 4.92821083982696
-           10824 |  141866 |  17.095297862879
-           99683 |  109998 | 22.9298945807643
-           10824 |  109998 | 35.6259236702052
+           42531 |  120249 | 5.02036761819399
+          128574 |  120249 | 17.6454889075942
+           42531 |   22516 | 22.9976299203542
+          128574 |   22516 | 36.7067900923121
 
 .. tip:: Agregované náklady vrací přímo funkce `pgr_dijkstraCost
    <http://docs.pgrouting.org/latest/en/src/dijkstra/doc/pgr_dijkstraCost.html>`__,
@@ -318,7 +319,7 @@ minutách):
        target,
        length_m / 1.2 / 60 AS cost
        FROM ways',
-      ARRAY[10824, 99683], ARRAY[141866, 109998], directed := false)
+      ARRAY[128574, 42531], ARRAY[120249, 22516], directed := false)
       ORDER BY agg_cost;
 
 Příklad - automobil
@@ -329,10 +330,45 @@ proti směru (:dbcolumn:`reverse_cost`) hrany. V případě obousměrných
 komunikací jsou oba náklady kladné, přičemž se ale mohou lišit. U
 jednosměrných komunikací jeden z nákladů nabývá záporné hodnoty.
 
-V našem případě se bude vozidlo pohybovat z Letiště Václava Havla
-(Terminál 2, ``osm_id: 2088346069``) k historické budově Hlavní
-nádraží (``osm_id: 2800419931``).
+V našem případě se bude vozidlo pohybovat z Letiště Václava Havla k
+historické budově Hlavní nádraží.
 
+.. code-block:: sql
+
+   SELECT o.osm_id, o.id, a.gml_id FROM 
+   ruian_praha.adresnimista a, 
+   ruian_praha.ulice u, 
+   routing.ways_vertices_pgr o 
+   WHERE a.cislodomovni = 1039 AND a.cisloorientacni = 6 AND u.nazev = 'Aviatická' 
+   AND a.ulicekod = u.kod 
+   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 30);
+
+::
+
+      osm_id   |   id   |   gml_id
+   ------------+--------+-------------
+    1207486584 | 23491 | AD.22738142
+
+.. code-block:: sql
+
+   SELECT o.osm_id, o.id, a.gml_id FROM 
+   ruian_praha.adresnimista a, 
+   ruian_praha.ulice u, 
+   routing.ways_vertices_pgr o 
+   WHERE a.cislodomovni = 300 AND a.cisloorientacni = 8 AND u.nazev = 'Wilsonova' 
+   AND a.ulicekod = u.kod 
+   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
+
+::
+
+      osm_id   |   id   |   gml_id
+   ------------+--------+-------------
+    4303448349 |  95535 | AD.21742367
+    4303448365 | 100649 | AD.21742367
+    4303448546 | 102169 | AD.21742367
+    4303448356 | 107212 | AD.21742367
+    4303448466 | 118339 | AD.21742367
+    4303448747 | 143944 | AD.21742367
 
 Nejkratší trasa
 ~~~~~~~~~~~~~~~
@@ -346,8 +382,8 @@ Nejkratší trasa
     CASE WHEN cost > 0 THEN length_m ELSE -1 END AS cost,
     CASE WHEN reverse_cost > 0 THEN length_m ELSE -1 END AS reverse_cost
     FROM ways',
-   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 2088346069),
-   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 2800419931),
+   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 1207486584),
+   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 4303448349),
    directed := true) AS a
    LEFT JOIN ways AS b
    ON (a.edge = b.gid) ORDER BY seq;
@@ -372,6 +408,8 @@ Příklad úpravy časových nákladu podle typu komunikace:
    UPDATE osm_way_classes SET penalty=0.4 WHERE name IN ('trunk','trunk_link');
    UPDATE osm_way_classes SET penalty=0.3 WHERE name IN ('motorway','motorway_junction','motorway_link');
 
+.. todo:: Přepsat, aby se blížilo realitě.
+             
 .. code-block:: sql
                 
    SELECT a.*, b.geom AS geom FROM pgr_dijkstra('
@@ -382,38 +420,37 @@ Příklad úpravy časových nákladu podle typu komunikace:
     reverse_cost_s * penalty AS reverse_cost
     FROM ways JOIN osm_way_classes
     USING (class_id)',
-   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 2088346069),
-   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 2800419931),
+   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 1207486584),
+   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 4303448349),
    directed := true) AS a
    LEFT JOIN ways AS b
    ON (a.edge = b.gid) ORDER BY seq;
 
 .. tip:: Po zavedení penalizace bude nejkratší trasa pro automobil
-         věrohodnější:
+   věrohodnější:
 
+   .. todo:: penalizace
+                   
    .. code-block:: sql
                    
       SELECT a.*, b.geom AS geom FROM pgr_dijkstra('
        SELECT gid AS id,
        source,
        target,
-       CASE WHEN cost > 0 THEN length_m * penalty ELSE -1 END AS cost,
-       CASE WHEN reverse_cost > 0 THEN length_m * penalty ELSE -1 END AS reverse_cost
+       CASE WHEN cost > 0 THEN length_m ELSE -1 END AS cost,
+       CASE WHEN reverse_cost > 0 THEN length_m ELSE -1 END AS reverse_cost
        FROM ways JOIN osm_way_classes
        USING (class_id)',
-      (SELECT id FROM ways_vertices_pgr WHERE osm_id = 2088346069),
-      (SELECT id FROM ways_vertices_pgr WHERE osm_id = 2800419931),
+      (SELECT id FROM ways_vertices_pgr WHERE osm_id = 1207486584),
+      (SELECT id FROM ways_vertices_pgr WHERE osm_id = 4303448349),
       directed := true) AS a
       LEFT JOIN ways AS b
       ON (a.edge = b.gid) ORDER BY seq;
 
-   .. todo:: upravit
-      
 .. figure:: ../images/route-auto.png
 
    Porovnání nejkratší (červeně) a nejrychlejší (modře) trasy z
-   Letiště Václava Havla na Hlavní nádraží. Společná část trasy je
-   znázorněna fialovou barvou.
+   Letiště Václava Havla na Hlavní nádraží.
 
 Servisní síť
 ------------
