@@ -2,8 +2,8 @@ Síťové analýzy
 ==============
 
 Síťové analýzy (tzv. routing) zajišťuje v prostředí PostGIS nadstavba
-označovaná jako `pgRouting <http://pgrouting.org/>`__. Tuto nadstavbu
-v databázi aktivujeme příkazem:
+označovaná jako `pgRouting <http://pgrouting.org/>`__. Nadstavbu v
+databázi aktivujeme příkazem:
 
 .. code-block:: sql
 
@@ -46,7 +46,7 @@ Po importu se ve výstupním schématu objeví následující tabulky:
     ways_vertices_pgr | the_geom          |               2 | 4326 | POINT
     ways              | the_geom          |               2 | 4326 | LINESTRING
 
-.. note:: Jak je vidět tak jsou data transformována do
+.. note:: Jak je vidět, tak jsou data transformována do
           :skoleni:`WGS-84 <open-source-gis/soursystemy/wgs84.html>`
           (:epsg:`4326`), geometrie je uložena ve sloupci
           :dbcolumn:`the_geom`. Pro zachování konzistence v databáze
@@ -81,28 +81,10 @@ Příklad - chodec
 Nejkratší trasa (jeden chodec)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Chodec se pohybuje ze stanice metra Dejvická (``osm_id: 2911015007``)
-k budově Fakulty stavební ČVUT v Praze (``osm_id:
-2905257304``). Hledáme nejkratší trasu, nákladem tedy bude *délka*
-segmentů trasy. Chodec se může pohybovat v obou směrech (budeme
-pracovat s neorientovaným grafem).
-
-Zjistíme ID uzlů v rámci grafu:
-
-.. code-block:: sql
-
-   SELECT osm_id, id FROM ways_vertices_pgr
-   WHERE osm_id IN (2911015007, 2905257304);
-
-::
-
-      osm_id   |  id   
-   ------------+-------
-    2911015007 |  1594
-    2905257304 | 10824
-
-Výchozí a cílový bod můžeme také najít s využitím adresních míst RǓIAN.
-Dojde k vyhledání všech OSM bodů do vzdálenosti 10 m od zadané adresy.
+Chodec se pohybuje z vlakového nádráží v Dejvicích k budově Fakulty
+stavební ČVUT v Praze. Hledáme nejkratší trasu, nákladem tedy bude
+*délka* segmentů trasy. Chodec se může pohybovat v obou směrech
+(budeme pracovat s neorientovaným grafem).
 
 Nastavíme si cestu ke schématům.
 
@@ -110,24 +92,25 @@ Nastavíme si cestu ke schématům.
    
    SET search_path TO public,routing,ruian_praha;
 
+Výchozí a cílový bod můžeme najít s využitím adresních míst
+RÚIAN. Dojde k vyhledání všech OSM bodů do vzdálenosti 10 m od zadané
+adresy.
+
 .. code-block:: sql
 
    SELECT o.osm_id, o.id, a.gml_id FROM 
    ruian_praha.adresnimista a, 
    ruian_praha.ulice u, 
    routing.ways_vertices_pgr o 
-   WHERE a.cisloorientacni = 1 AND u.nazev = 'Šolínova' 
+   WHERE a.cislodomovni = 2077 AND a.cisloorientacni = 7 AND u.nazev = 'Thákurova' 
    AND a.ulicekod = u.kod 
    AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
 
 ::
 
-      osm_id   |   id   |   gml_id    
+      osm_id   |   id   |   gml_id
    ------------+--------+-------------
-      55320587 |  79643 | AD.22189076
-    1249805116 |  87127 | AD.22189076
-    1249805175 | 120172 | AD.22189076   
-    1249805047 | 149722 | AD.22189076
+    4173356375 | 128574 | AD.22210156
  
 .. code-block:: sql
 
@@ -135,17 +118,16 @@ Nastavíme si cestu ke schématům.
    ruian_praha.adresnimista a, 
    ruian_praha.ulice u, 
    routing.ways_vertices_pgr o 
-   WHERE a.cisloorientacni = 5 AND u.nazev = 'Technická' 
+   WHERE a.cislodomovni = 169 and a.cisloorientacni = 1 AND u.nazev = 'Václavkova' 
    AND a.ulicekod = u.kod 
    AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
 
 ::
 
-      osm_id   |   id   |   gml_id    
+      osm_id   |   id   |   gml_id
    ------------+--------+-------------
-    2905214176 | 129632 | AD.22207996
-    2905214180 | 146959 | AD.22207996
-
+    4196659627 | 120249 | AD.22187006
+    4196659626 | 137956 | AD.22187006
 
 Nejkratší trasu nalezneme voláním funkce `pgr_dijkstra
 <http://docs.pgrouting.org/latest/en/src/dijkstra/doc/pgr_dijkstra.html>`__. Dijkstrův
@@ -164,17 +146,17 @@ algoritmus vyžaduje definovat celkem čtyři atributy:
     target,
     length AS cost
     FROM ways',
-   1594, 10824, directed := false);
+   120249, 128574, directed := false);
 
 ::
 
-     seq | path_seq |  node  |  edge  |         cost         |       agg_cost       
-    -----+----------+--------+--------+----------------------+----------------------
-       1 |        1 |  1594 | 137005 |  9.9040395796202e-06 |                    0
-       2 |        2 | 88646 |  71297 | 0.000129719697808577 | 9.90403957962019e-06
-    ...
-      24 |       24 |  1164 |  31277 |  6.8521529463256e-05 |  0.00684939507573181
-      25 |       25 | 10824 |     -1 |                    0 |  0.00691791660519507
+    seq | path_seq |  node  |  edge  |         cost         |       agg_cost
+   -----+----------+--------+--------+----------------------+----------------------
+      1 |        1 | 120249 | 110252 | 7.57929416242359e-05 |                    0
+      2 |        2 |  35204 |  34307 | 0.000258500986459147 | 7.57929416242359e-05
+      ...
+     59 |       59 |  97513 | 142754 |   8.676018672102e-05 |   0.0149044747275315
+     60 |       60 | 128574 |     -1 |                    0 |   0.0149912349142525
 
 Náklady jsou počítány v mapových jednotkách souřadnicového systému, v
 tomto případě stupních. Délku v metrech je uložena v atributu
@@ -188,13 +170,13 @@ tomto případě stupních. Délku v metrech je uložena v atributu
     target,
     length_m AS cost
     FROM ways',
-   1594, 10824, directed := false)) AS foo;
+   120249, 128574, directed := false)) AS foo;
 
 ::
              
    sum        
    ------------------
-   578.522948228576
+   1270.47520134678
 
 Geometrii trasy získáte spojením výsledku hledání optimální trasy s
 původní tabulkou:
@@ -207,12 +189,11 @@ původní tabulkou:
     target,
     length_m AS cost
     FROM ways',
-    1594, 10824, directed := false) AS a
+    120249, 128574, directed := false) AS a
    LEFT JOIN ways AS b
    ON (a.edge = b.gid) ORDER BY seq;
 
 .. figure:: ../images/route-single.png
-   :class: small
    
    Vizualizace nalezené nejkratší trasy.
 
