@@ -455,13 +455,13 @@ Příklad úpravy časových nákladu podle typu komunikace:
 Servisní síť
 ------------
 
-Ćastou operací v síťových analýzách je výpočet servisní sítě.
-Zajímá nás kam je možné se v rámci sítě dostat do určitého času. 
-V tomto případě nastavíme 300 sekund.
+Častou operací v síťových analýzách je výpočet servisní sítě. Zajímá
+nás, kam je možné se v rámci sítě dostat do určitého času. V tomto
+případě nastavíme 300 sekund.
 
-Ještě trochu upravíme penalty pro průchod. Budeme uvažovat, že
-můžeme jet kdekoli jen o něco málo pomaleji než po hlavních silnicích
-a zásadně zvýhodníme jen dálnice.
+Ještě trochu upravíme penalty pro průchod. Budeme uvažovat, že můžeme
+jet kdekoli jen o něco málo pomaleji než po hlavních silnicích a
+zásadně zvýhodníme jen dálnice.
 
 .. code-block:: sql
 
@@ -493,8 +493,8 @@ a zásadně zvýhodníme jen dálnice.
 
    Servisní síť z vybraného místa.
 
-Algoritmus má limity, které jsme zatím podrobně netestovali,
-přesto pro určení přibližného servisního území (sítě) může posloužit.
+.. note:: Algoritmus má limity, které jsme zatím podrobně netestovali,
+   přesto pro určení přibližného servisního území (sítě) může posloužit.
 
 Cesta obchodního cestujícího
 ----------------------------
