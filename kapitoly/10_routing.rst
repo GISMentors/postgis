@@ -79,7 +79,7 @@ Příklad - chodec
 ^^^^^^^^^^^^^^^^
 
 Nejkratší trasa (jeden chodec)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Chodec se pohybuje z vlakového nádráží v Dejvicích k budově Fakulty
 stavební ČVUT v Praze. Hledáme nejkratší trasu, nákladem tedy bude
@@ -214,7 +214,7 @@ původní tabulkou:
      120249, 128574 directed := false);
 
 Nejkratší trasa (více chodců, jeden cíl)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Chodci se pohybují ze stanice metra Hradčanská, vlakového nádraží
 Dejvice k budově Fakulty stavební ČVUT v Praze.
@@ -250,7 +250,7 @@ Dejvice k budově Fakulty stavební ČVUT v Praze.
    Vizualizace nalezených nejkratších cest.
 
 Nejrychlejší trasa (více chodců a cílů)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Chodci vycházejí od budovy Fakulty stavební ČVUT v Praze a ze stanice
 Hradčanská. Cílem jsou vlakové nádraží Dejvice a tramvajová zastávka
@@ -371,7 +371,7 @@ historické budově Hlavní nádraží.
     4303448747 | 143944 | AD.21742367
 
 Nejkratší trasa
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 .. code-block:: sql
 
@@ -389,7 +389,7 @@ Nejkratší trasa
    ON (a.edge = b.gid) ORDER BY seq;
 
 Nejrychlejší trasa
-~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^
 
 Před samotným výpočtem pro jednotlivé typy komunikací nastavíme
 odpovídající maximální dovolené rychlosti. Na základě toho budou poté
@@ -505,7 +505,7 @@ cestu tak, abychom navštívili každé místo pouze jednou a urazili cestu
 s nejmenšími náklady. 
 
 Využití vzdálenosti po síti
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Navržená cesta je přes Anděla, Europark, Holešovice.
 
@@ -536,7 +536,7 @@ Navržená cesta je přes Anděla, Europark, Holešovice.
 
 
 Využití euklidovské vzdálenosti
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 K dispozici je také výpočet cesty obchodního cestujícího, která
 využívá pouze euklidovský prostor. Tento výpočet je sice méně přesný,
@@ -582,7 +582,7 @@ Ne vždy je možné pracovat se sítí postavenou nad daty OSM.
 Pokud máme vlastní síť můžeme se pokusit vybudovat graf nad ní.
 
 Příprava dat
-~~~~~~~~~~~~
+^^^^^^^^^^^^
 
 Pokud nemáme data připravena pro síťové analýzy, např. nám chybí nody
 v místech křížení silnic, pak je nutné před vlastním vybudováním grafu
@@ -620,7 +620,7 @@ existující kolekce linií.
  , ST_Dump(g) d;
 
 Vytvoření grafu
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 Před vytvořením grafu, který realizuje funkce pgr_createTopology je nutné
 přidat sloupce source a target, kam jsou zapsány identifikátory uzlů.

@@ -7,7 +7,7 @@ dat. Data obvykle nahráváme ze souborových formátů, případně z
 webových služeb. Řetězec úkonů mezi uchopením nějakého zdroje dat a
 jeho konečným umístěním do databáze bychom nejspíš označili termínem*
 **ETL**. *Pro standardní formáty s úspěchem můžeme využít utility
-knihovny* `GDAL <http://gdal.org>`_, *jmenovitě* :ref:`ogr2ogr`. *Pro
+knihovny* `GDAL <http://gdal.org>`__, *jmenovitě* :ref:`ogr2ogr`. *Pro
 import* :wikipedia-en:`Esri Shapefile` *můžeme využít loader*
 :ref:`import-shp2pgsql` *instalovaný spolu s PostGISem.*
 
@@ -17,7 +17,7 @@ shp2pgsql
 ---------
 
 `shp2pgsql
-<http://www.bostongis.com/pgsql2shp_shp2pgsql_quickguide.bqg>`_ je
+<http://www.bostongis.com/pgsql2shp_shp2pgsql_quickguide.bqg>`__ je
 utilitka distribuovaná spolu s PostGISem, která vrací data v dump
 formátu na standardní výstup. Je tedy možné, v případě potřeby,
 upravit výstup z této utility například unixovým nástrojem
@@ -27,7 +27,7 @@ upravit výstup z této utility například unixovým nástrojem
 tak potřebnou tabulku vytvořit. Lze také pouze vytvořit na
 základě dat prázdnou tabulku a samotná data do ní
 nenahrávat. Více v `manuálu
-<http://postgis.net/docs/using_postgis_dbmanagement.html#shp2pgsql_usage>`_.
+<http://postgis.net/docs/using_postgis_dbmanagement.html#shp2pgsql_usage>`__.
 
 .. note:: Hlavním limitem pro použití :program:`shp2pgsql` jsou
           samotné limity formátu Esri Shapefile. Jde například o
@@ -39,7 +39,7 @@ nenahrávat. Více v `manuálu
           ``numeric(30)``.
 
 V našem příkladě zkusíme nahrát `datovou vrstvu ulic
-<http://training.gismentors.eu/geodata/postgis/Ulice_cp1250.zip>`_.
+<http://training.gismentors.eu/geodata/postgis/Ulice_cp1250.zip>`__.
 
 .. code-block:: bash
 
@@ -116,11 +116,11 @@ tabulku nejprve odstraní).
 ogr2ogr
 -------
 
-Nástroj `ogr2ogr <http://www.gdal.org/ogr2ogr.html>`_ je součástí
+Nástroj `ogr2ogr <http://www.gdal.org/ogr2ogr.html>`__ je součástí
 balíku utilit distribuovaných s knihovnou :wikipedia:`GDAL`. Slouží k
 převodu dat mezi nejrůznějšími GIS formáty. Mimo jiné, od verze 1.11
 podporuje také `Výměnný formát RÚIAN
-<http://freegis.fsv.cvut.cz/gwiki/RUIAN_/_GDAL>`_, což je v našich
+<http://freegis.fsv.cvut.cz/gwiki/RUIAN_/_GDAL>`__, což je v našich
 podmínkách velice užitečné. Kromě převodů mezi různými formáty geodat
 můžeme :program:`ogr2ogr` použít i pro transformaci mezi
 souřadnicovými systémy.
@@ -133,7 +133,7 @@ Driver PostgreSQL
 ^^^^^^^^^^^^^^^^^
 
 Nejdříve převedeme data z předešlého příkladu. Použijeme driver
-`PostgreSQL <http://www.gdal.org/drv_pg.html>`_, který se připojuje
+`PostgreSQL <http://www.gdal.org/drv_pg.html>`__, který se připojuje
 přímo k databázi.
 
 .. notecmd:: Nahrání Esri Shapefile pomocí ogr2ogr
@@ -154,7 +154,7 @@ V prvním řádku uvedeme kódování atributových dat vstupního souboru.
 
 .. warning:: Příkaz *export* funguje pod Linuxem, ve Windows se
              proměnné prostředí nastavují `jinak
-             <http://ss64.com/nt/syntax-variables.html>`_.
+             <http://ss64.com/nt/syntax-variables.html>`__.
 
 .. tip:: Proměnnou prostředí :envvar:`SHAPE_ENCODING` použijeme v
          případě, že chceme použít při výstupu do *Esri Shapefile*
@@ -191,7 +191,7 @@ názvu schématu, které ovšem musí být předem vytvořeno).
 Driver PGDump
 ^^^^^^^^^^^^^
 
-Driver `PGDump <http://www.gdal.org/drv_pgdump.html>`_ místo přímého
+Driver `PGDump <http://www.gdal.org/drv_pgdump.html>`__ místo přímého
 spojení s databází zapisuje do souboru (nebo na *STDOUT*). To může být
 užitečné například v případě, že nemáme přímé připojení k databázi,
 nebo když chceme převedený soubor nějakým způsobem dále
@@ -239,7 +239,7 @@ GML
 
 .. notecmd:: Nahrání GML pomocí ogr2ogr
 
-   Data ke stažení `zde <http://training.gismentors.eu/geodata/postgis/adres_mista.gml.gz>`_.
+   Data ke stažení `zde <http://training.gismentors.eu/geodata/postgis/adres_mista.gml.gz>`__.
 
    .. code-block:: bash
 
@@ -275,7 +275,7 @@ WFS
 
 V :program:`ogr2ogr` je možné pracovat i s webovými službami,
 například můžeme načíst katastrální území z `WFS ČÚZK
-<http://services.cuzk.cz/doc/inspire-cp-view.pdf>`_.
+<http://services.cuzk.cz/doc/inspire-cp-view.pdf>`__.
 
 .. notecmd:: Nahrání WFS
 
@@ -294,7 +294,7 @@ například můžeme načíst katastrální území z `WFS ČÚZK
    prvků. V praxi není možné obvykle stáhnout větší
    objem dat. Můžeme však stahovat prvky po jednom. Z
    `číselníku katastrálních území
-   <http://www.cuzk.cz/CUZK/media/CiselnikyISKN/SC_SEZNAMKUKRA_DOTAZ/SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip>`_
+   <http://www.cuzk.cz/CUZK/media/CiselnikyISKN/SC_SEZNAMKUKRA_DOTAZ/SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip>`__
    vybereme katastrální území Prahy.
 
    .. notecmd:: Dávkového nahrání dat z WFS

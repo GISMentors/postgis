@@ -80,8 +80,8 @@ GNU/Linux, MS Windows či Mac OSX.
 * Alternativně přístup na server přes *ssh*, na kterém běží
   PostgreSQL, na klientovi *psql*. Data stačí prohlížet přes
   webový prohlížeč (webový QGIS).
-* `QGIS <http://www.qgis.org>`_ minimálně 2.14
-* `PostGIS 2.0 <http://www.postgis.net>`_ a vyšší
+* `QGIS <http://www.qgis.org>`__ minimálně 2.14
+* `PostGIS 2.0 <http://www.postgis.net>`__ a vyšší
 
 .. only:: html
 
@@ -124,10 +124,10 @@ Attribution-ShareAlike 4.0 International License
 Autoři
 ------
 
-Za `GISMentors <http://www.gismentors.cz/>`_:
+Za `GISMentors <http://www.gismentors.cz/>`__:
 
-* `Jan Michálek <http://www.gismentors.cz/mentors/michalek>`_ ``<godzilalalala gmail.com>``
-* `Martin Landa <http://www.gismentors.cz/mentors/landa>`_ ``<martin.landa opengeolabs.cz>``
+* `Jan Michálek <http://www.gismentors.cz/mentors/michalek>`__ ``<godzilalalala gmail.com>``
+* `Martin Landa <http://www.gismentors.cz/mentors/landa>`__ ``<martin.landa opengeolabs.cz>``
 
 Text dokumentu
 --------------
