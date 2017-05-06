@@ -456,12 +456,12 @@ Servisní síť
 ------------
 
 Častou operací v síťových analýzách je výpočet servisní sítě. Zajímá
-nás, kam je možné se v rámci sítě dostat do určitého času. V tomto
+nás, kam je možné se v rámci sítě dostat do určitého času. V našem
 případě nastavíme 300 sekund.
 
-Ještě trochu upravíme penalty pro průchod. Budeme uvažovat, že můžeme
-jet kdekoli jen o něco málo pomaleji než po hlavních silnicích a
-zásadně zvýhodníme jen dálnice.
+Upravíme penalizaci pro průchod, aby se více blížil realitě. Budeme
+uvažovat, že můžeme jet kdekoli jen o něco málo pomaleji než po
+hlavních silnicích a zásadně zvýhodníme jen dálnice.
 
 .. code-block:: sql
 
@@ -499,15 +499,18 @@ zásadně zvýhodníme jen dálnice.
 Cesta obchodního cestujícího
 ----------------------------
 
-Vyjíždíme z Dejvic (id: 12333). Chceme se cestou zastavit na výstavišti v Holešovicích (id: 7436),
-v Europarku (id: 144884) a na Andělu (id: 116748) a pak dojet zpátky do Dejvic. Algoritimus naplánuje 
-cestu tak, abychom navštívili každé místo pouze jednou a urazili cestu
-s nejmenšími náklady. 
+Vyjíždíme z Dejvic (id: 12333). Chceme se cestou zastavit na
+výstavišti v Holešovicích (id: 7436), v Europarku (id: 144884) a na
+Andělu (id: 116748) a pak dojet zpátky do Dejvic. Algoritimus
+naplánuje cestu tak, abychom navštívili každé místo pouze jednou a
+urazili cestu s nejmenšími náklady.
 
+.. todo:: Přepsat ID na adresní body.
+          
 Využití vzdálenosti po síti
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Navržená cesta je přes Anděla, Europark, Holešovice.
+Navržená cesta je přes zastávky Anděl, Europark, Holešovice.
 
 .. code-block:: sql
 
@@ -579,20 +582,22 @@ Vytvoření sítě
 --------------
 
 Ne vždy je možné pracovat se sítí postavenou nad daty OSM. 
-Pokud máme vlastní síť můžeme se pokusit vybudovat graf nad ní.
+Pokud máme vlastní síť, můžeme se pokusit vybudovat graf nad ní.
 
 Příprava dat
 ^^^^^^^^^^^^
 
-Pokud nemáme data připravena pro síťové analýzy, např. nám chybí nody
+Pokud nemáme data připravena pro síťové analýzy, např. nám chybí uzly
 v místech křížení silnic, pak je nutné před vlastním vybudováním grafu
 realizovat úpravu dat.
 
-K dispozici je funce pgr_nodeNetwork, která dokáže doplnit uzly do 
-křížení, případně dotáhnout linie k jiným liniím, v případě nedotahů.
+K dispozici je funce `pgr_nodeNetwork
+<http://docs.pgrouting.org/2.0/en/src/common/doc/functions/node_network.html>`__,
+která dokáže doplnit uzly v místech křížení, případně dotáhnout linie
+k jiným liniím, v případě nedotahů.
 
-V případě, že funkce selže, jako v následjícím příkladu nad ulicemi Prahy,
-můžeme zkusit alternativní postup popsaný dále.
+V případě, že funkce selže, jako v následujícím ukázce nad ulicemi
+Prahy, můžeme zkusit alternativní postup popsaný dále.
 
 .. code-block:: sql
 
@@ -608,8 +613,8 @@ můžeme zkusit alternativní postup popsaný dále.
         where locus<>0 and locus<>1)"
    PL/pgSQL function pgr_nodenetwork(text,double precision,text,text,text,text,boolean) line 191 at EXECUTE   
    
-Jiný způsob je využití běžných nástrojů PostGIS a snaha o vytvoření multilinie agregací z 
-existující kolekce linií.
+Alternativní způsob využívá běžných nástrojů PostGIS a snahu o
+vytvoření multilinie agregací z existující kolekce linií.
 
 .. code-block:: sql
 
@@ -622,8 +627,10 @@ existující kolekce linií.
 Vytvoření grafu
 ^^^^^^^^^^^^^^^
 
-Před vytvořením grafu, který realizuje funkce pgr_createTopology je nutné
-přidat sloupce source a target, kam jsou zapsány identifikátory uzlů.
+Před vytvořením grafu, který realizuje funkce `pgr_createTopology
+<http://docs.pgrouting.org/2.2/en/src/topology/doc/pgr_createTopology.html>`__,
+je nutné přidat sloupce :dbcolumn:`source` a :dbcolumn:`target`, kam jsou zapsány
+identifikátory uzlů.
 
 Vhodné je také vytvořit primární klíč a indexovat geometrii.
 
@@ -634,9 +641,10 @@ Vhodné je také vytvořit primární klíč a indexovat geometrii.
  ALTER TABLE ruian_praha.ulice_noded ADD COLUMN "source" integer;
  ALTER TABLE ruian_praha.ulice_noded ADD COLUMN "target" integer;
 
-Graf se vytvoří pomocí funkce pgr_createTopology, kde se zadají názvy sloupců s geomnetrií,
-id a sloupce pro zápis id nodů (source, target). Hodnota 1 ve funkci představuje toleranci
-pro tvorbu grafu.
+Graf se vytvoří pomocí funkce ``pgr_createTopology``, kde se zadají
+názvy sloupců s geometrií, id a sloupce pro zápis id nodů
+(:dbcolumn:`source`, :dbcolumn:`target`). Hodnota 1 ve funkci
+představuje toleranci pro tvorbu grafu.
  
 .. code-block:: sql
 

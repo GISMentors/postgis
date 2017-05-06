@@ -281,9 +281,9 @@ Praktická ukázka *Brloh u Drhovle*
 
 Topologickou funkcionalitu PostGISu můžeme s výhodou využít pro zaplochování a
 tvorbu polygonů u dat, kde máme síť hranic a centroidy. Typickým příkladem dat,
-která takto dostáváme jsou data ve formátech `vfk
+která takto dostáváme jsou data ve formátech `VFK
 <http://www.cuzk.cz/Katastr-nemovitosti/Poskytovani-udaju-z-KN/Vymenny-format-KN/Vymenny-format-NVF.aspx>`_
-a `vkm
+a `VKM
 <http://www.cuzk.cz/Katastr-nemovitosti/Poskytovani-udaju-z-KN/Vymenny-format-KN/Stary-vymenny-format/Stary-vymenny-format-cast-1.aspx>`_
 vydávané `Českým úřadem zeměměřickým a katastrálním <http://www.cuzk.cz/Uvod.aspx>`_.
 
@@ -293,20 +293,21 @@ topologická generalizace.
 Zadání
 ^^^^^^
 
-Stáhnul jsem `vkm Brlohu u Drhovle <http://services.cuzk.cz/VKM/ku/20170401/632406.zip>`_
-a pomocí skriptu v bashi z vkm vybral `linie hranic parcel a definiční body
+Stáhneme vstupní soubor `VKM Brlohu u Drhovle
+<http://services.cuzk.cz/VKM/ku/20170401/632406.zip>`_ a pomocí
+skriptu v Bashi vybereme `linie hranic parcel a definiční body
 <http://training.gismentors.eu/geodata/postgis/brloh.sql>`_. Data jsou
 připravena k nahrání do schématu :dbtable:`brloh_data`.
 
-Sestavte z dat polygony parcel. Vytvořte jednoduchou geometrii a topologickou
-geometrii. Proveďtě generalizaci hranic parcel a porovnejte výsledek
-generalizace jednoduché a topologické geometrie.
+Sestavíme z dat polygony parcel. Vytvoříme jednoduchou geometrii a
+topologickou geometrii. Dále provedeme generalizaci hranic parcel a
+porovnáme výsledek generalizace jednoduché a topologické geometrie.
 
 Postup
 ^^^^^^
 
-Nahrání liní do topologického schématu
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Nahrání linií do topologického schématu
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Nejdříve vytvoříme nové topologické schéma. Nazveme ho :dbtable:`brloh`.
 
@@ -317,7 +318,8 @@ Nejdříve vytvoříme nové topologické schéma. Nazveme ho :dbtable:`brloh`.
 Zvolíme *SRID* "5514" a centimetrovou přesnost. Poslední parametr funkce
 :pgiscmd:`CreateTopology` udává, že ve schématu nepočítáme se souřadnicí Z.
 
-.. note:: Všiměte si, že funkce nemá prefix "ST", není tedy součástí standartu.
+.. note:: Všiměte si, že funkce nemá prefix "ST", není tedy součástí
+          standardu ISO SQL M/M.
 
 Přidáme všechny linie z tabulky :dbtable:`brloh_data.hranice` do topologie.
 
@@ -358,7 +360,7 @@ Případně můžeme geometrii k bodům doplnit přímo do tabulky.
 Z již vytvořené topologie můžeme vytvořit zpětně topogeometrie bez toho, abychom
 museli topografický sloupec vytvářet z již získané "jednoduché" geometrie.
 
-Nejdřív přidáme toposloupec,
+Nejdřív přidáme nový atribut pro datový typ TopoGeometry.
 
 .. code-block:: sql
 
@@ -371,7 +373,7 @@ Nejdřív přidáme toposloupec,
       , 'POLYGON'
    );
 
-Číslo vrstvy zjistíme dotazem do :dbtable:`topology.layer`.
+Číslo vrstvy zjistíme dotazem v tabulce :dbtable:`topology.layer`.
 
 .. code-block:: sql
 
@@ -396,14 +398,14 @@ K vygenerování topogeometrie použijeme funkci :pgiscmd:`CreateTopoGeom`.
       ]::topology.TopoElementArray
    );
 
-Nyní můžeme zobrazit geometrii z topologie.
+Nyní můžeme zobrazit geometrii sestavenou z topologických primitiv.
 
 .. code-block:: sql
 
    SELECT id, label, topo::geometry FROM brloh_data.debo;
 
-Případně se přesvědčit, zda se geometrie z topologie shoduje s dříve uloženou
-geometrií.
+Případně se přesvědčit, zda se geometrie sestavená z topologie shoduje
+s dříve uloženou geometrií vycházející z jednoduchých prvků.
 
 .. code-block:: sql
 
@@ -413,8 +415,9 @@ geometrií.
 
 Generalizace
 ~~~~~~~~~~~~
-Nejdříve vyzkoušíme generalizaci jednoduché geometrie. Použijeme funkci
-:pgiscmd:`ST_SimplifyPreserveTopology`, která na rozdíl od
+
+Nejdříve vyzkoušíme generalizaci jednoduché geometrie. Použijeme
+funkci :pgiscmd:`ST_SimplifyPreserveTopology`, která na rozdíl od
 :pgiscmd:`ST_Simplify` dohlíží i na validitu vrácených prvků.
 
 .. code-block:: sql
@@ -422,12 +425,12 @@ Nejdříve vyzkoušíme generalizaci jednoduché geometrie. Použijeme funkci
    SELECT id, st_simplifypreservetopology(geom_polygon, 5) geom
    FROM brloh_data.debo;
 
-Výsledek si mohu zobrazit v Qgis.
+Výsledek si mohu zobrazit v QGIS.
 
 .. figure:: ../images/simplify.png
    :class: middle
 
-   Výsledek generalizace jednoduchých prvků zobrazený v Qgis
+   Výsledek generalizace jednoduchých prvků zobrazený v QGIS.
 
 Z obrázku je celkem jasně patrné, že v důsledku toho, že každý prvek byl
 generalizován samostatně vznikla řada překryvů a mezer.
@@ -441,11 +444,11 @@ Vyzkoušíme to samé v topologii pomocí funkce :pgiscmd:`TP_ST_Simplify`.
 .. figure:: ../images/simplify_topo.png
    :class: middle
 
-   Výsledek generalizace v topologii zobrazený v Qgis
+   Výsledek generalizace s ohledem na topologii zobrazený v QGIS.
 
 Vrácený výsledek naprosto přesně odpovídá nezjednodušeným geometriím. Je to
 proto, že se generalizují jednotlivé hrany a zde použité hrany mají všechny
-právě dva body a nelze je tedy zjednodušit. Je to důsledek importu z vkm.
+právě dva body a nelze je tedy zjednodušit. Je to důsledek importu z VKM.
 
 Smažeme tedy celé pracně vytvořené topologické schéma. A vytvoříme ho znova.
 
@@ -454,9 +457,10 @@ Smažeme tedy celé pracně vytvořené topologické schéma. A vytvoříme ho z
    SELECT topology.DropTopology('brloh');
    SELECT topology.CreateTopology('brloh', 5514, 0.01, false);
 
-Tentokrát linie zunionujeme a rozpustíme pomocí :pgiscmd:`ST_Dump`. Navíc je
-třeba použít funkci :pgiscmd:`ST_LineMerge`, která propojí jednotlivé úseky v
-rámci multilinie.
+Tentokrát linie spojíme a rozpustíme pomocí funkce
+:pgiscmd:`ST_Dump`. Navíc je třeba použít funkci
+:pgiscmd:`ST_LineMerge`, která propojí jednotlivé úseky v rámci
+multilinie.
 
 .. code-block:: sql
 
@@ -474,7 +478,7 @@ Dále budeme postupovat stejně.
 .. figure:: ../images/simplify_topo_2.png
    :class: middle
 
-   Opravený výsledek generalizace v topologii zobrazený v Qgis.
+   Opravený výsledek generalizace na základě topologie zobrazený v QGIS.
 
 Původní hrany jsou vyznačeny světlou linkou.
 
