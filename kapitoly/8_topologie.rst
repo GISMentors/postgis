@@ -63,7 +63,7 @@ v topologickém modelu PostGISu popsána:
 .. figure:: ../images/postgis-topo-polygon-example.png
    :class: small
 
-   Dva sousedící polygony z :num:`#priklad-polygony-sf` v topologickém
+   Dva sousedící polygony z :numref:`priklad-polygony-sf` v topologickém
    modelu.
 
 Ve výsledku bude tedy společná hranice polygonů :fignote:`A` a
