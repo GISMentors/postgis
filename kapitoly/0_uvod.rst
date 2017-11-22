@@ -93,7 +93,7 @@ Základní úvod do problematiky je možné nabýt třeba `zde
 .. note:: Základní nastavení PostgreSQL po instalaci je obvykle velice šetrné ke
           zdrojům, na úkor výkonu. Je to proto, aby bylo možné PostgreSQL pustit
           i na nevýkonném počítači bez rizika havárie systému. Základní
-          nastavení je možné provést pomocí nástroje `pgTune <http://pgfoundry.org/projects/pgtune/>`_,
+          nastavení je možné provést pomocí nástroje `pgTune <http://pgtune.leopard.in.ua/>`_,
           které přizpůsobí nastavení PostgreSQL výkonu Vašeho hardware.
 
 Naučte se používat psql
