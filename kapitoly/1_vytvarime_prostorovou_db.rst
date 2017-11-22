@@ -4,7 +4,7 @@ Vytváříme prostorovou databázi
 Je nezbytné, aby byl PostGIS nainstalován na témže stroji, na kterém
 běží databázový server. K tomu poslouží balíčky v balíčkovacím systému
 vaší distribuce. Návod pro operační systém Windows :skoleni:`zde
-<postgis-zacatecnik/kapitoly/7_instalace>`.
+<postgis-zacatecnik/kapitoly/7_instalace.html>`.
 
 .. note:: V případě PostGIS a PostgreSQL je výhodné používat
           nejnovější verze s ohledem na to, že odráží trendy v rychle

@@ -32,8 +32,9 @@ Od jakého množství záznamů se vyplatí tabulky indexovat záleží na mnoha
 Na typu dat, výkonu hardware, nastavení PostgreSQL. Při velké míře zobecnění se
 dá říct, že indexovat má cenu tabulky od velikosti několika tisíc záznamů.
 
-Geometrické hodnoty indexujte :pgsqlcmd:`GiST indexem <gist>`. Číselné hodnoty a
-řetězce obvykle pomocí :pgsqlcmd:`b-tree indexu <indexes-types>`.
+Geometrické atribututy indexujte pomocí metody :pgsqlcmd:`GiST
+<gist>`. Číselné hodnoty a řetězce obvykle pomocí :pgsqlcmd:`b-tree
+indexu <indexes-types>`.
 
 .. noteadvanced:: Zda byl index použit v konkrétním dotazu můžeme zjistit pomocí
                   klauzule `EXPLAIN
