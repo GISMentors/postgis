@@ -143,9 +143,9 @@ Kde je:
    +----------------------+-------------------------------------------------------+
    | ``blocksize_y``      | velikost dlaždice ve směru osy y                      |
    +----------------------+-------------------------------------------------------+
-   | ``same_alignment``   | mají všechny dlaždice stejné zarovnání                |
+   | ``same_alignment``   | všechny dlaždice mají stejné zarovnání                |
    +----------------------+-------------------------------------------------------+
-   | ``regular_blocking`` | mají všchny dlaždice stejný rozměr a nepřekrývají se  |
+   | ``regular_blocking`` | všechny dlaždice mají stejný rozměr a nepřekrývají se |
    +----------------------+-------------------------------------------------------+
    | ``num_bands``        | počet kanálů                                          |
    +----------------------+-------------------------------------------------------+
