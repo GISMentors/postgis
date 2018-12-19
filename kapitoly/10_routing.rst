@@ -65,10 +65,10 @@ Algoritmus nalezení optimální cesty je implementován v pgRouting ve
 dvou variantách:
 
 * `pgr_dijkstra
-  <http://docs.pgrouting.org/latest/en/src/dijkstra/doc/pgr_dijkstra.html>`__,
+  <https://docs.pgrouting.org/latest/en/pgr_dijkstra.html>`__,
   viz. :wikipedia-en:`Dijkstra's algorithm`
-* `pgr_astar
-  <http://docs.pgrouting.org/latest/en/src/astar/doc/pgr_astar.html#description>`__,
+* `pgr_aStar
+  <https://docs.pgrouting.org/latest/en/pgr_aStar.html>`__,
   viz :wikipedia-en:`A* search algorithm`
 
 .. note:: V následujících příkladech se bude pohybovat v okolí Fakulty stavební
