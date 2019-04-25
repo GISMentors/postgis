@@ -303,9 +303,9 @@ topologická generalizace.
 Zadání
 ^^^^^^
 
-Na základě VKM Brlohu u Drhovle a pomocí skriptu v Bashi vybereme
-*linie hranic parcel a jejich definiční body*. Výsledná SQL dávka ke
-stažení `zde
+Na základě `VKM <http://services.cuzk.cz/VKM/ku/>`__ Brlohu u Drhovle
+a pomocí skriptu v Bashi vybereme *linie hranic parcel a jejich
+definiční body*. Výsledná SQL dávka ke stažení `zde
 <http://training.gismentors.eu/geodata/postgis/brloh.sql>`__. Data
 jsou připravena k nahrání do schématu :dbtable:`brloh_data`.
 
