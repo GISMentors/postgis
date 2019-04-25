@@ -303,11 +303,11 @@ topologická generalizace.
 Zadání
 ^^^^^^
 
-Stáhneme vstupní soubor `VKM Brlohu u Drhovle
-<http://services.cuzk.cz/VKM/ku/20170401/632406.zip>`_ a pomocí
-skriptu v Bashi vybereme `linie hranic parcel a definiční body
-<http://training.gismentors.eu/geodata/postgis/brloh.sql>`_. Data jsou
-připravena k nahrání do schématu :dbtable:`brloh_data`.
+Na základě VKM Brlohu u Drhovle a pomocí skriptu v Bashi vybereme
+*linie hranic parcel a jejich definiční body*. Výsledná SQL dávka ke
+stažení `zde
+<http://training.gismentors.eu/geodata/postgis/brloh.sql>`__. Data
+jsou připravena k nahrání do schématu :dbtable:`brloh_data`.
 
 Z těchto dat sestavíme polygony parcel. Vytvoříme jednoduchou
 geometrii a jejich topologickou reprezentaci. Dále provedeme
