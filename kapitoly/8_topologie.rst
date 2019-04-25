@@ -95,6 +95,9 @@ schéma vytvoříme pomocí funkce :pgiscmd:`CreateTopology`.
 .. note:: Topologická schéma jsou uložena v tabulce
           :dbtable:`topology.topology`.
 
+          Všiměte si, že funkce z rozšíření topology nemá prefix "st",
+          není tedy součástí standardu ISO SQL M/M.
+                   
 Do tabulky prvků :dbtable:`p2` vložíme nový atribut, do kterého
 posléze sestavíme topologii prvků. K tomu použijeme funkci
 :pgiscmd:`AddTopoGeometryColumn`.
@@ -130,7 +133,7 @@ topologickými primitivy. Je složen ze čtyř složek:
 
 * ``topology_id`` (id topologického schématu v tabulce :dbtable:`topology`)
 * ``layer_id`` (id topologického atributu v tabulce :dbtable:`layer`)
-* ``id`` (id topologické relace)
+* ``id`` (id topologického primitiva)
 * ``type`` (geometrický typ jednoduchého prvku)
  * ``1`` bod (point)
  * ``2`` lomená čára (linestring)
@@ -148,6 +151,16 @@ V našem případě:
    -----+------------------------------------------------------------------+-----------
       1 | POLYGON((0 0,100 0,125 100,0 125,0 0),(25 25,75 25,50 50,25 25)) | (1,1,1,3)
       2 | POLYGON((100 0,200 0,225 100,125 100,100 0))                     | (1,1,2,3)
+
+.. note:: Vztah mezi atributem a daným topologickým primitivem určuje složka
+   ``id`` a tabulka :dbtable:`relation` umistěná v topologickém schématu. Příklad:
+
+   .. code-block:: sql
+
+      SELECT st_astext(mbr) FROM topo_p2.face WHERE face_id IN
+      (SELECT r.element_id FROM p2 AS f JOIN topo_p2.relation AS r ON
+      (f.topo).layer_id=r.layer_id AND (f.topo).type = r.element_type
+      AND (f.topo).id=r.topogeo_id);   
 
 Tabulky s topologickými primitivy
 ---------------------------------
@@ -212,8 +225,7 @@ Vytvoříme nové schéma a atribut pro topologii.
          dynamicky pomocí funkce ``find_srid``,
          např. ``find_srid('topo_test', 'parcely_732583', 'geom')``.
 
-Nakonec se pokusíme topologii sestavit z naimportovaných jednoduchých
-prvků.
+Nakonec se pokusíme topologii sestavit z původních jednoduchých prvků.
 
 .. code-block:: sql
 
@@ -225,8 +237,8 @@ prvků.
           navíc velmi náchylná na topologické chyby na vstupu a často
           skončí chybou.
 
-.. noteadvanced:: Pro sestavení topologie můžete použít jako externí
-   nástroj `GRASS GIS
+.. noteadvanced:: Pro sestavení topologie v PostGISu můžete použít
+   externí nástroj `GRASS GIS
    <http://www.gismentors.cz/skoleni/grass-gis/>`_. Následuje zkracený
    návod. Detaily tohoto řešení jsou nad rámec tohoto školení a
    spadají spíše do školení :skoleni:`GRASS GIS pro pokročilé
@@ -297,9 +309,10 @@ skriptu v Bashi vybereme `linie hranic parcel a definiční body
 <http://training.gismentors.eu/geodata/postgis/brloh.sql>`_. Data jsou
 připravena k nahrání do schématu :dbtable:`brloh_data`.
 
-Sestavíme z dat polygony parcel. Vytvoříme jednoduchou geometrii a
-topologickou geometrii. Dále provedeme generalizaci hranic parcel a
-porovnáme výsledek generalizace jednoduché a topologické geometrie.
+Z těchto dat sestavíme polygony parcel. Vytvoříme jednoduchou
+geometrii a jejich topologickou reprezentaci. Dále provedeme
+generalizaci hranic parcel a porovnáme výsledek generalizace
+jednoduchých prvků a topologické reprezentace.
 
 Postup
 ^^^^^^
@@ -315,9 +328,6 @@ Nejdříve vytvoříme nové topologické schéma. Nazveme ho :dbtable:`brloh`.
 
 Zvolíme *SRID* "5514" a centimetrovou přesnost. Poslední parametr funkce
 :pgiscmd:`CreateTopology` udává, že ve schématu nepočítáme se souřadnicí Z.
-
-.. note:: Všiměte si, že funkce nemá prefix "ST", není tedy součástí
-          standardu ISO SQL M/M.
 
 Přidáme všechny linie z tabulky :dbtable:`brloh_data.hranice` do topologie.
 
@@ -355,10 +365,10 @@ Případně můžeme geometrii k bodům doplnit přímo do tabulky.
       , topology.GetFaceByPoint('brloh', geom, 0)
    );
 
-Z již vytvořené topologie můžeme vytvořit zpětně topogeometrie bez toho, abychom
-museli topografický sloupec vytvářet z již získané "jednoduché" geometrie.
+Z již vytvořené topologie můžeme vytvořit topologický atribut bez
+toho, abychom jej museli vytvářet na základě jednoduchých prvků.
 
-Nejdřív přidáme nový atribut pro datový typ TopoGeometry.
+Nejdříve přidáme nový atribut o datovém typu TopoGeometry.
 
 .. code-block:: sql
 
