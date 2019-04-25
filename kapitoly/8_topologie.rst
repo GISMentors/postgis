@@ -16,7 +16,8 @@ Topologický datový model
 ------------------------
 
 Rozdíl mezi datovým modelem jednoduchých geoprvků (simple features) a
-topologickým modelem si ukážeme na případě dvou sousedících polygonů.
+topologickým modelem si ukážeme na ukázce dvou sousedících polygonů
+(jeden z nich obsahuje otvor).
 
 Jednoduché prvky
 ^^^^^^^^^^^^^^^^
@@ -24,7 +25,6 @@ Jednoduché prvky
 .. _priklad-polygony-sf:
 
 .. figure:: ../images/postgis-polygon-example.png
-   :class: small
 
    Dva sousedící polygony jako jednoduché geoprvky.
 
@@ -32,8 +32,8 @@ Jednoduché prvky
 
   polygon |              geometrie (WKT)                   
  ---------+----------------------------------------------
-     A    | POLYGON((100 0,0 0,0 100,100 100,100 0))
-     B    | POLYGON((100 0,100 100,200 100,200 0,100 0))
+     A    | POLYGON((0 0,100 0,125 100,0 125,0 0),(25 25,75 25,50 50,25 25))
+     B    | POLYGON((100 0,200 0,225 100,125 100,100 0))
 
 Z výše uvedeného je evidentní, že jsou oba prvky uloženy odděleně. To
 vede k tomu, že hranice sousedících polygonů je uložena
@@ -54,40 +54,36 @@ Model pracuje s třemi základními *topologickými primitivy*:
 * stěnami (*faces*) 
 
 Kompozice znázorněná na :ref:`obrázku výše <priklad-polygony-sf>` bude
-v topologickém modelu PostGISu popsána:
+v topologickém modelu PostGISu popsána (minimálně, reálná situace se
+může lišit na základě použitého algoritmu tvorby topologických
+primitiv):
 
-* dvěma uzly :fignote:`N1` a :fignote:`N2`
+* třemi uzly :fignote:`N1`, :fignote:`N2` a :fignote:`N3`
 * třemi hranami :fignote:`E1`, :fignote:`E2` a :fignote:`E3`
-* dvěma stěnami :fignote:`F1` a :fignote:`F2`
+* třemi stěnami :fignote:`F1`, :fignote:`F2` a :fignote:`F3`
 
 .. figure:: ../images/postgis-topo-polygon-example.png
-   :class: small
 
    Dva sousedící polygony z :numref:`priklad-polygony-sf` v topologickém
    modelu.
 
 Ve výsledku bude tedy společná hranice polygonů :fignote:`A` a
-:fignote:`B` uložena pouze jednou a to jako hrana :fignote:`E1`.
-
-.. tip:: Podrobné informace k tomuto tématu `zde
-         <http://geo.fsv.cvut.cz/~gin/uzpd/uzpd.pdf#146>`_.
+:fignote:`B` uložena pouze jednou a to jako hrana :fignote:`E2`.
 
 Příklad
 ^^^^^^^
 
 .. code-block:: sql
 
-   -- vytvoříme pracovní schéma a nastavíme vyhledávací cestu
-   CREATE schema topo_test;
    -- schéma topology a public musí být v cestě uvedeno vždy
    SET search_path TO topo_test,topology,public;
 
    -- nahrání dat ve formě simple features
    CREATE TABLE p2 (fid serial PRIMARY KEY, geom geometry(Polygon));
    INSERT INTO p2 (geom) VALUES (ST_GeomFromText('Polygon(
-    (0 0, 100 0, 100 100, 0 100, 0 0))'));
+    (0 0, 100 0, 125 100, 0 125, 0 0),(25 25, 75 25, 50 50, 25 25))'));
    INSERT INTO p2 (geom) VALUES (ST_GeomFromText('Polygon(
-    (100 0, 200 0, 200 100, 100 100, 100 0))'));
+    (100 0, 200 0, 225 100, 125 100, 100 0))'));
     
 Každá datová vrstva s topologii je uložena ve zvláštním schématu, nové
 schéma vytvoříme pomocí funkce :pgiscmd:`CreateTopology`.
@@ -96,11 +92,12 @@ schéma vytvoříme pomocí funkce :pgiscmd:`CreateTopology`.
 
    SELECT CreateTopology('topo_p2');
 
-.. tip:: Topologická schéma jsou uložena v tabulce :dbtable:`topology`
-         (schéma :dbtable:`topology`).
+.. note:: Topologická schéma jsou uložena v tabulce
+          :dbtable:`topology.topology`.
 
-Do tohoto schématu vložíme nový atribut, do kterého posléze sestavíme
-topologii prvků. K tomu použijeme funkce :pgiscmd:`AddTopoGeometryColumn`.
+Do tabulky prvků :dbtable:`p2` vložíme nový atribut, do kterého
+posléze sestavíme topologii prvků. K tomu použijeme funkci
+:pgiscmd:`AddTopoGeometryColumn`.
 
 .. code-block:: sql
 
@@ -109,8 +106,8 @@ topologii prvků. K tomu použijeme funkce :pgiscmd:`AddTopoGeometryColumn`.
 Ve výsledku se v tabulce :dbtable:`p2` vytvoří nový sloupce s názvem
 :dbcolumn:`topo` a datovým typem :ref:`TopoGeometry <topogeometry>`.
 
-.. tip:: Atributy s topologií jsou uloženy v tabulce :dbtable:`layer`
-         (schéma :dbtable:`topology`).
+.. note:: Informace o atributech s topologií jsou uloženy v tabulce
+         :dbtable:`topology.layer`.
 
 Topologická primitiva sestavíme z jednoduchým prvků pomocí funkce
 :pgiscmd:`toTopoGeom`.
@@ -119,8 +116,9 @@ Topologická primitiva sestavíme z jednoduchým prvků pomocí funkce
 
    UPDATE p2 SET topo = toTopoGeom(geom, 'topo_p2', 1);
 
-.. note:: Poslední argument určuje toleranci se kterou budeme
-          topologii sestavovat. Zde jsme zvolili toleranci 1~metr.
+.. note:: Poslední argument určuje toleranci, se kterou budeme
+          topologii sestavovat. V našem případě jsme zvolili toleranci
+          1 metr.
 
 .. _topogeometry:
 
@@ -132,7 +130,7 @@ topologickými primitivy. Je složen ze čtyř složek:
 
 * ``topology_id`` (id topologického schématu v tabulce :dbtable:`topology`)
 * ``layer_id`` (id topologického atributu v tabulce :dbtable:`layer`)
-* ``id`` (id topologického primitiva)
+* ``id`` (id topologické relace)
 * ``type`` (geometrický typ jednoduchého prvku)
  * ``1`` bod (point)
  * ``2`` lomená čára (linestring)
@@ -146,10 +144,10 @@ V našem případě:
 
 ::
 
-    fid |                  st_astext                   |   topo    
-   -----+----------------------------------------------+-----------
-      1 | POLYGON((0 0,100 0,100 100,0 100,0 0))       | (1,1,1,3)
-      2 | POLYGON((100 0,200 0,200 100,100 100,100 0)) | (1,1,2,3)
+    fid |                            st_astext                             |   topo    
+   -----+------------------------------------------------------------------+-----------
+      1 | POLYGON((0 0,100 0,125 100,0 125,0 0),(25 25,75 25,50 50,25 25)) | (1,1,1,3)
+      2 | POLYGON((100 0,200 0,225 100,125 100,100 0))                     | (1,1,2,3)
 
 Tabulky s topologickými primitivy
 ---------------------------------
