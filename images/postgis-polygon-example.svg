@@ -31,7 +31,7 @@
      id="namedview69"
      showgrid="false"
      inkscape:zoom="0.58252421"
-     inkscape:cx="555.1861"
+     inkscape:cx="218.7194"
      inkscape:cy="267.22517"
      inkscape:window-x="67"
      inkscape:window-y="27"
@@ -66,18 +66,20 @@
      d="M 379.71382,2081.36 H 1622.8817 L 1933.6843,838.18365 379.71382,527.39105 V 2081.36 m 310.79309,-310.7926 h 621.58219 l -310.7886,-310.7926 -310.79359,310.7926"
      id="path40"
      inkscape:connector-curvature="0"
-     style="font-style:normal;font-weight:400;font-size:medium;font-family:'Sans Serif';vector-effect:none;fill:#89f0ff;fill-opacity:1;fill-rule:evenodd;stroke:#232323;stroke-width:3.07010531;stroke-linecap:square;stroke-linejoin:bevel;stroke-opacity:1" />
+     style="font-style:normal;font-weight:400;font-size:medium;font-family:'Sans Serif';vector-effect:none;fill:#a5f0ff;fill-opacity:1;fill-rule:evenodd;stroke:#232323;stroke-width:3.07010531;stroke-linecap:square;stroke-linejoin:bevel;stroke-opacity:1" />
   <path
      d="M 1622.8817,2081.36 H 2866.0621 L 3176.8547,838.18365 H 1933.6843 L 1622.8817,2081.36"
      id="path42"
      inkscape:connector-curvature="0"
-     style="font-style:normal;font-weight:400;font-size:medium;font-family:'Sans Serif';vector-effect:none;fill:#89f0ff;fill-opacity:1;fill-rule:evenodd;stroke:#232323;stroke-width:3.07010531;stroke-linecap:square;stroke-linejoin:bevel;stroke-opacity:1" />
+     style="font-style:normal;font-weight:400;font-size:medium;font-family:'Sans Serif';vector-effect:none;fill:#89f0b5;fill-opacity:1;fill-rule:evenodd;stroke:#232323;stroke-width:3.07010531;stroke-linecap:square;stroke-linejoin:bevel;stroke-opacity:1"
+     inkscape:export-xdpi="96"
+     inkscape:export-ydpi="96" />
   <metadata
      id="qgismetadata">
     <rdf:RDF>
       <cc:Work>
         <dc:format>image/svg+xml</dc:format>
-        <dc:title></dc:title>
+        <dc:title />
         <dc:date>2019-04-24T11:08:00</dc:date>
         <dc:identifier />
         <dc:description />
@@ -205,4 +207,26 @@
        x="852.5238"
        y="1425.2902"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:104.1668396px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:3.12500501">50 50</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:125.00019836px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#fb0000;fill-opacity:1;stroke:none;stroke-width:3.12500501"
+     x="992.89014"
+     y="1245.5264"
+     id="text4622-6-8-0-93-1-0-3"><tspan
+       sodipodi:role="line"
+       id="tspan4620-9-9-6-9-9-1-6"
+       x="992.89014"
+       y="1245.5264"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:125.00019836px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#fb0000;fill-opacity:1;stroke-width:3.12500501">A</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:125.00019836px;line-height:1.25;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#fb0000;fill-opacity:1;stroke:none;stroke-width:3.12500501"
+     x="2333.5059"
+     y="1505.3069"
+     id="text4622-6-8-0-93-1-0-3-2"><tspan
+       sodipodi:role="line"
+       id="tspan4620-9-9-6-9-9-1-6-6"
+       x="2333.5059"
+       y="1505.3069"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:125.00019836px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#fb0000;fill-opacity:1;stroke-width:3.12500501">B</tspan></text>
 </svg>
