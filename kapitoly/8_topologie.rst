@@ -157,10 +157,18 @@ V našem případě:
 
    .. code-block:: sql
 
-      SELECT st_astext(mbr) FROM topo_p2.face WHERE face_id IN
+      SELECT face_id, st_astext(mbr) FROM topo_p2.face WHERE face_id IN
       (SELECT r.element_id FROM p2 AS f JOIN topo_p2.relation AS r ON
       (f.topo).layer_id=r.layer_id AND (f.topo).type = r.element_type
-      AND (f.topo).id=r.topogeo_id);   
+      AND (f.topo).id=r.topogeo_id);
+
+   ::
+
+     face_id |                  st_astext                   
+    ---------+----------------------------------------------
+           1 | POLYGON((0 0,0 125,125 125,125 0,0 0))
+           3 | POLYGON((100 0,100 100,225 100,225 0,100 0))
+
 
 Tabulky s topologickými primitivy
 ---------------------------------
