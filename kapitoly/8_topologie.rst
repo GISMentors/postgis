@@ -133,7 +133,7 @@ topologickými primitivy. Je složen ze čtyř složek:
 
 * ``topology_id`` (id topologického schématu v tabulce :dbtable:`topology`)
 * ``layer_id`` (id topologického atributu v tabulce :dbtable:`layer`)
-* ``id`` (id topologického primitiva)
+* ``id`` (id topologické relace)
 * ``type`` (geometrický typ jednoduchého prvku)
  * ``1`` bod (point)
  * ``2`` lomená čára (linestring)
