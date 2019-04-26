@@ -42,7 +42,7 @@ Po importu se ve výstupním schématu objeví následující tabulky:
    
       f_table_name    | f_geometry_column | coord_dimension | srid |    type    
    -------------------+-------------------+-----------------+------+------------
-    osm_nodes         | the_geom          |               2 | 4326 | POINT
+    pointsofinterest  | the_geom          |               2 | 4326 | POINT
     ways_vertices_pgr | the_geom          |               2 | 4326 | POINT
     ways              | the_geom          |               2 | 4326 | LINESTRING
 
@@ -54,7 +54,7 @@ Po importu se ve výstupním schématu objeví následující tabulky:
 
           .. code-block:: sql
 
-             ALTER TABLE osm_nodes RENAME the_geom TO geom;
+             ALTER TABLE pointsofinterest RENAME the_geom TO geom;
              ALTER TABLE ways_vertices_pgr RENAME the_geom TO geom;
              ALTER TABLE ways RENAME the_geom TO geom;
 
