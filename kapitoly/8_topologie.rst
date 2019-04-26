@@ -53,7 +53,7 @@ Model pracuje s třemi základními *topologickými primitivy*:
 * hranami (*edges*) 
 * stěnami (*faces*) 
 
-Kompozice znázorněná na :ref:`obrázku výše <priklad-polygony-sf>` bude
+Kompozice znázorněná na :numref:`priklad-polygony-sf` bude
 v topologickém modelu PostGISu popsána (minimálně, reálná situace se
 může lišit na základě použitého algoritmu tvorby topologických
 primitiv):
