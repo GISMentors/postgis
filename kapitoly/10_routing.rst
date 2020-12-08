@@ -108,26 +108,49 @@ adresy.
 
 ::
 
-      osm_id   |   id   |   gml_id
+      osm_id   |   id   |   gml_id    
    ------------+--------+-------------
-    4173356375 | 128574 | AD.22210156
- 
+    3776391915 | 152343 | AD.22210156
+    3776391918 | 155642 | AD.22210156
+    4173356388 | 157417 | AD.22210156
+    4174654161 | 158057 | AD.22210156
+    4173437520 | 159128 | AD.22210156
+    4173361989 | 160879 | AD.22210156
+    4174654158 | 162342 | AD.22210156
+
+.. tip:: Pro snadnější vyhledání OSM bodů, resp. id souvisejícího uzlu
+         vytvoříme uživatelskou funkci ``find_node()``.
+
+         .. code-block:: sql
+
+             CREATE OR REPLACE FUNCTION find_node(ulice varchar, cislo_domovni int, cislo_orient int, 
+                                                  vertices_table regclass, OUT result integer)
+             AS $func$
+             BEGIN
+             EXECUTE format('
+               SELECT o.id FROM
+               ruian_praha.adresnimista a,
+               ruian_praha.ulice u,
+               %s o
+               WHERE a.cislodomovni = %s AND a.cisloorientacni = %s AND u.nazev = ''%s''
+               AND a.ulicekod = u.kod
+               AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10) limit 1',
+               vertices_table, cislo_domovni, cislo_orient, ulice)
+             INTO result;
+             END
+             $func$ LANGUAGE plpgsql;
+
+Příklad vyhledání id uzlu vychozího a cílového bodu pomocí funkce ``find_node()``.
+
 .. code-block:: sql
 
-   SELECT o.osm_id, o.id, a.gml_id FROM 
-   ruian_praha.adresnimista a, 
-   ruian_praha.ulice u, 
-   routing.ways_vertices_pgr o 
-   WHERE a.cislodomovni = 169 and a.cisloorientacni = 1 AND u.nazev = 'Václavkova' 
-   AND a.ulicekod = u.kod 
-   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
-
+   select find_node('Václavkova', 169, 1, 'routing.ways_vertices_pgr');
+   
 ::
 
-      osm_id   |   id   |   gml_id
-   ------------+--------+-------------
-    4196659627 | 120249 | AD.22187006
-    4196659626 | 137956 | AD.22187006
+     find_node 
+    -----------
+        158921
 
 Nejkratší trasu nalezneme voláním funkce `pgr_dijkstra
 <http://docs.pgrouting.org/latest/en/src/dijkstra/doc/pgr_dijkstra.html>`__. Dijkstrův
@@ -145,8 +168,10 @@ algoritmus vyžaduje definovat celkem čtyři atributy:
     source,
     target,
     length AS cost
-    FROM ways',
-   120249, 128574, directed := false);
+    FROM routing.ways',
+   find_node('Thákurova', 2077, 7, 'routing.ways_vertices_pgr'),
+   find_node('Václavkova', 169, 1, 'routing.ways_vertices_pgr'),
+   directed := false);
 
 ::
 
@@ -169,8 +194,10 @@ tomto případě stupních. Délku v metrech je uložena v atributu
     source,
     target,
     length_m AS cost
-    FROM ways',
-   120249, 128574, directed := false)) AS foo;
+    FROM routing.ways',
+   find_node('Thákurova', 2077, 7, 'routing.ways_vertices_pgr'),
+   find_node('Václavkova', 169, 1, 'routing.ways_vertices_pgr'),
+   directed := false)) AS foo;
 
 ::
              
@@ -188,9 +215,11 @@ původní tabulkou:
     source,
     target,
     length_m AS cost
-    FROM ways',
-    120249, 128574, directed := false) AS a
-   LEFT JOIN ways AS b
+    FROM routing.ways',
+    find_node('Thákurova', 2077, 7, 'routing.ways_vertices_pgr'),
+    find_node('Václavkova', 169, 1, 'routing.ways_vertices_pgr'),
+    directed := false) AS a
+   LEFT JOIN routing.ways AS b
    ON (a.edge = b.gid) ORDER BY seq;
 
 .. figure:: ../images/route-single.png
@@ -210,8 +239,10 @@ původní tabulkou:
       target,
       length AS cost,
       x1, y1, x2, y2
-      FROM ways',
-     120249, 128574 directed := false);
+      FROM routing.ways',
+      find_node('Thákurova', 2077, 7, 'routing.ways_vertices_pgr'),
+      find_node('Václavkova', 169, 1, 'routing.ways_vertices_pgr'),
+      directed := false);
 
 Nejkratší trasa (více chodců, jeden cíl)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -221,13 +252,8 @@ Dejvice k budově Fakulty stavební ČVUT v Praze.
 
 .. code-block:: sql
 
-   SELECT o.osm_id, o.id, a.gml_id FROM 
-   ruian_praha.adresnimista a, 
-   ruian_praha.ulice u, 
-   routing.ways_vertices_pgr o 
-   WHERE a.cislodomovni = 2558 AND a.cisloorientacni = 17 AND u.nazev = 'K Brusce' 
-   AND a.ulicekod = u.kod 
-   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
+      
+   SELECT find_node('K Brusce', 2558, 17, 'routing.ways_vertices_pgr');
 
 ::
 
