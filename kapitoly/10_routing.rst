@@ -54,9 +54,9 @@ Po importu se ve výstupním schématu objeví následující tabulky:
 
           .. code-block:: sql
 
-             ALTER TABLE pointsofinterest RENAME the_geom TO geom;
-             ALTER TABLE ways_vertices_pgr RENAME the_geom TO geom;
-             ALTER TABLE ways RENAME the_geom TO geom;
+             ALTER TABLE routing.pointsofinterest RENAME the_geom TO geom;
+             ALTER TABLE routing.ways_vertices_pgr RENAME the_geom TO geom;
+             ALTER TABLE routing.ways RENAME the_geom TO geom;
 
 Nalezení optimální cesty
 ------------------------
