@@ -122,7 +122,7 @@ adresy.
    lišit. Zaleží s jakou verzí datasetu OSM pracujete.
           
 .. tip:: Pro snadnější vyhledání bodu OSM, resp. id souvisejícího uzlu
-         vytvoříme uživatelskou funkci ``find_node()``.
+         vytvoříme uživatelskou funkci ``find_node()``. Limit zvýšíme na 30m.
 
          .. code-block:: sql
 
@@ -137,7 +137,7 @@ adresy.
                routing.ways_vertices_pgr o
                WHERE a.cislodomovni = %s AND a.cisloorientacni = %s AND u.nazev = ''%s''
                AND a.ulicekod = u.kod
-               AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 20) limit 1',
+               AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 30) limit 1',
                cislo_domovni, cislo_orient, ulice)
              INTO result;
              END
@@ -240,7 +240,7 @@ původní tabulkou:
       SELECT gid AS id,
       source,
       target,
-      length AS cost,
+      length_m AS cost,
       x1, y1, x2, y2
       FROM routing.ways',
       find_node('Thákurova', 2077, 7),
@@ -270,7 +270,7 @@ Dejvice k budově Fakulty stavební ČVUT v Praze.
     SELECT gid AS id,
     source,
     target,
-    length AS cost
+    length_m AS cost
     FROM routing.ways',
     ARRAY[find_node('Dejvická', 184, 4),
           find_node('Václavkova', 169, 1)],
@@ -519,14 +519,26 @@ hlavních silnicích a zásadně zvýhodníme jen dálnice.
 Cesta obchodního cestujícího
 ----------------------------
 
-Vyjíždíme z Dejvic (id: 12333). Chceme se cestou zastavit na
-výstavišti v Holešovicích (id: 7436), v Europarku (id: 144884) a na
-Andělu (id: 116748) a pak dojet zpátky do Dejvic. Algoritimus
-naplánuje cestu tak, abychom navštívili každé místo pouze jednou a
-urazili cestu s nejmenšími náklady.
+Vyjíždíme z Dejvic (Thákurova 2077/7). Chceme se cestou zastavit na
+výstavišti v Holešovicích (U Výstaviště, 1286/21), v Europarku
+(Černokostelecká 128/161) a na Andělu (Plzeňská 344/1) a pak dojet zpátky
+do Dejvic. Algoritimus naplánuje cestu tak, abychom navštívili každé
+místo pouze jednou a urazili cestu s nejmenšími náklady.
 
-.. todo:: Přepsat ID na adresní body.
-          
+.. code-block:: sql
+
+   SELECT find_node('Thákurova', 2077, 7);
+   SELECT find_node('U Výstaviště', 1286, 21);
+   SELECT find_node('Černokostelecká', 128, 161);
+   SELECT find_node('Plzeňská', 344, 1);
+
+::
+
+   60880
+   41489
+   109366
+   161370
+
 Využití vzdálenosti po síti
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -537,15 +549,15 @@ Navržená cesta je přes zastávky Anděl, Europark, Holešovice.
    SELECT * FROM pgr_TSP(
        $$
        SELECT * FROM pgr_dijkstraCostMatrix(
-           'SELECT gid as id, source, target, cost, reverse_cost FROM ways',
-           (SELECT array_agg(id) FROM ways_vertices_pgr WHERE id IN (12333, 7436, 144884, 116748)),
+           'SELECT gid as id, source, target, cost, reverse_cost FROM routing.ways',
+           (SELECT array_agg(id) FROM routing.ways_vertices_pgr WHERE id IN
+           (60880, 41489, 109366, 161370)),
            directed := false
        )
        $$,
-       start_id := 12333,
+       start_id := 60880,
        randomize := false
    );
-
 
 ::
 
@@ -557,6 +569,8 @@ Navržená cesta je přes zastávky Anděl, Europark, Holešovice.
       4 |   7436 | 0.0443240851172554 |   0.33115182360216
       5 |  12333 |                  0 |  0.375475908719415
 
+.. tip:: S využitím :dbcolumn:`cost_s` a :dbcolumn:`reverse_cost_s`
+   spočítejte náklady v sekundách.
 
 Využití euklidovské vzdálenosti
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -575,17 +589,16 @@ v případě předchozího algoritmu.
    FROM (
      SELECT DISTINCT id AS source_id,
                        ST_X(geom) AS x,
-                       ST_Y(geom) AS y FROM ways_vertices_pgr
-             WHERE id IN (12333, 7436, 144884, 116748)
+                       ST_Y(geom) AS y FROM routing.ways_vertices_pgr
+             WHERE id IN (60880, 41489, 109366, 161370)
    ) t
    ORDER BY
    CASE source_id
-     WHEN 12333 THEN 1 
-     WHEN 7436 THEN 2
-     WHEN 144884 THEN 3
-     WHEN 116748 THEN 4  
+     WHEN 60880 THEN 1 
+     WHEN 41489 THEN 2
+     WHEN 109366 THEN 3
+     WHEN 161370 THEN 4  
     END');
-
 
 ::
 
@@ -612,7 +625,7 @@ v místech křížení silnic, pak je nutné před vlastním vybudováním grafu
 realizovat úpravu dat.
 
 K dispozici je funce `pgr_nodeNetwork
-<http://docs.pgrouting.org/2.0/en/src/common/doc/functions/node_network.html>`__,
+<http://docs.pgrouting.org/latest/en/pgr_nodeNetwork.html>`__,
 která dokáže doplnit uzly v místech křížení, případně dotáhnout linie
 k jiným liniím, v případě nedotahů.
 
@@ -638,9 +651,9 @@ vytvoření multilinie agregací z existující kolekce linií.
 
 .. code-block:: sql
 
- CREATE TABLE ruian_praha.ulice_noded AS
+ CREATE TABLE ulice_noded AS
  SELECT d.path[1], geom FROM (
-   SELECT ST_UNION(geom) g FROM ruian_praha.ulice
+   SELECT ST_Union(geom) g FROM ruian_praha.ulice
  ) dta
  , ST_Dump(g) d;
 
@@ -648,7 +661,7 @@ Vytvoření grafu
 ^^^^^^^^^^^^^^^
 
 Před vytvořením grafu, který realizuje funkce `pgr_createTopology
-<http://docs.pgrouting.org/2.2/en/src/topology/doc/pgr_createTopology.html>`__,
+<http://docs.pgrouting.org/latest/en/pgr_createTopology.html>`__,
 je nutné přidat sloupce :dbcolumn:`source` a :dbcolumn:`target`, kam jsou zapsány
 identifikátory uzlů.
 
@@ -656,26 +669,27 @@ Vhodné je také vytvořit primární klíč a indexovat geometrii.
 
 .. code-block:: sql
 
- ALTER TABLE ruian_praha.ulice_noded ADD PRIMARY KEY (path);
- CREATE INDEX ON ruian_praha.ulice_noded USING gist(geom);
- ALTER TABLE ruian_praha.ulice_noded ADD COLUMN "source" integer;
- ALTER TABLE ruian_praha.ulice_noded ADD COLUMN "target" integer;
+ ALTER TABLE ulice_noded ADD PRIMARY KEY (path);
+ CREATE INDEX ON ulice_noded USING gist(geom);
+ ALTER TABLE ulice_noded ADD COLUMN "source" integer;
+ ALTER TABLE ulice_noded ADD COLUMN "target" integer;
 
-Graf se vytvoří pomocí funkce ``pgr_createTopology``, kde se zadají
+Graf se vytvoří pomocí funkce ``pgr_createTopology()``, kde se zadají
 názvy sloupců s geometrií, id a sloupce pro zápis id nodů
 (:dbcolumn:`source`, :dbcolumn:`target`). Hodnota 1 ve funkci
-představuje toleranci pro tvorbu grafu.
+představuje toleranci pro tvorbu grafu (v mapových jednotkách, tj. v
+našem případě jde o 1 metr).
  
 .. code-block:: sql
 
- SELECT pgr_createTopology('ruian_praha.ulice_noded', 1, 'geom', 'path', 'source', 'target');
+ SELECT pgr_createTopology('ulice_noded', 1, 'geom', 'path', 'source', 'target');
 
 Na závěr je vhodné ohodnotit graf pomocí např. délky úseků.
 
 .. code-block:: sql
 
- ALTER TABLE ruian_praha.ulice_noded ADD COLUMN length FLOAT;
- UPDATE ruian_praha.ulice_noded SET length = ST_Length(geom);
+ ALTER TABLE ulice_noded ADD COLUMN length FLOAT;
+ UPDATE ulice_noded SET length = ST_Length(geom);
    
 Další materiály
 ---------------
