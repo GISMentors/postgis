@@ -120,28 +120,38 @@ adresy.
 
 .. important:: Hodnoty atributu ``osm_id`` a ``id`` se mohou
    lišit. Zaleží s jakou verzí datasetu OSM pracujete.
-          
-.. tip:: Pro snadnější vyhledání bodu OSM, resp. id souvisejícího uzlu
-         vytvoříme uživatelskou funkci ``find_node()``. Limit zvýšíme na 30m.
 
-         .. code-block:: sql
+.. tip:: Nalezení relevatního uzlu zpomaluje transformace uzlů ze
+   souřadnicového systému :epsg:`4326` do :epsg:`5514`. Pro
+   urychlení výpočtu si geometrii uzlů v :epsg:`5514` předpočítáme.
 
-             CREATE OR REPLACE FUNCTION find_node(ulice varchar, cislo_domovni int, cislo_orient int, 
-                                                  OUT result integer)
-             AS $func$
-             BEGIN
-             EXECUTE format('
-               SELECT o.id FROM
-               ruian_praha.adresnimista a,
-               ruian_praha.ulice u,
-               routing.ways_vertices_pgr o
-               WHERE a.cislodomovni = %s AND a.cisloorientacni = %s AND u.nazev = ''%s''
-               AND a.ulicekod = u.kod
-               AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 30) limit 1',
-               cislo_domovni, cislo_orient, ulice)
-             INTO result;
-             END
-             $func$ LANGUAGE plpgsql;
+   .. code-block:: sql
+
+      ALTER TABLE routing.ways_vertices_pgr ADD COLUMN geom5514 geometry(point, 5514);
+      UPDATE routing.ways_vertices_pgr set geom5514 = st_transform(geom, 5514);
+      CREATE INDEX on routing.ways_vertices_pgr using gist (geom5514);
+
+Pro snadnější vyhledání id uzlu vytvoříme uživatelskou funkci
+``find_node()``. Limit posuneme na 30m.
+
+.. code-block:: sql
+
+    CREATE OR REPLACE FUNCTION find_node(ulice varchar, cislo_domovni int, cislo_orient int, 
+                                         OUT result integer)
+    AS $func$
+    BEGIN
+    EXECUTE format('
+      SELECT o.id FROM
+      ruian_praha.adresnimista a,
+      ruian_praha.ulice u,
+      routing.ways_vertices_pgr o
+      WHERE a.cislodomovni = %s AND a.cisloorientacni = %s AND u.nazev = ''%s''
+      AND a.ulicekod = u.kod
+      AND ST_DWithin(geom5514, a.geom, 30) limit 1',
+      cislo_domovni, cislo_orient, ulice)
+    INTO result;
+    END
+    $func$ LANGUAGE plpgsql;
 
 Příklad vyhledání id uzlu vychozího a cílového bodu pomocí funkce ``find_node()``.
 
@@ -274,7 +284,7 @@ Dejvice k budově Fakulty stavební ČVUT v Praze.
     FROM routing.ways',
     ARRAY[find_node('Dejvická', 184, 4),
           find_node('Václavkova', 169, 1)],
-    find_node('Thákurova', 2077, 7, 'routing.ways_vertices_pgr'),
+    find_node('Thákurova', 2077, 7),
     directed := false);
 
 .. figure:: ../images/route-multi.png
