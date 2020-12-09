@@ -413,13 +413,17 @@ Příklad úpravy časových nákladu podle typu komunikace:
 
 .. code-block:: sql
 
-   ALTER TABLE osm_way_classes ADD COLUMN penalty FLOAT;
-   UPDATE osm_way_classes SET penalty=100;
-   UPDATE osm_way_classes SET penalty=0.8 WHERE name IN ('secondary', 'secondary_link',
-                                                         'tertiary', 'tertiary_link');
-   UPDATE osm_way_classes SET penalty=0.6 WHERE name IN ('primary','primary_link');
-   UPDATE osm_way_classes SET penalty=0.4 WHERE name IN ('trunk','trunk_link');
-   UPDATE osm_way_classes SET penalty=0.3 WHERE name IN ('motorway','motorway_junction','motorway_link');
+   ALTER TABLE routing.configuration ADD COLUMN penalty FLOAT;
+   UPDATE routing.configuration SET penalty=100;
+   UPDATE routing.configuration SET penalty=0.8 WHERE tag_key = 'highway' AND
+    tag_value IN ('secondary', 'secondary_link',
+                  'tertiary', 'tertiary_link');
+   UPDATE routing.configuration SET penalty=0.6 WHERE tag_key = 'highway' AND
+    tag_value IN ('primary','primary_link');
+   UPDATE routing.configuration SET penalty=0.4 WHERE tag_key = 'highway' AND
+    tag_value IN ('trunk','trunk_link');
+   UPDATE routing.configuration SET penalty=0.3 WHERE tag_key = 'highway' AND
+    tag_value IN ('motorway','motorway_junction','motorway_link');
 
 .. todo:: Přepsat, aby se blížilo realitě.
              
@@ -431,8 +435,8 @@ Příklad úpravy časových nákladu podle typu komunikace:
     target,
     cost_s * penalty AS cost,
     reverse_cost_s * penalty AS reverse_cost
-    FROM routing.ways JOIN osm_way_classes
-    USING (class_id)',
+    FROM routing.ways JOIN routing.configuration
+    USING (tag_id)',
     find_node('Aviatická', 1017, 2),
     find_node('Wilsonova', 300, 8),
     directed := true) AS a
@@ -452,8 +456,8 @@ Příklad úpravy časových nákladu podle typu komunikace:
        target,
        CASE WHEN cost > 0 THEN length_m ELSE -1 END AS cost,
        CASE WHEN reverse_cost > 0 THEN length_m ELSE -1 END AS reverse_cost
-       FROM routing.ways JOIN osm_way_classes
-       USING (class_id)',
+       FROM routing.ways JOIN routing.configuration
+       USING (tag_id)',
        find_node('Aviatická', 1017, 2),
        find_node('Wilsonova', 300, 8),
        directed := true) AS a
@@ -478,12 +482,15 @@ hlavních silnicích a zásadně zvýhodníme jen dálnice.
 
 .. code-block:: sql
 
-   UPDATE osm_way_classes SET penalty=1.2;
-   UPDATE osm_way_classes SET penalty=1.0 WHERE name IN ('secondary', 'secondary_link',
-                                                         'tertiary', 'tertiary_link');
-   UPDATE osm_way_classes SET penalty=1.0 WHERE name IN ('primary','primary_link');
-   UPDATE osm_way_classes SET penalty=1.0 WHERE name IN ('trunk','trunk_link');
-   UPDATE osm_way_classes SET penalty=0.8 WHERE name IN ('motorway','motorway_junction','motorway_link'); 
+   UPDATE routing.configuration SET penalty=1.2;
+   UPDATE routing.configuration SET penalty=1.0 WHERE tag_key = 'highway' AND
+    tag_value IN ('secondary', 'secondary_link', 'tertiary', 'tertiary_link');
+   UPDATE routing.configuration SET penalty=1.0 WHERE tag_key = 'highway' AND
+    tag_value IN ('primary','primary_link');
+   UPDATE routing.configuration SET penalty=1.0 WHERE tag_key = 'highway' AND
+    tag_value IN ('trunk','trunk_link');
+   UPDATE routing.configuration SET penalty=0.8 WHERE tag_key = 'highway' AND
+    tag_value IN ('motorway','motorway_junction','motorway_link'); 
 
 .. code-block:: sql
                 
@@ -493,12 +500,12 @@ hlavních silnicích a zásadně zvýhodníme jen dálnice.
     target,
     cost_s * penalty AS cost,
     reverse_cost_s * penalty AS reverse_cost
-    FROM ways JOIN osm_way_classes
-    USING (class_id)',
-   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 250862),
-   300,
-   directed := true) AS a
-   LEFT JOIN ways AS b
+    FROM routing.ways JOIN routing.configuration
+    USING (tag_id)',
+    find_node('Thákurova', 2077, 7, 'routing.ways_vertices_pgr'),
+    300,
+    directed := true) AS a
+   LEFT JOIN routing.ways AS b
    ON (a.edge = b.gid) ORDER BY seq;
 
       
