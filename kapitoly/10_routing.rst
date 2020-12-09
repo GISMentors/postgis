@@ -104,7 +104,7 @@ adresy.
    routing.ways_vertices_pgr o 
    WHERE a.cislodomovni = 2077 AND a.cisloorientacni = 7 AND u.nazev = 'Thákurova' 
    AND a.ulicekod = u.kod 
-   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
+   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 20);
 
 ::
 
@@ -118,24 +118,27 @@ adresy.
     4173361989 | 160879 | AD.22210156
     4174654158 | 162342 | AD.22210156
 
-.. tip:: Pro snadnější vyhledání OSM bodů, resp. id souvisejícího uzlu
+.. important:: Hodnoty atributu ``osm_id`` a ``id`` se mohou
+   lišit. Zaleží s jakou verzí datasetu OSM pracujete.
+          
+.. tip:: Pro snadnější vyhledání bodu OSM, resp. id souvisejícího uzlu
          vytvoříme uživatelskou funkci ``find_node()``.
 
          .. code-block:: sql
 
              CREATE OR REPLACE FUNCTION find_node(ulice varchar, cislo_domovni int, cislo_orient int, 
-                                                  vertices_table regclass, OUT result integer)
+                                                  OUT result integer)
              AS $func$
              BEGIN
              EXECUTE format('
                SELECT o.id FROM
                ruian_praha.adresnimista a,
                ruian_praha.ulice u,
-               %s o
+               routing.ways_vertices_pgr o
                WHERE a.cislodomovni = %s AND a.cisloorientacni = %s AND u.nazev = ''%s''
                AND a.ulicekod = u.kod
-               AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10) limit 1',
-               vertices_table, cislo_domovni, cislo_orient, ulice)
+               AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 20) limit 1',
+               cislo_domovni, cislo_orient, ulice)
              INTO result;
              END
              $func$ LANGUAGE plpgsql;
@@ -144,7 +147,7 @@ Příklad vyhledání id uzlu vychozího a cílového bodu pomocí funkce ``find
 
 .. code-block:: sql
 
-   select find_node('Václavkova', 169, 1, 'routing.ways_vertices_pgr');
+   select find_node('Václavkova', 169, 1);
    
 ::
 
@@ -169,8 +172,8 @@ algoritmus vyžaduje definovat celkem čtyři atributy:
     target,
     length AS cost
     FROM routing.ways',
-   find_node('Thákurova', 2077, 7, 'routing.ways_vertices_pgr'),
-   find_node('Václavkova', 169, 1, 'routing.ways_vertices_pgr'),
+   find_node('Thákurova', 2077, 7),
+   find_node('Václavkova', 169, 1),
    directed := false);
 
 ::
@@ -195,8 +198,8 @@ tomto případě stupních. Délku v metrech je uložena v atributu
     target,
     length_m AS cost
     FROM routing.ways',
-   find_node('Thákurova', 2077, 7, 'routing.ways_vertices_pgr'),
-   find_node('Václavkova', 169, 1, 'routing.ways_vertices_pgr'),
+   find_node('Thákurova', 2077, 7),
+   find_node('Václavkova', 169, 1),
    directed := false)) AS foo;
 
 ::
@@ -216,8 +219,8 @@ původní tabulkou:
     target,
     length_m AS cost
     FROM routing.ways',
-    find_node('Thákurova', 2077, 7, 'routing.ways_vertices_pgr'),
-    find_node('Václavkova', 169, 1, 'routing.ways_vertices_pgr'),
+    find_node('Thákurova', 2077, 7),
+    find_node('Václavkova', 169, 1),
     directed := false) AS a
    LEFT JOIN routing.ways AS b
    ON (a.edge = b.gid) ORDER BY seq;
@@ -240,8 +243,8 @@ původní tabulkou:
       length AS cost,
       x1, y1, x2, y2
       FROM routing.ways',
-      find_node('Thákurova', 2077, 7, 'routing.ways_vertices_pgr'),
-      find_node('Václavkova', 169, 1, 'routing.ways_vertices_pgr'),
+      find_node('Thákurova', 2077, 7),
+      find_node('Václavkova', 169, 1),
       directed := false);
 
 Nejkratší trasa (více chodců, jeden cíl)
@@ -253,13 +256,13 @@ Dejvice k budově Fakulty stavební ČVUT v Praze.
 .. code-block:: sql
 
       
-   SELECT find_node('K Brusce', 2558, 17, 'routing.ways_vertices_pgr');
+   SELECT find_node('Dejvická', 184, 4);
 
 ::
 
-      osm_id   |   id   |   gml_id
-   ------------+--------+-------------
-     889215289 |  42531 | AD.22719881
+     find_node 
+    -----------
+        48313
 
 .. code-block:: sql
                 
@@ -268,8 +271,11 @@ Dejvice k budově Fakulty stavební ČVUT v Praze.
     source,
     target,
     length AS cost
-    FROM ways',
-   ARRAY[42531, 120249], 128574, directed := false);
+    FROM routing.ways',
+    ARRAY[find_node('Dejvická', 184, 4),
+          find_node('Václavkova', 169, 1)],
+    find_node('Thákurova', 2077, 7, 'routing.ways_vertices_pgr'),
+    directed := false);
 
 .. figure:: ../images/route-multi.png
 
@@ -284,22 +290,14 @@ Hradčanské náměstí. Rychlost pohybu chodců uvažujeme 1,2 m/s.
 
 .. code-block:: sql
 
-   SELECT o.osm_id, o.id, a.gml_id FROM 
-   ruian_praha.adresnimista a, 
-   ruian_praha.ulice u, 
-   routing.ways_vertices_pgr o 
-   WHERE a.cislodomovni = 37 AND a.cisloorientacni = 23 AND u.nazev = 'Malostranské náměstí' 
-   AND a.ulicekod = u.kod 
-   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
-
+   SELECT find_node('Malostranské náměstí', 37, 23);
+   
 ::
 
-      osm_id   |   id   |   gml_id
-   ------------+--------+-------------
-    4763711106 | 22516  | AD.21694419
-     340112849 | 32791  | AD.21694419
+     find_node 
+    -----------
+          7304
    
-
 .. code-block:: sql
                 
    SELECT * FROM pgr_dijkstra('
@@ -307,8 +305,10 @@ Hradčanské náměstí. Rychlost pohybu chodců uvažujeme 1,2 m/s.
     source,
     target,
     length_m / 1.2 / 60 AS cost
-    FROM ways',
-   ARRAY[128574, 42531], ARRAY[120249, 22516], directed := false);
+    FROM routing.ways',
+   ARRAY[find_node('Thákurova', 2077, 7), find_node('Dejvická', 184, 4)],
+   ARRAY[find_node('Václavkova', 169, 1), find_node('Malostranské náměstí', 37, 23)],
+   directed := false);
 
 Časovou náročnost tras získáme následujícím příkazem (náklady v
 minutách):
@@ -320,8 +320,10 @@ minutách):
        source,
        target,
        length_m / 1.2 / 60 AS cost
-       FROM ways',
-      ARRAY[128574, 42531], ARRAY[120249, 22516], directed := false)
+       FROM routing.ways',
+       ARRAY[find_node('Thákurova', 2077, 7), find_node('Dejvická', 184, 4)],
+       ARRAY[find_node('Václavkova', 169, 1), find_node('Malostranské náměstí', 37, 23)],
+       directed := false)
       WHERE edge=-1 ORDER BY agg_cost;
 
    ::
@@ -344,8 +346,10 @@ minutách):
        source,
        target,
        length_m / 1.2 / 60 AS cost
-       FROM ways',
-      ARRAY[128574, 42531], ARRAY[120249, 22516], directed := false)
+       FROM routing.ways',
+       ARRAY[find_node('Thákurova', 2077, 7), find_node('Dejvická', 184, 4)],
+       ARRAY[find_node('Václavkova', 169, 1), find_node('Malostranské náměstí', 37, 23)],
+       directed := false)
       ORDER BY agg_cost;
 
 Příklad - automobil
@@ -361,40 +365,23 @@ historické budově Hlavní nádraží.
 
 .. code-block:: sql
 
-   SELECT o.osm_id, o.id, a.gml_id FROM 
-   ruian_praha.adresnimista a, 
-   ruian_praha.ulice u, 
-   routing.ways_vertices_pgr o 
-   WHERE a.cislodomovni = 1039 AND a.cisloorientacni = 6 AND u.nazev = 'Aviatická' 
-   AND a.ulicekod = u.kod 
-   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 30);
-
+   select find_node('Aviatická', 1017, 2);
+   
 ::
 
-      osm_id   |   id   |   gml_id
-   ------------+--------+-------------
-    1207486584 | 23491 | AD.22738142
+     find_node 
+    -----------
+        153103
 
 .. code-block:: sql
 
-   SELECT o.osm_id, o.id, a.gml_id FROM 
-   ruian_praha.adresnimista a, 
-   ruian_praha.ulice u, 
-   routing.ways_vertices_pgr o 
-   WHERE a.cislodomovni = 300 AND a.cisloorientacni = 8 AND u.nazev = 'Wilsonova' 
-   AND a.ulicekod = u.kod 
-   AND ST_DWithin(ST_Transform(o.geom, 5514), a.geom, 10);
+   SELECT find_node('Wilsonova', 300, 8);
 
 ::
 
-      osm_id   |   id   |   gml_id
-   ------------+--------+-------------
-    4303448349 |  95535 | AD.21742367
-    4303448365 | 100649 | AD.21742367
-    4303448546 | 102169 | AD.21742367
-    4303448356 | 107212 | AD.21742367
-    4303448466 | 118339 | AD.21742367
-    4303448747 | 143944 | AD.21742367
+     find_node 
+    -----------
+        107098
 
 Nejkratší trasa
 ^^^^^^^^^^^^^^^
@@ -407,11 +394,11 @@ Nejkratší trasa
     target,
     CASE WHEN cost > 0 THEN length_m ELSE -1 END AS cost,
     CASE WHEN reverse_cost > 0 THEN length_m ELSE -1 END AS reverse_cost
-    FROM ways',
-   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 1207486584),
-   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 4303448349),
-   directed := true) AS a
-   LEFT JOIN ways AS b
+    FROM routing.ways',
+    find_node('Aviatická', 1017, 2),
+    find_node('Wilsonova', 300, 8),
+    directed := true) AS a
+   LEFT JOIN routing.ways AS b
    ON (a.edge = b.gid) ORDER BY seq;
 
 Nejrychlejší trasa
@@ -444,12 +431,12 @@ Příklad úpravy časových nákladu podle typu komunikace:
     target,
     cost_s * penalty AS cost,
     reverse_cost_s * penalty AS reverse_cost
-    FROM ways JOIN osm_way_classes
+    FROM routing.ways JOIN osm_way_classes
     USING (class_id)',
-   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 1207486584),
-   (SELECT id FROM ways_vertices_pgr WHERE osm_id = 4303448349),
-   directed := true) AS a
-   LEFT JOIN ways AS b
+    find_node('Aviatická', 1017, 2),
+    find_node('Wilsonova', 300, 8),
+    directed := true) AS a
+   LEFT JOIN routing.ways AS b
    ON (a.edge = b.gid) ORDER BY seq;
 
 .. tip:: Po zavedení penalizace bude nejkratší trasa pro automobil
@@ -465,12 +452,12 @@ Příklad úpravy časových nákladu podle typu komunikace:
        target,
        CASE WHEN cost > 0 THEN length_m ELSE -1 END AS cost,
        CASE WHEN reverse_cost > 0 THEN length_m ELSE -1 END AS reverse_cost
-       FROM ways JOIN osm_way_classes
+       FROM routing.ways JOIN osm_way_classes
        USING (class_id)',
-      (SELECT id FROM ways_vertices_pgr WHERE osm_id = 1207486584),
-      (SELECT id FROM ways_vertices_pgr WHERE osm_id = 4303448349),
-      directed := true) AS a
-      LEFT JOIN ways AS b
+       find_node('Aviatická', 1017, 2),
+       find_node('Wilsonova', 300, 8),
+       directed := true) AS a
+      LEFT JOIN routing.ways AS b
       ON (a.edge = b.gid) ORDER BY seq;
 
 .. figure:: ../images/route-auto.png
