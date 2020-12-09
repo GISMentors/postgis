@@ -414,12 +414,27 @@ Nejkratší trasa
 Nejrychlejší trasa
 ^^^^^^^^^^^^^^^^^^
 
-Před samotným výpočtem pro jednotlivé typy komunikací nastavíme
-odpovídající maximální dovolené rychlosti. Na základě toho budou poté
-určeny náklady pohybu v časových jednotkách. Náklady v atributu
-:dbcolumn:`cost_s` jsou uvedeny v sekundách.
+Tabulka :dbtable:`routing.ways` obsahuje předpočítané náklady v
+sekundách, jde o atribut :dbcolumn:`cost_s`.
 
-Příklad úpravy časových nákladu podle typu komunikace:
+.. code-block:: sql
+                
+   SELECT a.*, b.geom AS geom FROM pgr_dijkstra('
+    SELECT gid AS id,
+    source,
+    target,
+    cost_s AS cost,
+    reverse_cost_s AS reverse_cost
+    FROM routing.ways JOIN routing.configuration
+    USING (tag_id)',
+    find_node('Aviatická', 1017, 2),
+    find_node('Wilsonova', 300, 8),
+    directed := true) AS a
+   LEFT JOIN routing.ways AS b
+   ON (a.edge = b.gid) ORDER BY seq;
+
+Zkusme závést penaltizaci, která povede k realističtějšímu
+výsledku.
 
 .. code-block:: sql
 
@@ -435,8 +450,8 @@ Příklad úpravy časových nákladu podle typu komunikace:
    UPDATE routing.configuration SET penalty=0.3 WHERE tag_key = 'highway' AND
     tag_value IN ('motorway','motorway_junction','motorway_link');
 
-.. todo:: Přepsat, aby se blížilo realitě.
-             
+Nalezená trasa by neměla vést přes území letiště.
+ 
 .. code-block:: sql
                 
    SELECT a.*, b.geom AS geom FROM pgr_dijkstra('
@@ -453,26 +468,27 @@ Příklad úpravy časových nákladu podle typu komunikace:
    LEFT JOIN routing.ways AS b
    ON (a.edge = b.gid) ORDER BY seq;
 
-.. tip:: Po zavedení penalizace bude nejkratší trasa pro automobil
-   věrohodnější:
+.. task:: Zkuste zavést penaltizaci také do vyhledání nejkratší cesty.
 
-   .. todo:: penalizace
-                   
-   .. code-block:: sql
-                   
-      SELECT a.*, b.geom AS geom FROM pgr_dijkstra('
-       SELECT gid AS id,
-       source,
-       target,
-       CASE WHEN cost > 0 THEN length_m ELSE -1 END AS cost,
-       CASE WHEN reverse_cost > 0 THEN length_m ELSE -1 END AS reverse_cost
-       FROM routing.ways JOIN routing.configuration
-       USING (tag_id)',
-       find_node('Aviatická', 1017, 2),
-       find_node('Wilsonova', 300, 8),
-       directed := true) AS a
-      LEFT JOIN routing.ways AS b
-      ON (a.edge = b.gid) ORDER BY seq;
+..
+   .. tip:: Po zavedení penalizace bude nejkratší trasa pro automobil
+      věrohodnější:
+
+      .. code-block:: sql
+
+         SELECT a.*, b.geom AS geom FROM pgr_dijkstra('
+          SELECT gid AS id,
+          source,
+          target,
+          CASE WHEN cost > 0 THEN length_m ELSE -1 END AS cost,
+          CASE WHEN reverse_cost > 0 THEN length_m ELSE -1 END AS reverse_cost
+          FROM routing.ways JOIN routing.configuration
+          USING (tag_id)',
+          find_node('Aviatická', 1017, 2),
+          find_node('Wilsonova', 300, 8),
+          directed := true) AS a
+         LEFT JOIN routing.ways AS b
+         ON (a.edge = b.gid) ORDER BY seq;
 
 .. figure:: ../images/route-auto.png
 
