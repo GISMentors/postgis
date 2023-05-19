@@ -36,7 +36,7 @@ implementuje specifikaci `Simple Features
       Logo projektu PostGIS
 
 Kromě podpory práce s vektorovými daty v podobě jednoduchých geoprvků
-(simple features) podporuje PostGIS 2.0 i vektorová data v
+(simple features) podporuje PostGIS 3.0 i vektorová data v
 topologickém formátu a bezešvý přístup k uložení rastrových dat a
 jejich využití v prostorovém SQL v souvislosti s daty vektorovými.
 
@@ -80,8 +80,8 @@ GNU/Linux, MS Windows či Mac OSX.
 * Alternativně přístup na server přes *ssh*, na kterém běží
   PostgreSQL, na klientovi *psql*. Data stačí prohlížet přes
   webový prohlížeč (webový QGIS).
-* `QGIS <http://www.qgis.org>`__ minimálně 2.14
-* `PostGIS 2.0 <http://www.postgis.net>`__ a vyšší
+* `QGIS <http://www.qgis.org>`_ 3.4 a vyšší
+* `PostGIS <http://www.postgis.net>`_ 3.0 a vyšší
 
 .. only:: html
 
@@ -128,6 +128,7 @@ Za `GISMentors <http://www.gismentors.cz/>`__:
 
 * `Jan Michálek <http://www.gismentors.cz/mentors/michalek>`__ ``<godzilalalala gmail.com>``
 * `Martin Landa <http://www.gismentors.cz/mentors/landa>`__ ``<martin.landa opengeolabs.cz>``
+* `Jan Růžička <http://www.gismentors.cz/mentors/ruzicka>`_ ``<jan.ruzicka opengeolabs.cz>``
 
 Text dokumentu
 --------------

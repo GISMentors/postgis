@@ -468,7 +468,9 @@ Prostorové indexy
 
 Pro efektivní práci s prostorovými daty je nezbytné tato data
 indexovat (pakliže se bavíme o objemu dat od tisícovek záznamů
-výše). Obvykle používáme GIST index.
+výše). Obvykle používáme GIST index, ale můžeme využít i jiné.
+GIST, SP-GIST a BRIN jsou všechny indexové metody využívané v PostgreSQL
+pro efektivní vyhledávání dat v databázi.
 
 .. code-block:: sql
 
@@ -487,3 +489,214 @@ výše). Obvykle používáme GIST index.
    .. code-block:: sql
 
       SELECT pg_get_indexdef('vesmirne_zrudice_geom_p_geom_idx'::regclass);
+
+GIST
+----
+
+GIST (Generalized Search Tree) je indexová metoda pro libovolné datové typy.
+GIST je velmi flexibilní a může být použit pro indexování různých datových typů včetně textových řetězců,
+množin a různých geometrických objektů.
+
+SP-GIST
+-------
+
+SP-GIST (Space-Partitioned Generalized Search Tree) je obecná metoda pro vytváření indexů pro libovolné datové typy.
+Jedná se o rozšíření GIST, který pracuje s prostorovými daty. Tento index je výhodný v případě, že jsou data
+nerovnoměrně distribuována v prostoru resp. vytváří shluky dat.
+
+BRIN
+____
+
+BRIN (Block Range INdex) je indexová metoda, která se zaměřuje na efektivitu při práci s velkými tabulkami.
+BRIN využívá blokovou orientaci, kde v každém bloku je uchováván minimální a maximální hodnota indexovaného sloupce.
+To umožňuje rychlé vyhledávání výsledků v rozsahu hodnot bloku a přiřazení bloku k dotazu,
+který omezuje výsledky na menší část tabulky. BRIN index je vhodný pro rozsáhlá a uspořádaná data,
+kde existuje jasný vztah mezi jednotlivými hodnotami.
+
+Rozdíl mezi těmito metodami spočívá v tom, jaký typ dat se indexuje a jakým způsobem se index vytváří.
+Každá metoda má své výhody a nevýhody a vhodnost použití závisí na konkrétní situaci a datových typech, které se indexují.
+
+Dále uvedené časy jsou velmi orientační na neoptimalizovaném PostgreSQL na HW konfiguraci:
+8 CPU Intel(R) Core(TM) i7-6700 CPU @ 3.40GHz, 32 GB RAM.
+
+Rychlost zápisu
+---------------
+
+.. code-block:: sql
+
+   create table points_idx_test(id int, note text, geom geometry)
+   with (autovacuum_enabled=off,toast.autovacuum_enabled=off);
+   create index idx_points_idx_test on points_idx_test using gist (geom);
+   insert into points_idx_test
+   select id, md5(random()::text), ST_SetSRID(ST_Point(180-random()*360, 90-random()*180),4326)
+   from generate_series(1,10000000) t(id);
+
+Čas: 3m 9s
+
+.. code-block:: sql
+
+   drop table points_idx_test;
+   create table points_idx_test(id int, note text, geom geometry)
+   with (autovacuum_enabled=off,toast.autovacuum_enabled=off);
+   create index idx_points_idx_test on points_idx_test using brin (geom) with (pages_per_range =1);
+   insert into points_idx_test
+   select id, md5(random()::text), ST_SetSRID(ST_Point(180-random()*360, 90-random()*180),4326)
+   from generate_series(1,10000000) t(id);
+
+Čas: 16s
+
+.. code-block:: sql
+
+   drop table points_idx_test;
+   create table points_idx_test(id int, note text, geom geometry)
+   with (autovacuum_enabled=off,toast.autovacuum_enabled=off);
+   create index idx_points_idx_test on points_idx_test using spgist (geom);
+   insert into points_idx_test
+   select id, md5(random()::text), ST_SetSRID(ST_Point(180-random()*360, 90-random()*180),4326)
+   from generate_series(1,10000000) t(id);
+
+Čas: 2m 11s
+
+Rychlost vytvoření
+------------------
+Použijeme stejnou tabulku s 10 mil. bodů
+
+.. code-block:: sql
+
+  drop index idx_points_idx_test;
+  create index idx_points_idx_test on points_idx_test using gist (geom);
+
+Čas: 2m 9s
+
+.. code-block:: sql
+
+  drop index idx_points_idx_test;
+  create index idx_points_idx_test on points_idx_test using brin (geom)
+  with (pages_per_range =1);
+
+Čas: 3s
+
+.. code-block:: sql
+
+  drop index idx_points_idx_test;
+  create index idx_points_idx_test on points_idx_test using spgist (geom);
+
+Čas: 1m 28s
+
+Velikost indexu
+---------------
+.. code-block:: psql
+
+  \di+ idx_points_idx_test
+
+GIST: 521 MB
+
+BRIN: 3.5 MB
+
+SP-GIST: 443 MB
+
+Výběr bodů v polygonu
+---------------------
+.. code-block:: sql
+
+  explain (analyze,verbose,timing,costs,buffers)
+  select * from points_idx_test
+  where
+  st_within (geom,
+  ST_SetSRID(ST_GeomFromText('POLYGON ((0 0, 15 0, 7.5 10, 0 0))'),4326));
+
+
+GIST: 115 ms
+
+BRIN: 830 ms
+
+SP-GIST: 142 ms
+
+NOINDEX: 830 ms
+
+Z výsledků je vidět, že BRIN nebyl použit vůbec.
+V případě SP-GIST indexu je dotaz poněkud pomalejší než u indexu GIST,
+protože data jsou distribuována rovnoměrně v rámci celého světa. V následujícím příkladu si ukážeme,
+jak se index SPGIST chová u jinak distribuovaných dat.
+
+Jiná distribuce bodů pro GIST a SPGIST
+--------------------------------------
+.. code-block:: sql
+
+  drop table points_idx_test;
+  create table points_idx_test(id int, note text, geom geometry)
+  with (autovacuum_enabled=off,toast.autovacuum_enabled=off);
+
+  insert into points_idx_test
+  select id, md5(random()::text), ST_SetSRID(ST_Point(180-random()*90, 90-random()*180),4326)
+  from generate_series(1,5000000) t(id);
+
+  insert into points_idx_test
+  select id, md5(random()::text), ST_SetSRID(ST_Point(-180+random()*90, 90-random()*180),4326)
+  from generate_series(1,5000000) t(id);
+
+GIST: 152 ms
+
+SP-GIS: 74 ms
+
+Zde je vidět, jak SP-GIST index funguje. Pokud máme data rozmístěna do oblastí, které je možno separovat
+pomocí obdélníků, pak je dotaz výrazně rychlejší.
+
+Využití indexu BRIN pro časoprostorová data
+-------------------------------------------
+
+Pakliže máme časoprostorová data, např. získáváme informace o pohybu flotily aut, pak pro nás může být zajímavé
+využít kombinaci indexu BRIN a GIST (případně SP-GIST).
+
+Časovou značku indexujeme pomocí indexu BRIN a prostorovu pomocí GIST (SP-GIST).
+
+.. code-block:: sql
+
+  create table points_time_idx_test(id int, dt timestamp, geom geometry)
+  with (autovacuum_enabled=off,toast.autovacuum_enabled=off);
+
+  with dts as (SELECT dd as dt
+  FROM generate_series
+        ( '2023-02-01'::timestamp
+        , '2023-02-07'::timestamp
+        , '1 second'::interval) dd)
+  insert into points_time_idx_test select id, dts.dt,
+  ST_SetSRID(ST_Point(-180+random()*90, 90-random()*180),4326) geom
+   from generate_series(1,100) t(id), dts order by dt;
+
+  create index on points_time_idx_test using GIST(geom);
+  create index on points_time_idx_test using BRIN(dt) with (pages_per_range =1);
+
+  analyze points_time_idx_test;
+
+  explain (analyze,verbose,timing,costs,buffers)
+    select * from points_time_idx_test
+    where
+    st_within (geom,
+    ST_SetSRID(ST_GeomFromText('POLYGON ((0 0, 15 0, 7.5 10, 0 0))'),4326))
+    and dt between '2023-02-01 01:00:00' and '2023-02-01 02:00:00';
+
+NOINDEX: 1380 ms
+
+BRIN: 164 ms
+
+GIST a BRIN: 7 ms
+
+Pokud tedy potřebujeme pracovat s malým indexem a rychle zapisovat do databáze
+velké množství dat a víme, že dotazy budou primárně na časovou složku, můžeme použít pouze index BRIN.
+Pokud budou dotazy vždy vracet jen tisíce záznamů před prostorovou filtrací, můžeme prostorový index vynechat.
+
+Pokud však množství zapisovaných dat nebude extrémní, což v našem případě neplatí,
+jedná se o stovku řádků každou sekundu. V tomto případě zápis i s existencí indexu GIST trvá cca 20 ms,
+což je bez problémů.
+
+Pokud by se však jednalo o 30 tis. záznamů každou sekundu, pak už nám doba zápisu přesáhne 1 s.
+V případě, že tabulka nebude obsahovat index GIST, ale pouze index BRIN dobaz bude výrazně nižší
+v mém případě 80 ms i při zápisu 30 tis záznamů.
+
+Zdroje
+------
+https://www.alibabacloud.com/blog/postgresql-best-practices-selection-and-optimization-of-postgis-spatial-indexes-gist-brin-and-r-tree_597034
+https://www.crunchydata.com/blog/the-many-spatial-indexes-of-postgis
+https://pgsessions.com/assets/archives/gbroccolo_jrouhaud_pgsession_brin4postgis.pdf
+https://www.crunchydata.com/blog/postgres-indexing-when-does-brin-win
