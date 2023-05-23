@@ -9,6 +9,12 @@ databázi aktivujeme příkazem:
 
    CREATE EXTENSION pgrouting;
 
+Vytvoříme si schéma, kde budeme pracovat.
+
+.. code-block:: sql
+
+   CREATE SCHEMA routing;
+
 Příprava dat
 ------------
 
@@ -16,6 +22,9 @@ Jako podkladová data použijeme data OpenStreetMap pro území Hlavního
 města Prahy. Data stáhneme přes tzv. Overpass API. Území je dáno
 minimálním ohraničujícím obdélníkem (bbox), který můžeme zjistit
 např. ze stránek http://boundingbox.klokantech.com (formát CSV).
+
+.. tip:: Pro vyhnutí se zadávání hesla při načítání dat můžeme postupovat podle
+  https://www.postgresql.org/docs/current/libpq-pgpass.html
 
 Příklad stažení dat:
 
@@ -108,15 +117,19 @@ adresy.
 
 ::
 
-      osm_id   |   id   |   gml_id    
-   ------------+--------+-------------
-    3776391915 | 152343 | AD.22210156
-    3776391918 | 155642 | AD.22210156
-    4173356388 | 157417 | AD.22210156
-    4174654161 | 158057 | AD.22210156
-    4173437520 | 159128 | AD.22210156
-    4173361989 | 160879 | AD.22210156
-    4174654158 | 162342 | AD.22210156
+      osm_id    |   id   |   gml_id
+   -------------+--------+-------------
+    4140110599  |  70968 | AD.22210156
+    3776391915  | 167139 | AD.22210156
+    3776391918  | 167141 | AD.22210156
+    4140110598  | 168842 | AD.22210156
+    4173356388  | 173367 | AD.22210156
+    4173361989  | 173368 | AD.22210156
+    4173437520  | 173405 | AD.22210156
+    4174654158  | 173408 | AD.22210156
+    4174654161  | 173409 | AD.22210156
+    10816377365 | 177882 | AD.22210156
+    10881875992 | 177911 | AD.22210156
 
 .. important:: Hodnoty atributu ``osm_id`` a ``id`` se mohou
    lišit. Zaleží s jakou verzí datasetu OSM pracujete.
@@ -163,7 +176,7 @@ Příklad vyhledání id uzlu vychozího a cílového bodu pomocí funkce ``find
 
      find_node 
     -----------
-        158921
+         43771
 
 Nejkratší trasu nalezneme voláním funkce `pgr_dijkstra
 <http://docs.pgrouting.org/latest/en/src/dijkstra/doc/pgr_dijkstra.html>`__. Dijkstrův
@@ -190,11 +203,11 @@ algoritmus vyžaduje definovat celkem čtyři atributy:
 
     seq | path_seq |  node  |  edge  |         cost         |       agg_cost
    -----+----------+--------+--------+----------------------+----------------------
-      1 |        1 | 120249 | 110252 | 7.57929416242359e-05 |                    0
-      2 |        2 |  35204 |  34307 | 0.000258500986459147 | 7.57929416242359e-05
+      1 |        1 |  70968 |  57123 | 0.000246672110300531 |                     0
+      2 |        2 |  24623 | 251742 | 9.886116527732606e-05| 0.0002466721103005314
       ...
-     59 |       59 |  97513 | 142754 |   8.676018672102e-05 |   0.0149044747275315
-     60 |       60 | 128574 |     -1 |                    0 |   0.0149912349142525
+     66 |       66 | 226619 | 327051 | 8.937169574263753e-05|  0.013830874168060458
+     67 |       67 |  43771 |     -1 |                    0 |  0.013920245863803096
 
 Náklady jsou počítány v mapových jednotkách souřadnicového systému, v
 tomto případě stupních. Délku v metrech je uložena v atributu
@@ -216,7 +229,7 @@ tomto případě stupních. Délku v metrech je uložena v atributu
              
    sum        
    ------------------
-   1270.47520134678
+   1205.2407823551814
 
 Geometrii trasy získáte spojením výsledku hledání optimální trasy s
 původní tabulkou:
@@ -338,12 +351,12 @@ minutách):
 
    ::
 
-       start_vid | end_vid |     agg_cost     
-      -----------+---------+------------------
-           42531 |  120249 | 5.02036761819399
-          128574 |  120249 | 17.6454889075942
-           42531 |   22516 | 22.9976299203542
-          128574 |   22516 | 36.7067900923121
+       start_vid | end_vid |      agg_cost
+      -----------+---------+--------------------
+           43765 |   43771 |  5.459139825701516
+           70968 |   43771 | 16.739455310488626
+           43765 |  112121 | 22.610288252313232
+           70968 |  112121 |  36.27111371353636
 
 .. tip:: Agregované náklady vrací přímo funkce `pgr_dijkstraCost
    <http://docs.pgrouting.org/latest/en/src/dijkstra/doc/pgr_dijkstraCost.html>`__,
@@ -381,7 +394,7 @@ historické budově Hlavní nádraží.
 
      find_node 
     -----------
-        153103
+        163267
 
 .. code-block:: sql
 
@@ -391,7 +404,7 @@ historické budově Hlavní nádraží.
 
      find_node 
     -----------
-        107098
+        154272
 
 Nejkratší trasa
 ^^^^^^^^^^^^^^^
@@ -433,7 +446,12 @@ sekundách, jde o atribut :dbcolumn:`cost_s`.
    LEFT JOIN routing.ways AS b
    ON (a.edge = b.gid) ORDER BY seq;
 
-Zkusme závést penaltizaci, která povede k realističtějšímu
+.. figure:: ../images/route-auto.png
+
+   Porovnání nejkratší (červeně) a nejrychlejší (modře) trasy z
+   Letiště Václava Havla na Hlavní nádraží.
+
+Zkusme závést penalizaci, která povede k realističtějšímu
 výsledku.
 
 .. code-block:: sql
@@ -468,7 +486,7 @@ Nalezená trasa by neměla vést přes území letiště.
    LEFT JOIN routing.ways AS b
    ON (a.edge = b.gid) ORDER BY seq;
 
-.. task:: Zkuste zavést penaltizaci také do vyhledání nejkratší cesty.
+.. task:: Zkuste zavést penalizaci také do vyhledání nejkratší cesty.
 
 ..
    .. tip:: Po zavedení penalizace bude nejkratší trasa pro automobil
@@ -490,9 +508,9 @@ Nalezená trasa by neměla vést přes území letiště.
          LEFT JOIN routing.ways AS b
          ON (a.edge = b.gid) ORDER BY seq;
 
-.. figure:: ../images/route-auto.png
+.. figure:: ../images/route-auto-penalty.png
 
-   Porovnání nejkratší (červeně) a nejrychlejší (modře) trasy z
+   Porovnání nejrychlejší trasy bez penalizace (mondrá) a s penalizací (červeně) trasy z
    Letiště Václava Havla na Hlavní nádraží.
 
 Servisní síť
@@ -528,7 +546,7 @@ hlavních silnicích a zásadně zvýhodníme jen dálnice.
     reverse_cost_s * penalty AS reverse_cost
     FROM routing.ways JOIN routing.configuration
     USING (tag_id)',
-    find_node('Thákurova', 2077, 7, 'routing.ways_vertices_pgr'),
+    find_node('Thákurova', 2077, 7),
     300,
     directed := true) AS a
    LEFT JOIN routing.ways AS b
@@ -551,20 +569,6 @@ výstavišti v Holešovicích (U Výstaviště, 1286/21), v Europarku
 do Dejvic. Algoritimus naplánuje cestu tak, abychom navštívili každé
 místo pouze jednou a urazili cestu s nejmenšími náklady.
 
-.. code-block:: sql
-
-   SELECT find_node('Thákurova', 2077, 7);
-   SELECT find_node('U Výstaviště', 1286, 21);
-   SELECT find_node('Černokostelecká', 128, 161);
-   SELECT find_node('Plzeňská', 344, 1);
-
-::
-
-   60880
-   41489
-   109366
-   161370
-
 Využití vzdálenosti po síti
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -576,66 +580,27 @@ Navržená cesta je přes zastávky Anděl, Europark, Holešovice.
        $$
        SELECT * FROM pgr_dijkstraCostMatrix(
            'SELECT gid as id, source, target, cost, reverse_cost FROM routing.ways',
-           (SELECT array_agg(id) FROM routing.ways_vertices_pgr WHERE id IN
-           (60880, 41489, 109366, 161370)),
+           (SELECT array[find_node('Thákurova', 2077, 7), find_node('U Výstaviště', 1286, 21), find_node('Černokostelecká', 128, 161), find_node('Plzeňská', 344, 1)]),
            directed := false
        )
        $$,
-       start_id := 60880,
+       start_id := find_node('Thákurova', 2077, 7),
        randomize := false
    );
 
 ::
 
-    seq |  node  |        cost        |      agg_cost      
-   -----+--------+--------------------+--------------------
-      1 |  12333 | 0.0484455749225172 |                  0
-      2 | 116748 |  0.148717683986367 | 0.0484455749225172
-      3 | 144884 |  0.133988564693275 |  0.197163258908885
-      4 |   7436 | 0.0443240851172554 |   0.33115182360216
-      5 |  12333 |                  0 |  0.375475908719415
+   seq |  node  |         cost         |      agg_cost
+  -----+--------+----------------------+---------------------
+     1 |  70968 |  0.04640480515133084 |                   0
+     2 | 157622 |  0.12761437347907223 | 0.04640480515133084
+     3 | 156604 |  0.13971389693707958 | 0.17401917863040306
+     4 | 180378 | 0.044233748325529225 | 0.31373307556748264
+     5 |  70968 |                    0 |  0.3579668238930119
+
 
 .. tip:: S využitím :dbcolumn:`cost_s` a :dbcolumn:`reverse_cost_s`
    spočítejte náklady v sekundách.
-
-Využití euklidovské vzdálenosti
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-K dispozici je také výpočet cesty obchodního cestujícího, která
-využívá pouze euklidovský prostor. Tento výpočet je sice méně přesný,
-ale měl by být o dost rychlejší, zejména v případě většího počtu míst.
-Rychlost jsme netestovali.
-
-Navržená cesta je přes Anděla, Holešovice a Europark. Tedy jinak než
-v případě předchozího algoritmu.
-
-.. code-block:: sql
-
-   SELECT * FROM pgr_eucledianTSP('SELECT *
-   FROM (
-     SELECT DISTINCT id AS source_id,
-                       ST_X(geom) AS x,
-                       ST_Y(geom) AS y FROM routing.ways_vertices_pgr
-             WHERE id IN (60880, 41489, 109366, 161370)
-   ) t
-   ORDER BY
-   CASE source_id
-     WHEN 60880 THEN 1 
-     WHEN 41489 THEN 2
-     WHEN 109366 THEN 3
-     WHEN 161370 THEN 4  
-    END');
-
-::
-
-     seq | node |         cost          |      agg_cost      
-    -----+------+-----------------------+--------------------
-       1 |    1 |    0.0382006302085469 |                  0
-       2 |    4 |    0.0462512161967639 | 0.0382006302085469
-       3 |    2 |     0.117270931512459 | 0.0844518464053108
-       4 |    3 | 4.64686056594346e-310 |   0.20172277791777
-       5 |    1 |                     0 |   0.20172277791777
-
 
 Vytvoření sítě
 --------------
