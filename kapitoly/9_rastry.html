@@ -1,0 +1,344 @@
+
+<!DOCTYPE html>
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Rastrová data &#8212; Školení PostGIS pro pokročilé</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gismentors.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/translations.js"></script>
+    <link rel="search" title="Vyhledávání" href="../search.html" />
+    <link rel="next" title="Síťové analýzy" href="10_routing.html" />
+    <link rel="prev" title="Topologie" href="8_topologie.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">Školení PostGIS pro pokročilé</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="8_topologie.html" title="Topologie"
+             accesskey="P">předchozí</a> |
+          <a href="10_routing.html" title="Síťové analýzy"
+             accesskey="N">další</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="rastrova-data">
+<h1>Rastrová data<a class="headerlink" href="#rastrova-data" title="Permalink to this heading">¶</a></h1>
+<p>Podporu pro práci s rastrovými daty poskytuje PostGIS až od verze 2.0
+a to v rámci rozšíření <a class="reference external" href="http://postgis.net/docs/using_raster_dataman.html">PostGIS Raster</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p><em>PostGIS Raster</em> je součástí rozšíření <code class="docutils literal notranslate"><span class="pre">postgis</span></code>, není
+potřeba ho zvlášt přidávat.</p>
+</div>
+<p>Rastrová data mohou být spravována ve dvou formách jako:</p>
+<ol class="arabic simple">
+<li><p><strong>IN-DB</strong>, tj. uložena přímo v databázi anebo</p></li>
+<li><p><strong>OUT-OF-DB</strong>, tj. mimo databázi.</p></li>
+</ol>
+<section id="nahrani-rastrovych-dat-do-databaze">
+<h2>Nahraní rastrových dat do databáze<a class="headerlink" href="#nahrani-rastrovych-dat-do-databaze" title="Permalink to this heading">¶</a></h2>
+<p>Podobně jako u vektorových dat, viz kapitola
+<a class="reference internal" href="3_shp2pgsql_a_davkove_nahrani.html"><span class="doc">Dávkové nahrání dat</span></a>, lze data nahrát pomocí
+specializovaného nástroje, který je součástí PostGISu a to
+<strong class="program">raster2pgsql</strong>.</p>
+<div class="admonition important">
+<p class="admonition-title">Důležité</p>
+<p>Knihovna GDAL formát PostGIS Raster podporuje nicméně v
+současnosti neumožnuje konverzi dat z jiných formátu to
+PostGIS Raster.</p>
+</div>
+<p>Nejprve si stáhneme testovací data <a class="reference external" href="http://training.gismentors.eu/geodata/eu-dem/dmt.zip">DMT</a> (digitální
+model terénu), soubor dekomprimujeme <code class="docutils literal notranslate"><span class="pre">unzip</span> <span class="pre">dmt.zip</span></code>.</p>
+<section id="raster2pgsql">
+<span id="import-raster2pgsql"></span><h3>raster2pgsql<a class="headerlink" href="#raster2pgsql" title="Permalink to this heading">¶</a></h3>
+<p>Příkaz <a class="reference external" href="http://postgis.net/docs/using_raster_dataman.html#RT_Raster_Loader">raster2pgsql</a>
+funguje obdobně jako <a class="reference internal" href="3_shp2pgsql_a_davkove_nahrani.html#import-shp2pgsql"><span class="std std-ref">shp2pgsql</span></a> pro vektorová data ve
+formátu Esri Shapefile. Pomocí tohoto nástroje lze rastrová data do
+PostGISu naimportovat v obou režimech <strong>IN-DB</strong> i <strong>OUT-OF-DB</strong>.</p>
+<section id="rezim-in-db">
+<h4>Režim IN-DB<a class="headerlink" href="#rezim-in-db" title="Permalink to this heading">¶</a></h4>
+<div class="notecmd admonition">
+<p class="admonition-title">Načtení rastrových dat pomocí raster2pgsql (IN-DB) z příkazové řádky</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>raster2pgsql<span class="w"> </span>-s<span class="w"> </span><span class="m">3035</span><span class="w"> </span>dmt.tif<span class="w"> </span>ukol_1.dmt<span class="w"> </span><span class="p">|</span><span class="w"> </span>psql<span class="w"> </span>pokusnik<span class="w"> </span><span class="m">2</span>&gt;err
+</pre></div>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Tento přikaz nicméně může skončit chybou typu</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span>  <span class="n">invalid</span> <span class="n">memory</span> <span class="n">alloc</span> <span class="n">request</span> <span class="n">size</span> <span class="mi">1073741824</span>
+</pre></div>
+</div>
+<p>která naznačuje, že máme nedostatek paměti pro import tohoto rastru.</p>
+<p>Tento problém můžeme např. obejít parametrem <code class="xref std std-option docutils literal notranslate"><span class="pre">-Y</span></code>, který
+pošle do PGDump příkaz <span class="sqlcmd">COPY</span> namísto <span class="sqlcmd">INSERT</span>.</p>
+<p>Přidáme ještě užitečný přepínač <code class="xref std std-option docutils literal notranslate"><span class="pre">-C</span></code>, který nastaví omezení
+na importovana data. Jinak by například byl ignorován souřadnicový
+systém a pod.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>raster2pgsql<span class="w"> </span>-s<span class="w"> </span><span class="m">3035</span><span class="w"> </span>-Y<span class="w"> </span>-C<span class="w"> </span>dmt.tif<span class="w"> </span>ukol_1.dmt<span class="w"> </span><span class="p">|</span><span class="w"> </span>psql<span class="w"> </span>pokusnik<span class="w"> </span><span class="m">2</span>&gt;err
+</pre></div>
+</div>
+</div>
+</section>
+<section id="rezim-out-of-db">
+<h4>Režim OUT-OF-DB<a class="headerlink" href="#rezim-out-of-db" title="Permalink to this heading">¶</a></h4>
+<p>V tomto režimu nedochází k importu vstupních dat do PostGISu, ale
+pouze k vytvoření odkazu z databáze na původní data. Rastrová data
+jsou tedy fyzicky uložena <em>mimo</em> databázi.</p>
+<div class="notecmd admonition">
+<p class="admonition-title">Načtení rastrových dat pomocí raster2pgsql (OUT-OF-DB) z příkazové řádky</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>raster2pgsql<span class="w"> </span>-s<span class="w"> </span><span class="m">3035</span><span class="w"> </span>-R<span class="w"> </span>-C<span class="w"> </span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>/dmt.tif<span class="w"> </span>ukol_1.dmt_link<span class="w"> </span><span class="p">|</span><span class="w"> </span>psql<span class="w"> </span>pokusnik<span class="w"> </span><span class="m">2</span>&gt;err
+</pre></div>
+</div>
+<p>Cesta k soubor musí být uplná, jinak nebude link korektní. Pomohli
+jsem si unixovým příkazem <strong class="program">pwd</strong>, který vrátí cestu k
+aktuálnímu adresáři, ve kterém jsou umístěna importovaná data.</p>
+</div>
+</section>
+</section>
+</section>
+<section id="zakladni-metadata">
+<h2>Základní metadata<a class="headerlink" href="#zakladni-metadata" title="Permalink to this heading">¶</a></h2>
+<p>V sekci <a class="reference internal" href="#import-raster2pgsql"><span class="std std-ref">raster2pgsql</span></a> jsme naimportovali rastr DMT ve
+dvou formách jako <strong>IN-DB</strong> (tabulka <span class="dbtable">ukol_1.dmt</span>) a
+<strong>OUT-OF-DB</strong> (tabulka <span class="dbtable">ukol_1.dmt_link</span>).</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">r_table_schema</span><span class="p">,</span><span class="n">r_table_name</span><span class="p">,</span><span class="n">srid</span><span class="p">,</span><span class="n">out_db</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">raster_columns</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">r_table_schema</span> <span class="o">|</span> <span class="n">r_table_name</span> <span class="o">|</span> <span class="n">srid</span> <span class="o">|</span> <span class="n">out_db</span>
+<span class="o">----------------+--------------+------+--------</span>
+ <span class="n">ukol_1</span>         <span class="o">|</span> <span class="n">dmt</span>          <span class="o">|</span> <span class="mi">3035</span> <span class="o">|</span> <span class="p">{</span><span class="n">f</span><span class="p">}</span>
+ <span class="n">ukol_1</span>         <span class="o">|</span> <span class="n">dmt_link</span>     <span class="o">|</span> <span class="mi">3035</span> <span class="o">|</span> <span class="p">{</span><span class="n">t</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>Tabulka <span class="dbtable">raster_columns</span> ukrývá další užitečné informace.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">scale_x</span><span class="p">,</span><span class="n">scale_y</span><span class="p">,</span><span class="n">blocksize_x</span><span class="p">,</span><span class="n">blocksize_y</span><span class="p">,</span><span class="n">same_alignment</span><span class="p">,</span>
+<span class="w"> </span><span class="n">regular_blocking</span><span class="p">,</span><span class="n">num_bands</span><span class="p">,</span><span class="n">pixel_types</span><span class="p">,</span><span class="n">nodata_values</span><span class="p">,</span><span class="n">ST_AsText</span><span class="p">(</span><span class="n">extent</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">extent</span>
+<span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">raster_columns</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">r_table_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;dmt&#39;</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">scale_x</span>          <span class="o">|</span> <span class="mi">25</span>
+<span class="n">scale_y</span>          <span class="o">|</span> <span class="o">-</span><span class="mi">25</span>
+<span class="n">blocksize_x</span>      <span class="o">|</span> <span class="mi">19615</span>
+<span class="n">blocksize_y</span>      <span class="o">|</span> <span class="mi">11119</span>
+<span class="n">same_alignment</span>   <span class="o">|</span> <span class="n">t</span>
+<span class="n">regular_blocking</span> <span class="o">|</span> <span class="n">f</span>
+<span class="n">num_bands</span>        <span class="o">|</span> <span class="mi">1</span>
+<span class="n">pixel_types</span>      <span class="o">|</span> <span class="p">{</span><span class="mi">16</span><span class="n">BUI</span><span class="p">}</span>
+<span class="n">nodata_values</span>    <span class="o">|</span> <span class="p">{</span><span class="mi">65535</span><span class="p">}</span>
+<span class="n">extent</span>           <span class="o">|</span> <span class="n">POLYGON</span><span class="p">((</span><span class="mi">4470075</span> <span class="mi">3113850</span><span class="p">,</span><span class="mi">4960450</span> <span class="mi">3113850</span><span class="p">,</span><span class="mi">4960450</span> <span class="mi">2835875</span><span class="p">,</span><span class="mi">4470075</span> <span class="mi">2835875</span><span class="p">,</span><span class="mi">4470075</span> <span class="mi">3113850</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Záporná hodnota <code class="docutils literal notranslate"><span class="pre">scale_y</span></code> naznačuje orientaci rastru ze
+severu na jih.</p>
+</div>
+<p>Kde je:</p>
+<table class="noborder docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">scale_x</span></code></p></td>
+<td><p>prostorové rozlišení ve směru osy x</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">scale_y</span></code></p></td>
+<td><p>prostorové rozlišení ve směru osy y</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">blocksize_x</span></code></p></td>
+<td><p>velikost dlaždice ve směru osy x</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">blocksize_y</span></code></p></td>
+<td><p>velikost dlaždice ve směru osy y</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">same_alignment</span></code></p></td>
+<td><p>všechny dlaždice mají stejné zarovnání</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">regular_blocking</span></code></p></td>
+<td><p>všechny dlaždice mají stejný rozměr a nepřekrývají se</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">num_bands</span></code></p></td>
+<td><p>počet kanálů</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pixel_types</span></code></p></td>
+<td><p>datový typ buněk kanálů</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">nodata_values</span></code></p></td>
+<td><p>hodnota pro no-data jednotlivých kanálů</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">extent</span></code></p></td>
+<td><p>minimální ohraničující obdélník datové vrstvy</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Porovnáme-li velikost dlaždice (<code class="docutils literal notranslate"><span class="pre">blocksize_x</span></code> a
+<code class="docutils literal notranslate"><span class="pre">blocksize_y</span></code>) a velikost vstupního rastru (například
+pomocí nástroje knihovny GDAL <strong class="program">gdalinfo</strong>, tak
+dojdeme, že se rastr naimportoval jako jedna dlaždice.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>gdalinfo<span class="w"> </span>dmt.tif<span class="w"> </span>-noct
+</pre></div>
+</div>
+<p>Pro rozdělení rastrových dat při importu do více dlaždic
+slouží parametr <code class="xref std std-option docutils literal notranslate"><span class="pre">-t</span></code> (<code class="docutils literal notranslate"><span class="pre">&lt;šířka&gt;x&lt;výška&gt;</span></code>) programu
+<strong class="program">raster2pgsql</strong>.</p>
+<div class="notecmd admonition">
+<p class="admonition-title">Rozdělení dat do více dlaždic při importu z příkazové řádky</p>
+<p>Velikost dlaždice zvolíme <code class="docutils literal notranslate"><span class="pre">400x400px</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>raster2pgsql<span class="w"> </span>-s<span class="w"> </span><span class="m">3035</span><span class="w"> </span>-Y<span class="w"> </span>-C<span class="w"> </span>-t<span class="w"> </span>400x400<span class="w"> </span>dmt.tif<span class="w"> </span>ukol_1.dmt_tiled<span class="w"> </span><span class="p">|</span><span class="w"> </span>psql<span class="w"> </span>pokusnik<span class="w"> </span><span class="m">2</span>&gt;err
+</pre></div>
+</div>
+<p>Rastr se v tomto případě naimportuje jako 1400 dlaždic.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">.</span><span class="n">dmt_tiled</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="priklad">
+<h2>Příklad<a class="headerlink" href="#priklad" title="Permalink to this heading">¶</a></h2>
+<p><em>Vejce vesmírných oblud v nadmořské výšce nad 300 metrů jsou
+oslabena. Využijte toho a zlikvidujte je.</em></p>
+<section id="zadani">
+<h3>Zadání<a class="headerlink" href="#zadani" title="Permalink to this heading">¶</a></h3>
+<p>Určete nadmořskou výšku bodů s výskytem vajec na základě rastru
+DMT. Vyberte body s nadmořskou výškou větší než 300 metrů.</p>
+</section>
+<section id="reseni">
+<h3>Řešení<a class="headerlink" href="#reseni" title="Permalink to this heading">¶</a></h3>
+<p>Geometrie tabulky <span class="dbtable">vesmirne_zrudnice</span> je v systému S-JTSK
+(<a class="reference external" href="http://epsg.io/5514">EPSG:5514</a>), rastrová data v ETRS-89 (<a class="reference external" href="http://epsg.io/3035">EPSG:3035</a>). V rámci řešení
+tedy musíme počítat s transformaci dat do společného souřadnicového
+systému pomocí funkce <a class="reference external" href="http://postgis.net/docs/ST_Transform.html">ST_Transform</a>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- nastavevíme cestu</span>
+<span class="k">SET</span><span class="w"> </span><span class="n">search_path</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="p">;</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="n">ST_Value</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">rast</span><span class="p">,</span><span class="n">v</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">dmt</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="k">CROSS</span><span class="w"> </span><span class="k">JOIN</span>
+<span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="n">ST_Transform</span><span class="p">(</span><span class="n">geom_p</span><span class="p">,</span><span class="w"> </span><span class="mi">3035</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">v</span><span class="p">;</span>
+
+<span class="c1">-- optimalizovaná verze dotazu (dmt -&gt; dmt_tiled)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="n">ST_Value</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">rast</span><span class="p">,</span><span class="n">v</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">dmt_tiled</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="k">JOIN</span>
+<span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="n">ST_Transform</span><span class="p">(</span><span class="n">geom_p</span><span class="p">,</span><span class="w"> </span><span class="mi">3035</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="k">ON</span>
+<span class="w"> </span><span class="n">ST_Intersects</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">rast</span><span class="p">,</span><span class="n">v</span><span class="p">.</span><span class="n">geom</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Výsledek uložíme do nového sloupečku v tabulce
+<span class="dbtable">vesmirne_zrudnice</span> a vybereme body s nadmořskou výškou větší než 300 metrů.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">vyska</span><span class="w"> </span><span class="nb">FLOAT</span><span class="p">;</span>
+
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">vyska</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="k">FROM</span>
+<span class="p">(</span>
+<span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">vid</span><span class="p">,</span><span class="n">ST_Value</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">rast</span><span class="p">,</span><span class="n">v</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">dmt_tiled</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="k">JOIN</span>
+<span class="w">  </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="n">ST_Transform</span><span class="p">(</span><span class="n">geom_p</span><span class="p">,</span><span class="w"> </span><span class="mi">3035</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="k">ON</span>
+<span class="w">  </span><span class="n">ST_Intersects</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">rast</span><span class="p">,</span><span class="n">v</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span>
+<span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vid</span><span class="p">;</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">vyska</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">300</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="uzitecne-odkazy">
+<h2>Užitečné odkazy<a class="headerlink" href="#uzitecne-odkazy" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="http://freegis.fsv.cvut.cz/gwiki/PostGIS_Raster">http://freegis.fsv.cvut.cz/gwiki/PostGIS_Raster</a></p></li>
+<li><p><a class="reference external" href="http://postgis.net/docs/RT_reference.html">Funkce rozšíření PostGIS Raster</a></p></li>
+</ul>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="0_uvod.html">Úvod</a></li>
+<li class="toctree-l1"><a class="reference internal" href="1_vytvarime_prostorovou_db.html">Vytváříme prostorovou databázi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2_tvorba_jednoduche_prostorove_tabulky.html">Vytváříme prostorovou tabulku</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3_shp2pgsql_a_davkove_nahrani.html">Dávkové nahrání dat</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4_prostorove_operatory.html">Operátory datového typu geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5_prostorove_funkce.html">Prostorové funkce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6_obludy.html">Praktické příklady</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7_finty.html">Efektivní práce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8_topologie.html">Topologie</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Rastrová data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#nahrani-rastrovych-dat-do-databaze">Nahraní rastrových dat do databáze</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#raster2pgsql">raster2pgsql</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#zakladni-metadata">Základní metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#priklad">Příklad</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#zadani">Zadání</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reseni">Řešení</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#uzitecne-odkazy">Užitečné odkazy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="10_routing.html">Síťové analýzy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11_zaver.html">A co dál?</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Vyhledávání</h3>
+            <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="OK" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="8_topologie.html" title="Topologie"
+              >předchozí</a> |
+            <a href="10_routing.html" title="Síťové analýzy"
+              >další</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2023 GISMentors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

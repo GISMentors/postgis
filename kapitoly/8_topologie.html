@@ -1,0 +1,578 @@
+
+<!DOCTYPE html>
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Topologie &#8212; Školení PostGIS pro pokročilé</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gismentors.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/translations.js"></script>
+    <link rel="search" title="Vyhledávání" href="../search.html" />
+    <link rel="next" title="Rastrová data" href="9_rastry.html" />
+    <link rel="prev" title="Efektivní práce" href="7_finty.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">Školení PostGIS pro pokročilé</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="7_finty.html" title="Efektivní práce"
+             accesskey="P">předchozí</a> |
+          <a href="9_rastry.html" title="Rastrová data"
+             accesskey="N">další</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="topologie">
+<h1>Topologie<a class="headerlink" href="#topologie" title="Permalink to this heading">¶</a></h1>
+<p><em>PostGIS vznikl jako projekt implementující standard OGC</em> <a class="reference external" href="http://www.opengeospatial.org/standards/sfa">Simple
+Features</a> <em>pro práci s
+vektorovými daty ve formě jednoduchých prvků. Od verze 2.0 nicméně
+umožnuje práci s vektorovými daty také v topologické formě.</em></p>
+<p>Rozšíření pro topologická vektorová data nahrajeme příkazem:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">postgis_topology</span><span class="p">;</span>
+</pre></div>
+</div>
+<section id="topologicky-datovy-model">
+<h2>Topologický datový model<a class="headerlink" href="#topologicky-datovy-model" title="Permalink to this heading">¶</a></h2>
+<p>Rozdíl mezi datovým modelem jednoduchých geoprvků (simple features) a
+topologickým modelem si ukážeme na ukázce dvou sousedících polygonů
+(jeden z nich obsahuje otvor).</p>
+<section id="jednoduche-prvky">
+<h3>Jednoduché prvky<a class="headerlink" href="#jednoduche-prvky" title="Permalink to this heading">¶</a></h3>
+<figure class="align-center" id="id3">
+<span id="priklad-polygony-sf"></span><img alt="../_images/postgis-polygon-example.png" src="../_images/postgis-polygon-example.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 8 </span><span class="caption-text">Dva sousedící polygony jako jednoduché geoprvky.</span><a class="headerlink" href="#id3" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">polygon</span> <span class="o">|</span>              <span class="n">geometrie</span> <span class="p">(</span><span class="n">WKT</span><span class="p">)</span>
+<span class="o">---------+----------------------------------------------</span>
+    <span class="n">A</span>    <span class="o">|</span> <span class="n">POLYGON</span><span class="p">((</span><span class="mi">0</span> <span class="mi">0</span><span class="p">,</span><span class="mi">100</span> <span class="mi">0</span><span class="p">,</span><span class="mi">125</span> <span class="mi">100</span><span class="p">,</span><span class="mi">0</span> <span class="mi">125</span><span class="p">,</span><span class="mi">0</span> <span class="mi">0</span><span class="p">),(</span><span class="mi">25</span> <span class="mi">25</span><span class="p">,</span><span class="mi">75</span> <span class="mi">25</span><span class="p">,</span><span class="mi">50</span> <span class="mi">50</span><span class="p">,</span><span class="mi">25</span> <span class="mi">25</span><span class="p">))</span>
+    <span class="n">B</span>    <span class="o">|</span> <span class="n">POLYGON</span><span class="p">((</span><span class="mi">100</span> <span class="mi">0</span><span class="p">,</span><span class="mi">200</span> <span class="mi">0</span><span class="p">,</span><span class="mi">225</span> <span class="mi">100</span><span class="p">,</span><span class="mi">125</span> <span class="mi">100</span><span class="p">,</span><span class="mi">100</span> <span class="mi">0</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Z výše uvedeného je evidentní, že jsou oba prvky uloženy odděleně. To
+vede k tomu, že hranice sousedících polygonů je uložena
+dvakrát. Jednou jako součást polygonu <span class="fignote">A</span> podruhé jako součást
+polygonu <span class="fignote">B</span>.</p>
+</section>
+<section id="id1">
+<h3>Topologický datový model<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p>PostGIS Topology používá datový model Topo-Geo, který vychází z
+technické normy SQL/MM (<a class="reference external" href="http://www.wiscorp.com/H2-2004-168r2-Topo-Geo-and-Topo-Net-1-The-Concepts.pdf">ISO 13249-3:2006</a>).</p>
+<p>Model pracuje s třemi základními <em>topologickými primitivy</em>:</p>
+<ul class="simple">
+<li><p>uzly (<em>nodes</em>)</p></li>
+<li><p>hranami (<em>edges</em>)</p></li>
+<li><p>stěnami (<em>faces</em>)</p></li>
+</ul>
+<p>Kompozice znázorněná na <a class="reference internal" href="#priklad-polygony-sf"><span class="std std-numref">Obr. 8</span></a> bude
+v topologickém modelu PostGISu popsána (minimálně, reálná situace se
+může lišit na základě použitého algoritmu tvorby topologických
+primitiv):</p>
+<ul class="simple">
+<li><p>třemi uzly <span class="fignote">N1</span>, <span class="fignote">N2</span> a <span class="fignote">N3</span></p></li>
+<li><p>třemi hranami <span class="fignote">E1</span>, <span class="fignote">E2</span> a <span class="fignote">E3</span></p></li>
+<li><p>třemi stěnami <span class="fignote">F1</span>, <span class="fignote">F2</span> a <span class="fignote">F3</span></p></li>
+</ul>
+<figure class="align-center" id="id4">
+<img alt="../_images/postgis-topo-polygon-example.png" src="../_images/postgis-topo-polygon-example.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 9 </span><span class="caption-text">Dva sousedící polygony z <a class="reference internal" href="#priklad-polygony-sf"><span class="std std-numref">Obr. 8</span></a> v topologickém
+modelu.</span><a class="headerlink" href="#id4" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+<p>Ve výsledku bude tedy společná hranice polygonů <span class="fignote">A</span> a
+<span class="fignote">B</span> uložena pouze jednou a to jako hrana <span class="fignote">E2</span>.</p>
+</section>
+<section id="priklad">
+<h3>Příklad<a class="headerlink" href="#priklad" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- schéma topology a public musí být v cestě uvedeno vždy</span>
+<span class="k">SET</span><span class="w"> </span><span class="n">search_path</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">topo_test</span><span class="p">,</span><span class="n">topology</span><span class="p">,</span><span class="k">public</span><span class="p">;</span>
+
+<span class="c1">-- nahrání dat ve formě simple features</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">p2</span><span class="w"> </span><span class="p">(</span><span class="n">fid</span><span class="w"> </span><span class="nb">serial</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="n">geometry</span><span class="p">(</span><span class="n">Polygon</span><span class="p">));</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">p2</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">ST_GeomFromText</span><span class="p">(</span><span class="s1">&#39;Polygon(</span>
+<span class="s1"> (0 0, 100 0, 125 100, 0 125, 0 0),(25 25, 75 25, 50 50, 25 25))&#39;</span><span class="p">));</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">p2</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">ST_GeomFromText</span><span class="p">(</span><span class="s1">&#39;Polygon(</span>
+<span class="s1"> (100 0, 200 0, 225 100, 125 100, 100 0))&#39;</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>Každá datová vrstva s topologii je uložena ve zvláštním schématu, nové
+schéma vytvoříme pomocí funkce <a class="reference external" href="http://postgis.net/docs/CreateTopology.html">CreateTopology</a>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">CreateTopology</span><span class="p">(</span><span class="s1">&#39;topo_p2&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Topologická schéma jsou uložena v tabulce
+<span class="dbtable">topology.topology</span>.</p>
+<p>Všiměte si, že funkce z rozšíření topology nemá prefix „st“,
+není tedy součástí standardu ISO SQL M/M.</p>
+</div>
+<p>Do tabulky prvků <span class="dbtable">p2</span> vložíme nový atribut, do kterého
+posléze sestavíme topologii prvků. K tomu použijeme funkci
+<a class="reference external" href="http://postgis.net/docs/AddTopoGeometryColumn.html">AddTopoGeometryColumn</a>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">AddTopoGeometryColumn</span><span class="p">(</span><span class="s1">&#39;topo_p2&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;topo_test&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;p2&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;topo&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;POLYGON&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Ve výsledku se v tabulce <span class="dbtable">p2</span> vytvoří nový sloupce s názvem
+<span class="dbcolumn">topo</span> a datovým typem <a class="reference internal" href="#topogeometry"><span class="std std-ref">TopoGeometry</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Informace o atributech s topologií jsou uloženy v tabulce
+<span class="dbtable">topology.layer</span>.</p>
+</div>
+<p>Topologická primitiva sestavíme z jednoduchým prvků pomocí funkce
+<a class="reference external" href="http://postgis.net/docs/toTopoGeom.html">toTopoGeom</a>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">p2</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">topo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">toTopoGeom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;topo_p2&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Poslední argument určuje toleranci, se kterou budeme
+topologii sestavovat. V našem případě jsme zvolili toleranci
+1 metr.</p>
+</div>
+</section>
+</section>
+<section id="datovy-typ-topogeometry">
+<span id="topogeometry"></span><h2>Datový typ TopoGeometry<a class="headerlink" href="#datovy-typ-topogeometry" title="Permalink to this heading">¶</a></h2>
+<p>Datový typ <strong>TopoGeometry</strong> reprezentuje geometrii definovanou
+topologickými primitivy. Je složen ze čtyř složek:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">topology_id</span></code> (id topologického schématu v tabulce <span class="dbtable">topology</span>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">layer_id</span></code> (id topologického atributu v tabulce <span class="dbtable">layer</span>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">id</span></code> (id topologické relace)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code> (geometrický typ jednoduchého prvku)</p></li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">1</span></code> bod (point)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2</span></code> lomená čára (linestring)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">3</span></code> polygon</p></li>
+</ul>
+</div></blockquote>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">fid</span><span class="p">,</span><span class="n">ST_AsText</span><span class="p">(</span><span class="n">geom</span><span class="p">),</span><span class="n">topo</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">p2</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>V našem případě:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">fid</span> <span class="o">|</span>                            <span class="n">st_astext</span>                             <span class="o">|</span>   <span class="n">topo</span>
+<span class="o">-----+------------------------------------------------------------------+-----------</span>
+   <span class="mi">1</span> <span class="o">|</span> <span class="n">POLYGON</span><span class="p">((</span><span class="mi">0</span> <span class="mi">0</span><span class="p">,</span><span class="mi">100</span> <span class="mi">0</span><span class="p">,</span><span class="mi">125</span> <span class="mi">100</span><span class="p">,</span><span class="mi">0</span> <span class="mi">125</span><span class="p">,</span><span class="mi">0</span> <span class="mi">0</span><span class="p">),(</span><span class="mi">25</span> <span class="mi">25</span><span class="p">,</span><span class="mi">75</span> <span class="mi">25</span><span class="p">,</span><span class="mi">50</span> <span class="mi">50</span><span class="p">,</span><span class="mi">25</span> <span class="mi">25</span><span class="p">))</span> <span class="o">|</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+   <span class="mi">2</span> <span class="o">|</span> <span class="n">POLYGON</span><span class="p">((</span><span class="mi">100</span> <span class="mi">0</span><span class="p">,</span><span class="mi">200</span> <span class="mi">0</span><span class="p">,</span><span class="mi">225</span> <span class="mi">100</span><span class="p">,</span><span class="mi">125</span> <span class="mi">100</span><span class="p">,</span><span class="mi">100</span> <span class="mi">0</span><span class="p">))</span>                     <span class="o">|</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Vztah mezi atributem a daným topologickým primitivem určuje složka
+<code class="docutils literal notranslate"><span class="pre">id</span></code> a tabulka <span class="dbtable">relation</span> umistěná v topologickém schématu. Příklad:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">face_id</span><span class="p">,</span><span class="w"> </span><span class="n">st_astext</span><span class="p">(</span><span class="n">mbr</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">topo_p2</span><span class="p">.</span><span class="n">face</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">face_id</span><span class="w"> </span><span class="k">IN</span>
+<span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">element_id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">p2</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">topo_p2</span><span class="p">.</span><span class="n">relation</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="k">ON</span>
+<span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">topo</span><span class="p">).</span><span class="n">layer_id</span><span class="o">=</span><span class="n">r</span><span class="p">.</span><span class="n">layer_id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">topo</span><span class="p">).</span><span class="k">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">element_type</span>
+<span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">topo</span><span class="p">).</span><span class="n">id</span><span class="o">=</span><span class="n">r</span><span class="p">.</span><span class="n">topogeo_id</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">face_id</span> <span class="o">|</span>                  <span class="n">st_astext</span>
+<span class="o">---------+----------------------------------------------</span>
+       <span class="mi">1</span> <span class="o">|</span> <span class="n">POLYGON</span><span class="p">((</span><span class="mi">0</span> <span class="mi">0</span><span class="p">,</span><span class="mi">0</span> <span class="mi">125</span><span class="p">,</span><span class="mi">125</span> <span class="mi">125</span><span class="p">,</span><span class="mi">125</span> <span class="mi">0</span><span class="p">,</span><span class="mi">0</span> <span class="mi">0</span><span class="p">))</span>
+       <span class="mi">3</span> <span class="o">|</span> <span class="n">POLYGON</span><span class="p">((</span><span class="mi">100</span> <span class="mi">0</span><span class="p">,</span><span class="mi">100</span> <span class="mi">100</span><span class="p">,</span><span class="mi">225</span> <span class="mi">100</span><span class="p">,</span><span class="mi">225</span> <span class="mi">0</span><span class="p">,</span><span class="mi">100</span> <span class="mi">0</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="tabulky-s-topologickymi-primitivy">
+<h2>Tabulky s topologickými primitivy<a class="headerlink" href="#tabulky-s-topologickymi-primitivy" title="Permalink to this heading">¶</a></h2>
+<p>Topologická primitiva jsou uloženy v tabulkách topologického schématu <span class="dbtable">node</span>, <span class="dbtable">edge</span> a <span class="dbtable">face</span>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- seznam uzlů</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">node_id</span><span class="p">,</span><span class="n">containing_face</span><span class="p">,</span><span class="n">st_astext</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">topo_p2</span><span class="p">.</span><span class="n">node</span><span class="p">;</span>
+
+<span class="c1">-- seznam hran</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">edge_id</span><span class="p">,</span><span class="n">start_node</span><span class="p">,</span><span class="n">end_node</span><span class="p">,</span><span class="n">next_left_edge</span><span class="p">,</span><span class="n">next_right_edge</span><span class="p">,</span>
+<span class="w"> </span><span class="n">left_face</span><span class="p">,</span><span class="n">right_face</span><span class="p">,</span><span class="n">st_astext</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">topo_p2</span><span class="p">.</span><span class="n">edge</span><span class="p">;</span>
+
+<span class="c1">-- seznam stěn</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">face_id</span><span class="p">,</span><span class="n">ST_AsText</span><span class="p">(</span><span class="n">mbr</span><span class="p">)</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">topo_p2</span><span class="p">.</span><span class="n">face</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+<section id="kontrola-konzistence-dat">
+<h2>Kontrola konzistence dat<a class="headerlink" href="#kontrola-konzistence-dat" title="Permalink to this heading">¶</a></h2>
+<p>Pro kontrolu topologické konzistence můžete použít dvě funkce
+<a class="reference external" href="http://postgis.net/docs/TopologySummary.html">TopologySummary</a> a <a class="reference external" href="http://postgis.net/docs/ValidateTopology.html">ValidateTopology</a>. První z nich
+vypisuje souhrné informace o topologii, druhá provádí validaci
+topologických primitiv.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">TopologySummary</span><span class="p">(</span><span class="s1">&#39;topo_p2&#39;</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ValidateTopology</span><span class="p">(</span><span class="s1">&#39;topo_p2&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="prakticka-ukazka">
+<h2>Praktická ukázka<a class="headerlink" href="#prakticka-ukazka" title="Permalink to this heading">¶</a></h2>
+<p>Z důvodu časové náročnosti si topologii sestavíme pouze na vzorku
+parcel na uzemí Hlavního města Prahy.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- vybereme část parcel na území Hl. města Prahy</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">parcely_732583</span><span class="w"> </span><span class="k">AS</span>
+<span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ruian_praha</span><span class="p">.</span><span class="n">parcely</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">katastralniuzemikod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">732583</span><span class="p">;</span>
+
+<span class="c1">-- přídáme primární klíč</span>
+<span class="w"> </span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">parcely_732583</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">ogc_fid</span><span class="p">);</span>
+
+<span class="c1">-- a prostorové indexy</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">parcely_732583</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gist</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Vytvoříme nové schéma a atribut pro topologii.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- topologické schéma</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">CreateTopology</span><span class="p">(</span><span class="s1">&#39;topo_parcely_732583&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">);</span>
+
+<span class="c1">-- topologický atribut</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">AddTopoGeometryColumn</span><span class="p">(</span><span class="s1">&#39;topo_parcely_732583&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;topo_test&#39;</span><span class="p">,</span>
+<span class="w"> </span><span class="s1">&#39;parcely_732583&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;topo&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;POLYGON&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Souřadnicový systém pro topologické schéma můžeme odvodit
+dynamicky pomocí funkce <code class="docutils literal notranslate"><span class="pre">find_srid</span></code>,
+např. <code class="docutils literal notranslate"><span class="pre">find_srid('topo_test',</span> <span class="pre">'parcely_732583',</span> <span class="pre">'geom')</span></code>.</p>
+</div>
+<p>Nakonec se pokusíme topologii sestavit z původních jednoduchých prvků.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">parcely_732583</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">topo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">toTopoGeom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;topo_parcely_732583&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Sestavení topologie z jednoduchých geoprvků je poměrně
+časově náročná činnost. Na výše uvedeném katastrálním území
+může trvat až několik minut. Funkce <a class="reference external" href="http://postgis.net/docs/toTopoGeom.html">toTopoGeom</a> je
+navíc velmi náchylná na topologické chyby na vstupu a často
+skončí chybou.</p>
+</div>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>Pro sestavení topologie v PostGISu můžete použít
+externí nástroj <a class="reference external" href="http://www.gismentors.cz/skoleni/grass-gis/">GRASS GIS</a>. Následuje zkracený
+návod. Detaily tohoto řešení jsou nad rámec tohoto školení a
+spadají spíše do školení <a class="reference external" href="http://training.gismentors.eu/grass-gis-pokrocily">GRASS GIS pro pokročilé</a>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>v.in.ogr<span class="w"> </span><span class="k">in</span><span class="o">=</span>PG:dbname<span class="o">=</span>pokusnik<span class="w"> </span><span class="nv">layer</span><span class="o">=</span>ukol_1.parcely<span class="w"> </span><span class="nv">out</span><span class="o">=</span>parcely
+v.out.postgis<span class="w"> </span>-l<span class="w"> </span><span class="k">in</span><span class="o">=</span>parcely<span class="w"> </span><span class="nv">out</span><span class="o">=</span>PG:dbname<span class="o">=</span>pokusnik<span class="w"> </span><span class="nv">out_layer</span><span class="o">=</span>parcely_topo
+</pre></div>
+</div>
+</div>
+<section id="zadani">
+<h3>Zadání<a class="headerlink" href="#zadani" title="Permalink to this heading">¶</a></h3>
+<p>Najděte parcely, které sousedí s parcelou, ve které se nachází adresní
+bod s označením <code class="docutils literal notranslate"><span class="pre">kod=22560840</span></code>.</p>
+</section>
+<section id="reseni">
+<h3>Řešení<a class="headerlink" href="#reseni" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">WITH</span><span class="w"> </span><span class="n">original_face_id</span><span class="w"> </span><span class="k">AS</span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span>
+<span class="w">   </span><span class="n">topology</span><span class="p">.</span><span class="n">getFaceByPoint</span><span class="p">(</span><span class="s1">&#39;topo_parcely_732583&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">face_id</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">ruian_praha</span><span class="p">.</span><span class="n">adresnimista</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">kod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">22560840</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">sousedni</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span>
+<span class="w">   </span><span class="k">CASE</span><span class="w"> </span><span class="n">right_face</span>
+<span class="w">      </span><span class="k">WHEN</span><span class="w"> </span><span class="n">original_face_id</span><span class="p">.</span><span class="n">face_id</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">left_face</span>
+<span class="w">      </span><span class="k">ELSE</span><span class="w"> </span><span class="n">right_face</span>
+<span class="w">   </span><span class="k">END</span><span class="w"> </span><span class="n">face</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">original_face_id</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">ST_GetFaceEdges</span><span class="p">(</span><span class="s1">&#39;topo_parcely_732583&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">face_id</span><span class="p">)</span>
+<span class="w">   </span><span class="k">JOIN</span><span class="w"> </span><span class="n">topo_parcely_732583</span><span class="p">.</span><span class="n">edge</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">edge_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">@</span><span class="n">edge</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">topo_test</span><span class="p">.</span><span class="n">parcely_732583</span><span class="w"> </span><span class="n">p</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">topo_parcely_732583</span><span class="p">.</span><span class="n">relation</span><span class="w"> </span><span class="n">r</span>
+<span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">topo</span><span class="p">).</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">topogeo_id</span>
+<span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">topo</span><span class="p">).</span><span class="n">layer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">layer_id</span>
+<span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">topo</span><span class="p">).</span><span class="k">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">element_id</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">face</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">sousedni</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="prakticka-ukazka-brloh-u-drhovle">
+<h2>Praktická ukázka <em>Brloh u Drhovle</em><a class="headerlink" href="#prakticka-ukazka-brloh-u-drhovle" title="Permalink to this heading">¶</a></h2>
+<p>Topologickou funkcionalitu PostGISu můžeme s výhodou využít pro zaplochování a
+tvorbu polygonů u dat, kde máme síť hranic a centroidy. Typickým příkladem dat,
+která takto dostáváme jsou data ve formátech <a class="reference external" href="http://www.cuzk.cz/Katastr-nemovitosti/Poskytovani-udaju-z-KN/Vymenny-format-KN/Vymenny-format-NVF.aspx">VFK</a>
+a <a class="reference external" href="http://www.cuzk.cz/Katastr-nemovitosti/Poskytovani-udaju-z-KN/Vymenny-format-KN/Stary-vymenny-format/Stary-vymenny-format-cast-1.aspx">VKM</a>
+vydávané <a class="reference external" href="http://www.cuzk.cz/Uvod.aspx">Českým úřadem zeměměřickým a katastrálním</a>.</p>
+<p>Další velice užitečnou možností využití funkcionalit topologie v PostGISu je
+topologická generalizace.</p>
+<section id="id2">
+<h3>Zadání<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
+<p>Na základě <a class="reference external" href="http://services.cuzk.cz/VKM/ku/">VKM</a> Brlohu u Drhovle
+a pomocí skriptu v Bashi vybereme <em>linie hranic parcel a jejich
+definiční body</em>. Výsledná SQL dávka ke stažení <a class="reference external" href="http://training.gismentors.eu/geodata/postgis/brloh.sql">zde</a>. Data
+jsou připravena k nahrání do schématu <span class="dbtable">brloh_data</span>.</p>
+<p>Z těchto dat sestavíme polygony parcel. Vytvoříme jednoduchou
+geometrii a jejich topologickou reprezentaci. Dále provedeme
+generalizaci hranic parcel a porovnáme výsledek generalizace
+jednoduchých prvků a topologické reprezentace.</p>
+</section>
+<section id="postup">
+<h3>Postup<a class="headerlink" href="#postup" title="Permalink to this heading">¶</a></h3>
+<section id="nahrani-linii-do-topologickeho-schematu">
+<h4>Nahrání linií do topologického schématu<a class="headerlink" href="#nahrani-linii-do-topologickeho-schematu" title="Permalink to this heading">¶</a></h4>
+<p>Nejdříve vytvoříme nové topologické schéma. Nazveme ho <span class="dbtable">brloh</span>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">CreateTopology</span><span class="p">(</span><span class="s1">&#39;brloh&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">01</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Zvolíme <em>SRID</em> „5514“ a centimetrovou přesnost. Poslední parametr funkce
+<a class="reference external" href="http://postgis.net/docs/CreateTopology.html">CreateTopology</a> udává, že ve schématu nepočítáme se souřadnicí Z.</p>
+<p>Přidáme všechny linie z tabulky <span class="dbtable">brloh_data.hranice</span> do topologie.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">TopoGeo_AddLineString</span><span class="p">(</span><span class="s1">&#39;brloh&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">brloh_data</span><span class="p">.</span><span class="n">hranice</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Zaplochujeme</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">Polygonize</span><span class="p">(</span><span class="s1">&#39;brloh&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>V novějších verzích PostGIS se stěny vytvoří automaticky.</p>
+</div>
+<p>Nyní můžeme vytvořit pohled <span class="dbtable">parcely</span>, který přidá k definičním bodům
+polygony.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">parcely</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">debo</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">debo</span><span class="p">.</span><span class="n">label</span>
+<span class="p">,</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">ST_GetFaceGeometry</span><span class="p">(</span>
+<span class="w">   </span><span class="s1">&#39;brloh&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">GetFaceByPoint</span><span class="p">(</span><span class="s1">&#39;brloh&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="p">)</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">debo</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Případně můžeme geometrii k bodům doplnit přímo do tabulky.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">debo</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="n">geom_polygon</span><span class="w"> </span><span class="n">geometry</span><span class="p">(</span><span class="n">POLYGON</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">);</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">debo</span>
+<span class="k">SET</span><span class="w"> </span><span class="n">geom_polygon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">ST_GetFaceGeometry</span><span class="p">(</span>
+<span class="w">   </span><span class="s1">&#39;brloh&#39;</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">GetFaceByPoint</span><span class="p">(</span><span class="s1">&#39;brloh&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p>Z již vytvořené topologie můžeme vytvořit topologický atribut bez
+toho, abychom jej museli vytvářet na základě jednoduchých prvků.</p>
+<p>Nejdříve přidáme nový atribut o datovém typu TopoGeometry.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">AddTopoGeometryColumn</span><span class="p">(</span>
+<span class="w">   </span><span class="s1">&#39;brloh&#39;</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;brloh_data&#39;</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;debo&#39;</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;topo&#39;</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;POLYGON&#39;</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p>Číslo vrstvy zjistíme dotazem v tabulce <span class="dbtable">topology.layer</span>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">layer_id</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">layer</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">schema_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;brloh_data&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">table_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;debo&#39;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>K vygenerování topogeometrie použijeme funkci <a class="reference external" href="http://postgis.net/docs/CreateTopoGeom.html">CreateTopoGeom</a>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">debo</span>
+<span class="k">SET</span><span class="w"> </span><span class="n">topo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">CreateTopoGeom</span><span class="p">(</span>
+<span class="w">   </span><span class="s1">&#39;brloh&#39;</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="c1">--polygonová vrstva</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="c1">--id vrstvy</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span>
+<span class="w">      </span><span class="nb">ARRAY</span><span class="p">[</span>
+<span class="w">         </span><span class="n">topology</span><span class="p">.</span><span class="n">GetFaceByPoint</span><span class="p">(</span><span class="s1">&#39;brloh&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="c1">--face_id</span>
+<span class="w">         </span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="c1">--značí, že jde o face</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">   </span><span class="p">]::</span><span class="n">topology</span><span class="p">.</span><span class="n">TopoElementArray</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p>Nyní můžeme zobrazit geometrii sestavenou z topologických primitiv.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="p">,</span><span class="w"> </span><span class="n">topo</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">brloh_data</span><span class="p">.</span><span class="n">debo</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Případně se přesvědčit, zda se geometrie sestavená z topologie shoduje
+s dříve uloženou geometrií vycházející z jednoduchých prvků.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">debo</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="n">ST_Equals</span><span class="p">(</span><span class="n">geom_polygon</span><span class="p">,</span><span class="w"> </span><span class="n">topo</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="generalizace">
+<h4>Generalizace<a class="headerlink" href="#generalizace" title="Permalink to this heading">¶</a></h4>
+<p>Nejdříve vyzkoušíme generalizaci jednoduché geometrie. Použijeme
+funkci <a class="reference external" href="http://postgis.net/docs/ST_SimplifyPreserveTopology.html">ST_SimplifyPreserveTopology</a>, která na rozdíl od
+<a class="reference external" href="http://postgis.net/docs/ST_Simplify.html">ST_Simplify</a> dohlíží i na validitu vrácených prvků.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">st_simplifypreservetopology</span><span class="p">(</span><span class="n">geom_polygon</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">brloh_data</span><span class="p">.</span><span class="n">debo</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Výsledek si mohu zobrazit v QGIS.</p>
+<figure class="align-center" id="id5">
+<img alt="../_images/simplify.png" class="middle" src="../_images/simplify.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 10 </span><span class="caption-text">Výsledek generalizace jednoduchých prvků zobrazený v QGIS.</span><a class="headerlink" href="#id5" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+<p>Z obrázku je celkem jasně patrné, že v důsledku toho, že každý prvek byl
+generalizován samostatně vznikla řada překryvů a mezer.</p>
+<p>Vyzkoušíme to samé v topologii pomocí funkce <a class="reference external" href="http://postgis.net/docs/TP_ST_Simplify.html">TP_ST_Simplify</a>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">st_simplify</span><span class="p">(</span><span class="n">topo</span><span class="p">,</span><span class="w"> </span><span class="mi">15</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">brloh_data</span><span class="p">.</span><span class="n">debo</span><span class="p">;</span>
+</pre></div>
+</div>
+<figure class="align-center" id="id6">
+<img alt="../_images/simplify_topo.png" class="middle" src="../_images/simplify_topo.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 11 </span><span class="caption-text">Výsledek generalizace s ohledem na topologii zobrazený v QGIS.</span><a class="headerlink" href="#id6" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+<p>Vrácený výsledek naprosto přesně odpovídá nezjednodušeným geometriím. Je to
+proto, že se generalizují jednotlivé hrany a zde použité hrany mají všechny
+právě dva body a nelze je tedy zjednodušit. Je to důsledek importu z VKM.</p>
+<p>Smažeme tedy celé pracně vytvořené topologické schéma. A vytvoříme ho znova.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">DropTopology</span><span class="p">(</span><span class="s1">&#39;brloh&#39;</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">CreateTopology</span><span class="p">(</span><span class="s1">&#39;brloh&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">01</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Tentokrát linie spojíme a rozpustíme pomocí funkce
+<a class="reference external" href="http://postgis.net/docs/ST_Dump.html">ST_Dump</a>. Navíc je třeba použít funkci
+<a class="reference external" href="http://postgis.net/docs/ST_LineMerge.html">ST_LineMerge</a>, která propojí jednotlivé úseky v rámci
+multilinie.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">topology</span><span class="p">.</span><span class="n">TopoGeo_AddLineString</span><span class="p">(</span><span class="s1">&#39;brloh&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">u_geom</span><span class="p">)).</span><span class="n">geom</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span>
+<span class="w">      </span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_LineMerge</span><span class="p">(</span><span class="n">ST_Union</span><span class="p">(</span><span class="n">geom</span><span class="p">))</span><span class="w"> </span><span class="n">u_geom</span>
+<span class="w">      </span><span class="k">FROM</span><span class="w"> </span><span class="n">brloh_data</span><span class="p">.</span><span class="n">hranice</span>
+<span class="w">   </span><span class="p">)</span><span class="w"> </span><span class="n">uni</span>
+<span class="p">)</span><span class="w"> </span><span class="n">geoms</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Dále budeme postupovat stejně.</p>
+<figure class="align-center" id="id7">
+<img alt="../_images/simplify_topo_2.png" class="middle" src="../_images/simplify_topo_2.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 12 </span><span class="caption-text">Opravený výsledek generalizace na základě topologie zobrazený v QGIS.</span><a class="headerlink" href="#id7" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+<p>Původní hrany jsou vyznačeny světlou linkou.</p>
+</section>
+</section>
+</section>
+<section id="uzitecne-odkazy">
+<h2>Užitečné odkazy<a class="headerlink" href="#uzitecne-odkazy" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="http://postgis.net/docs/Topology.html">Funkce rozšíření Topology</a></p></li>
+<li><p><a class="reference external" href="http://freegis.fsv.cvut.cz/gwiki/PostGIS_Topology">http://freegis.fsv.cvut.cz/gwiki/PostGIS_Topology</a></p></li>
+<li><p><a class="reference external" href="http://grasswiki.osgeo.org/wiki/PostGIS_Topology">http://grasswiki.osgeo.org/wiki/PostGIS_Topology</a></p></li>
+</ul>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="0_uvod.html">Úvod</a></li>
+<li class="toctree-l1"><a class="reference internal" href="1_vytvarime_prostorovou_db.html">Vytváříme prostorovou databázi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2_tvorba_jednoduche_prostorove_tabulky.html">Vytváříme prostorovou tabulku</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3_shp2pgsql_a_davkove_nahrani.html">Dávkové nahrání dat</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4_prostorove_operatory.html">Operátory datového typu geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5_prostorove_funkce.html">Prostorové funkce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6_obludy.html">Praktické příklady</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7_finty.html">Efektivní práce</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Topologie</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#topologicky-datovy-model">Topologický datový model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#jednoduche-prvky">Jednoduché prvky</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Topologický datový model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#priklad">Příklad</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#datovy-typ-topogeometry">Datový typ TopoGeometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tabulky-s-topologickymi-primitivy">Tabulky s topologickými primitivy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#kontrola-konzistence-dat">Kontrola konzistence dat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#prakticka-ukazka">Praktická ukázka</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#zadani">Zadání</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reseni">Řešení</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#prakticka-ukazka-brloh-u-drhovle">Praktická ukázka <em>Brloh u Drhovle</em></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id2">Zadání</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#postup">Postup</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#uzitecne-odkazy">Užitečné odkazy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="9_rastry.html">Rastrová data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10_routing.html">Síťové analýzy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11_zaver.html">A co dál?</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Vyhledávání</h3>
+            <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="OK" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="7_finty.html" title="Efektivní práce"
+              >předchozí</a> |
+            <a href="9_rastry.html" title="Rastrová data"
+              >další</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2023 GISMentors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

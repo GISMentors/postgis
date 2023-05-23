@@ -1,0 +1,770 @@
+
+<!DOCTYPE html>
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Síťové analýzy &#8212; Školení PostGIS pro pokročilé</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gismentors.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/translations.js"></script>
+    <link rel="search" title="Vyhledávání" href="../search.html" />
+    <link rel="next" title="A co dál?" href="11_zaver.html" />
+    <link rel="prev" title="Rastrová data" href="9_rastry.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">Školení PostGIS pro pokročilé</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="9_rastry.html" title="Rastrová data"
+             accesskey="P">předchozí</a> |
+          <a href="11_zaver.html" title="A co dál?"
+             accesskey="N">další</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="sitove-analyzy">
+<h1>Síťové analýzy<a class="headerlink" href="#sitove-analyzy" title="Permalink to this heading">¶</a></h1>
+<p>Síťové analýzy (tzv. routing) zajišťuje v prostředí PostGIS nadstavba
+označovaná jako <a class="reference external" href="http://pgrouting.org/">pgRouting</a>. Nadstavbu v
+databázi aktivujeme příkazem:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">pgrouting</span><span class="p">;</span>
+</pre></div>
+</div>
+<section id="priprava-dat">
+<h2>Příprava dat<a class="headerlink" href="#priprava-dat" title="Permalink to this heading">¶</a></h2>
+<p>Jako podkladová data použijeme data OpenStreetMap pro území Hlavního
+města Prahy. Data stáhneme přes tzv. Overpass API. Území je dáno
+minimálním ohraničujícím obdélníkem (bbox), který můžeme zjistit
+např. ze stránek <a class="reference external" href="http://boundingbox.klokantech.com">http://boundingbox.klokantech.com</a> (formát CSV).</p>
+<p>Příklad stažení dat:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>--progress<span class="o">=</span>dot:mega<span class="w"> </span>-O<span class="w"> </span>praha.osm<span class="w"> </span><span class="se">\</span>
+<span class="s2">&quot;http://www.overpass-api.de/api/xapi?*[bbox=14.224435,49.941898,14.706787,50.177433][@meta]&quot;</span>
+</pre></div>
+</div>
+<p>Data naimportujeme do databáze <em>gismentors</em>. Import dat zajišťuje
+specializovaný nástroj <strong class="program">osm2routing</strong>, příklad volání:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>osm2pgrouting<span class="w"> </span>-f<span class="w"> </span>praha.osm<span class="w"> </span>--schema<span class="w"> </span>routing<span class="w"> </span>-d<span class="w"> </span>gismentors<span class="w"> </span>-U<span class="w"> </span>postgres
+</pre></div>
+</div>
+<p>Po importu se ve výstupním schématu objeví následující tabulky:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">f_table_name</span><span class="p">,</span><span class="n">f_geometry_column</span><span class="p">,</span><span class="n">coord_dimension</span><span class="p">,</span><span class="n">srid</span><span class="p">,</span><span class="k">type</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">geometry_columns</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">f_table_schema</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;routing&#39;</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="n">f_table_name</span>    <span class="o">|</span> <span class="n">f_geometry_column</span> <span class="o">|</span> <span class="n">coord_dimension</span> <span class="o">|</span> <span class="n">srid</span> <span class="o">|</span>    <span class="nb">type</span>
+<span class="o">-------------------+-------------------+-----------------+------+------------</span>
+ <span class="n">pointsofinterest</span>  <span class="o">|</span> <span class="n">the_geom</span>          <span class="o">|</span>               <span class="mi">2</span> <span class="o">|</span> <span class="mi">4326</span> <span class="o">|</span> <span class="n">POINT</span>
+ <span class="n">ways_vertices_pgr</span> <span class="o">|</span> <span class="n">the_geom</span>          <span class="o">|</span>               <span class="mi">2</span> <span class="o">|</span> <span class="mi">4326</span> <span class="o">|</span> <span class="n">POINT</span>
+ <span class="n">ways</span>              <span class="o">|</span> <span class="n">the_geom</span>          <span class="o">|</span>               <span class="mi">2</span> <span class="o">|</span> <span class="mi">4326</span> <span class="o">|</span> <span class="n">LINESTRING</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Jak je vidět, tak jsou data transformována do
+<a class="reference external" href="http://training.gismentors.eu/open-source-gis/soursystemy/wgs84.html">WGS-84</a>
+(<a class="reference external" href="http://epsg.io/4326">EPSG:4326</a>), geometrie je uložena ve sloupci
+<span class="dbcolumn">the_geom</span>. Pro zachování konzistence v databáze
+jej přejmenujeme na <span class="dbcolumn">geom</span>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">pointsofinterest</span><span class="w"> </span><span class="k">RENAME</span><span class="w"> </span><span class="n">the_geom</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">geom</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">ways_vertices_pgr</span><span class="w"> </span><span class="k">RENAME</span><span class="w"> </span><span class="n">the_geom</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">geom</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">ways</span><span class="w"> </span><span class="k">RENAME</span><span class="w"> </span><span class="n">the_geom</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">geom</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="nalezeni-optimalni-cesty">
+<h2>Nalezení optimální cesty<a class="headerlink" href="#nalezeni-optimalni-cesty" title="Permalink to this heading">¶</a></h2>
+<p>Algoritmus nalezení optimální cesty je implementován v pgRouting ve
+dvou variantách:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://docs.pgrouting.org/latest/en/pgr_dijkstra.html">pgr_dijkstra</a>,
+viz. <a class="reference external" href="http://en.wikipedia.org/wiki/Dijkstra's algorithm">Dijkstra’s algorithm</a></p></li>
+<li><p><a class="reference external" href="https://docs.pgrouting.org/latest/en/pgr_aStar.html">pgr_aStar</a>,
+viz <a class="reference external" href="http://en.wikipedia.org/wiki/A* search algorithm">A* search algorithm</a></p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>V následujících příkladech se bude pohybovat v okolí Fakulty stavební
+ČVUT v Praze, kde školení GISMentors většinou probíhají:
+<a class="reference external" href="http://www.openstreetmap.org/#map=16/50.1029/14.3912">http://www.openstreetmap.org/#map=16/50.1029/14.3912</a></p>
+</div>
+<section id="priklad-chodec">
+<h3>Příklad - chodec<a class="headerlink" href="#priklad-chodec" title="Permalink to this heading">¶</a></h3>
+</section>
+<section id="nejkratsi-trasa-jeden-chodec">
+<h3>Nejkratší trasa (jeden chodec)<a class="headerlink" href="#nejkratsi-trasa-jeden-chodec" title="Permalink to this heading">¶</a></h3>
+<p>Chodec se pohybuje z vlakového nádráží v Dejvicích k budově Fakulty
+stavební ČVUT v Praze. Hledáme nejkratší trasu, nákladem tedy bude
+<em>délka</em> segmentů trasy. Chodec se může pohybovat v obou směrech
+(budeme pracovat s neorientovaným grafem).</p>
+<p>Nastavíme si cestu ke schématům.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="n">search_path</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="k">public</span><span class="p">,</span><span class="n">routing</span><span class="p">,</span><span class="n">ruian_praha</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Výchozí a cílový bod můžeme najít s využitím adresních míst
+RÚIAN. Dojde k vyhledání všech OSM bodů do vzdálenosti 10 m od zadané
+adresy.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">osm_id</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">gml_id</span><span class="w"> </span><span class="k">FROM</span>
+<span class="n">ruian_praha</span><span class="p">.</span><span class="n">adresnimista</span><span class="w"> </span><span class="n">a</span><span class="p">,</span>
+<span class="n">ruian_praha</span><span class="p">.</span><span class="n">ulice</span><span class="w"> </span><span class="n">u</span><span class="p">,</span>
+<span class="n">routing</span><span class="p">.</span><span class="n">ways_vertices_pgr</span><span class="w"> </span><span class="n">o</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">cislodomovni</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2077</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">cisloorientacni</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">7</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">nazev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Thákurova&#39;</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">ulicekod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">kod</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">ST_DWithin</span><span class="p">(</span><span class="n">ST_Transform</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">),</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="n">osm_id</span>   <span class="o">|</span>   <span class="nb">id</span>   <span class="o">|</span>   <span class="n">gml_id</span>
+<span class="o">------------+--------+-------------</span>
+ <span class="mi">3776391915</span> <span class="o">|</span> <span class="mi">152343</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">3776391918</span> <span class="o">|</span> <span class="mi">155642</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">4173356388</span> <span class="o">|</span> <span class="mi">157417</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">4174654161</span> <span class="o">|</span> <span class="mi">158057</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">4173437520</span> <span class="o">|</span> <span class="mi">159128</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">4173361989</span> <span class="o">|</span> <span class="mi">160879</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">4174654158</span> <span class="o">|</span> <span class="mi">162342</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Důležité</p>
+<p>Hodnoty atributu <code class="docutils literal notranslate"><span class="pre">osm_id</span></code> a <code class="docutils literal notranslate"><span class="pre">id</span></code> se mohou
+lišit. Zaleží s jakou verzí datasetu OSM pracujete.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Nalezení relevatního uzlu zpomaluje transformace uzlů ze
+souřadnicového systému <a class="reference external" href="http://epsg.io/4326">EPSG:4326</a> do <a class="reference external" href="http://epsg.io/5514">EPSG:5514</a>. Pro
+urychlení výpočtu si geometrii uzlů v <a class="reference external" href="http://epsg.io/5514">EPSG:5514</a> předpočítáme.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">ways_vertices_pgr</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">geom5514</span><span class="w"> </span><span class="n">geometry</span><span class="p">(</span><span class="n">point</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">);</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">ways_vertices_pgr</span><span class="w"> </span><span class="k">set</span><span class="w"> </span><span class="n">geom5514</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">st_transform</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">ways_vertices_pgr</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">gist</span><span class="w"> </span><span class="p">(</span><span class="n">geom5514</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<p>Pro snadnější vyhledání id uzlu vytvoříme uživatelskou funkci
+<code class="docutils literal notranslate"><span class="pre">find_node()</span></code>. Limit posuneme na 30m.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>CREATE OR REPLACE FUNCTION find_node(ulice varchar, cislo_domovni int, cislo_orient int,
+                                     OUT result integer)
+AS $func$
+BEGIN
+EXECUTE format(&#39;
+  SELECT o.id FROM
+  ruian_praha.adresnimista a,
+  ruian_praha.ulice u,
+  routing.ways_vertices_pgr o
+  WHERE a.cislodomovni = %s AND a.cisloorientacni = %s AND u.nazev = &#39;&#39;%s&#39;&#39;
+  AND a.ulicekod = u.kod
+  AND ST_DWithin(geom5514, a.geom, 30) limit 1&#39;,
+  cislo_domovni, cislo_orient, ulice)
+INTO result;
+END
+$func$ LANGUAGE plpgsql;
+</pre></div>
+</div>
+<p>Příklad vyhledání id uzlu vychozího a cílového bodu pomocí funkce <code class="docutils literal notranslate"><span class="pre">find_node()</span></code>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">select</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Václavkova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">169</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">find_node</span>
+<span class="o">-----------</span>
+    <span class="mi">158921</span>
+</pre></div>
+</div>
+<p>Nejkratší trasu nalezneme voláním funkce <a class="reference external" href="http://docs.pgrouting.org/latest/en/src/dijkstra/doc/pgr_dijkstra.html">pgr_dijkstra</a>. Dijkstrův
+algoritmus vyžaduje definovat celkem čtyři atributy:</p>
+<ul class="simple">
+<li><p><cite>id</cite> - identifikátor hrany</p></li>
+<li><p>source - identifikátor počátečního uzlu</p></li>
+<li><p>target - identifikátor koncového uzlu</p></li>
+<li><p>cost - atribut nákladů</p></li>
+</ul>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_dijkstra</span><span class="p">(</span><span class="s1">&#39;</span>
+<span class="s1"> SELECT gid AS id,</span>
+<span class="s1"> source,</span>
+<span class="s1"> target,</span>
+<span class="s1"> length AS cost</span>
+<span class="s1"> FROM routing.ways&#39;</span><span class="p">,</span>
+<span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">),</span>
+<span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Václavkova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">169</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span>
+<span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">seq</span> <span class="o">|</span> <span class="n">path_seq</span> <span class="o">|</span>  <span class="n">node</span>  <span class="o">|</span>  <span class="n">edge</span>  <span class="o">|</span>         <span class="n">cost</span>         <span class="o">|</span>       <span class="n">agg_cost</span>
+<span class="o">-----+----------+--------+--------+----------------------+----------------------</span>
+   <span class="mi">1</span> <span class="o">|</span>        <span class="mi">1</span> <span class="o">|</span> <span class="mi">120249</span> <span class="o">|</span> <span class="mi">110252</span> <span class="o">|</span> <span class="mf">7.57929416242359e-05</span> <span class="o">|</span>                    <span class="mi">0</span>
+   <span class="mi">2</span> <span class="o">|</span>        <span class="mi">2</span> <span class="o">|</span>  <span class="mi">35204</span> <span class="o">|</span>  <span class="mi">34307</span> <span class="o">|</span> <span class="mf">0.000258500986459147</span> <span class="o">|</span> <span class="mf">7.57929416242359e-05</span>
+   <span class="o">...</span>
+  <span class="mi">59</span> <span class="o">|</span>       <span class="mi">59</span> <span class="o">|</span>  <span class="mi">97513</span> <span class="o">|</span> <span class="mi">142754</span> <span class="o">|</span>   <span class="mf">8.676018672102e-05</span> <span class="o">|</span>   <span class="mf">0.0149044747275315</span>
+  <span class="mi">60</span> <span class="o">|</span>       <span class="mi">60</span> <span class="o">|</span> <span class="mi">128574</span> <span class="o">|</span>     <span class="o">-</span><span class="mi">1</span> <span class="o">|</span>                    <span class="mi">0</span> <span class="o">|</span>   <span class="mf">0.0149912349142525</span>
+</pre></div>
+</div>
+<p>Náklady jsou počítány v mapových jednotkách souřadnicového systému, v
+tomto případě stupních. Délku v metrech je uložena v atributu
+<span class="dbcolumn">length_m</span>. Příklad výpočtu celkové délky nalezené trasy:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">sum</span><span class="p">(</span><span class="n">cost</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_dijkstra</span><span class="p">(</span><span class="s1">&#39;</span>
+<span class="s1"> SELECT gid AS id,</span>
+<span class="s1"> source,</span>
+<span class="s1"> target,</span>
+<span class="s1"> length_m AS cost</span>
+<span class="s1"> FROM routing.ways&#39;</span><span class="p">,</span>
+<span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">),</span>
+<span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Václavkova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">169</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span>
+<span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">foo</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">sum</span>
+<span class="o">------------------</span>
+<span class="mf">1270.47520134678</span>
+</pre></div>
+</div>
+<p>Geometrii trasy získáte spojením výsledku hledání optimální trasy s
+původní tabulkou:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">ST_AsText</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_dijkstra</span><span class="p">(</span><span class="s1">&#39;</span>
+<span class="s1"> SELECT gid AS id,</span>
+<span class="s1"> source,</span>
+<span class="s1"> target,</span>
+<span class="s1"> length_m AS cost</span>
+<span class="s1"> FROM routing.ways&#39;</span><span class="p">,</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">),</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Václavkova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">169</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span>
+<span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">a</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">ways</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">b</span>
+<span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">edge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">gid</span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">seq</span><span class="p">;</span>
+</pre></div>
+</div>
+<figure class="align-center" id="id2">
+<img alt="../_images/route-single.png" src="../_images/route-single.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 13 </span><span class="caption-text">Vizualizace nalezené nejkratší trasy.</span><a class="headerlink" href="#id2" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Pro hledání optimální trasy lze použít funkci <a class="reference external" href="http://docs.pgrouting.org/latest/en/src/astar/doc/pgr_astar.html#description">pgr_astar</a>,
+která pracuje s geografickou informací uzlů hran grafu. To umožňuje
+ve výpočtu preferovat hrany, které jsou blíže cíle trasy.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_astar</span><span class="p">(</span><span class="s1">&#39;</span>
+<span class="s1"> SELECT gid AS id,</span>
+<span class="s1"> source,</span>
+<span class="s1"> target,</span>
+<span class="s1"> length_m AS cost,</span>
+<span class="s1"> x1, y1, x2, y2</span>
+<span class="s1"> FROM routing.ways&#39;</span><span class="p">,</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">),</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Václavkova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">169</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span>
+<span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="nejkratsi-trasa-vice-chodcu-jeden-cil">
+<h3>Nejkratší trasa (více chodců, jeden cíl)<a class="headerlink" href="#nejkratsi-trasa-vice-chodcu-jeden-cil" title="Permalink to this heading">¶</a></h3>
+<p>Chodci se pohybují ze stanice metra Hradčanská, vlakového nádraží
+Dejvice k budově Fakulty stavební ČVUT v Praze.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Dejvická&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">184</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">find_node</span>
+<span class="o">-----------</span>
+    <span class="mi">48313</span>
+</pre></div>
+</div>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_dijkstra</span><span class="p">(</span><span class="s1">&#39;</span>
+<span class="s1"> SELECT gid AS id,</span>
+<span class="s1"> source,</span>
+<span class="s1"> target,</span>
+<span class="s1"> length_m AS cost</span>
+<span class="s1"> FROM routing.ways&#39;</span><span class="p">,</span>
+<span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Dejvická&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">184</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">),</span>
+<span class="w">       </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Václavkova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">169</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)],</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">),</span>
+<span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">);</span>
+</pre></div>
+</div>
+<figure class="align-center" id="id3">
+<img alt="../_images/route-multi.png" src="../_images/route-multi.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 14 </span><span class="caption-text">Vizualizace nalezených nejkratších cest.</span><a class="headerlink" href="#id3" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="nejrychlejsi-trasa-vice-chodcu-a-cilu">
+<h3>Nejrychlejší trasa (více chodců a cílů)<a class="headerlink" href="#nejrychlejsi-trasa-vice-chodcu-a-cilu" title="Permalink to this heading">¶</a></h3>
+<p>Chodci vycházejí od budovy Fakulty stavební ČVUT v Praze a ze stanice
+Hradčanská. Cílem jsou vlakové nádraží Dejvice a tramvajová zastávka
+Hradčanské náměstí. Rychlost pohybu chodců uvažujeme 1,2 m/s.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Malostranské náměstí&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">37</span><span class="p">,</span><span class="w"> </span><span class="mi">23</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">find_node</span>
+<span class="o">-----------</span>
+      <span class="mi">7304</span>
+</pre></div>
+</div>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_dijkstra</span><span class="p">(</span><span class="s1">&#39;</span>
+<span class="s1"> SELECT gid AS id,</span>
+<span class="s1"> source,</span>
+<span class="s1"> target,</span>
+<span class="s1"> length_m / 1.2 / 60 AS cost</span>
+<span class="s1"> FROM routing.ways&#39;</span><span class="p">,</span>
+<span class="nb">ARRAY</span><span class="p">[</span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">),</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Dejvická&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">184</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)],</span>
+<span class="nb">ARRAY</span><span class="p">[</span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Václavkova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">169</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Malostranské náměstí&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">37</span><span class="p">,</span><span class="w"> </span><span class="mi">23</span><span class="p">)],</span>
+<span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Časovou náročnost tras získáme následujícím příkazem (náklady v
+minutách):</p>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">start_vid</span><span class="p">,</span><span class="w"> </span><span class="n">end_vid</span><span class="p">,</span><span class="w"> </span><span class="n">agg_cost</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_dijkstra</span><span class="p">(</span><span class="s1">&#39;</span>
+<span class="s1"> SELECT gid AS id,</span>
+<span class="s1"> source,</span>
+<span class="s1"> target,</span>
+<span class="s1"> length_m / 1.2 / 60 AS cost</span>
+<span class="s1"> FROM routing.ways&#39;</span><span class="p">,</span>
+<span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">),</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Dejvická&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">184</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)],</span>
+<span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Václavkova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">169</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Malostranské náměstí&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">37</span><span class="p">,</span><span class="w"> </span><span class="mi">23</span><span class="p">)],</span>
+<span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">)</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">edge</span><span class="o">=-</span><span class="mi">1</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">agg_cost</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">start_vid</span> <span class="o">|</span> <span class="n">end_vid</span> <span class="o">|</span>     <span class="n">agg_cost</span>
+<span class="o">-----------+---------+------------------</span>
+     <span class="mi">42531</span> <span class="o">|</span>  <span class="mi">120249</span> <span class="o">|</span> <span class="mf">5.02036761819399</span>
+    <span class="mi">128574</span> <span class="o">|</span>  <span class="mi">120249</span> <span class="o">|</span> <span class="mf">17.6454889075942</span>
+     <span class="mi">42531</span> <span class="o">|</span>   <span class="mi">22516</span> <span class="o">|</span> <span class="mf">22.9976299203542</span>
+    <span class="mi">128574</span> <span class="o">|</span>   <span class="mi">22516</span> <span class="o">|</span> <span class="mf">36.7067900923121</span>
+</pre></div>
+</div>
+</div></blockquote>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Agregované náklady vrací přímo funkce <a class="reference external" href="http://docs.pgrouting.org/latest/en/src/dijkstra/doc/pgr_dijkstraCost.html">pgr_dijkstraCost</a>,
+příklad:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_dijkstraCost</span><span class="p">(</span><span class="s1">&#39;</span>
+<span class="s1"> SELECT gid AS id,</span>
+<span class="s1"> source,</span>
+<span class="s1"> target,</span>
+<span class="s1"> length_m / 1.2 / 60 AS cost</span>
+<span class="s1"> FROM routing.ways&#39;</span><span class="p">,</span>
+<span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">),</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Dejvická&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">184</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)],</span>
+<span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Václavkova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">169</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Malostranské náměstí&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">37</span><span class="p">,</span><span class="w"> </span><span class="mi">23</span><span class="p">)],</span>
+<span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">)</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">agg_cost</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="priklad-automobil">
+<h3>Příklad - automobil<a class="headerlink" href="#priklad-automobil" title="Permalink to this heading">¶</a></h3>
+<p>Na rozdíl od chodce uvažujeme náklady ve směru (<span class="dbcolumn">cost</span>) a
+proti směru (<span class="dbcolumn">reverse_cost</span>) hrany. V případě obousměrných
+komunikací jsou oba náklady kladné, přičemž se ale mohou lišit. U
+jednosměrných komunikací jeden z nákladů nabývá záporné hodnoty.</p>
+<p>V našem případě se bude vozidlo pohybovat z Letiště Václava Havla k
+historické budově Hlavní nádraží.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">select</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Aviatická&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1017</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">find_node</span>
+<span class="o">-----------</span>
+    <span class="mi">153103</span>
+</pre></div>
+</div>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Wilsonova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">find_node</span>
+<span class="o">-----------</span>
+    <span class="mi">107098</span>
+</pre></div>
+</div>
+</section>
+<section id="nejkratsi-trasa">
+<h3>Nejkratší trasa<a class="headerlink" href="#nejkratsi-trasa" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">geom</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_dijkstra</span><span class="p">(</span><span class="s1">&#39;</span>
+<span class="s1"> SELECT gid AS id,</span>
+<span class="s1"> source,</span>
+<span class="s1"> target,</span>
+<span class="s1"> CASE WHEN cost &gt; 0 THEN length_m ELSE -1 END AS cost,</span>
+<span class="s1"> CASE WHEN reverse_cost &gt; 0 THEN length_m ELSE -1 END AS reverse_cost</span>
+<span class="s1"> FROM routing.ways&#39;</span><span class="p">,</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Aviatická&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1017</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Wilsonova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">),</span>
+<span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">a</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">ways</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">b</span>
+<span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">edge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">gid</span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">seq</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+<section id="nejrychlejsi-trasa">
+<h3>Nejrychlejší trasa<a class="headerlink" href="#nejrychlejsi-trasa" title="Permalink to this heading">¶</a></h3>
+<p>Tabulka <span class="dbtable">routing.ways</span> obsahuje předpočítané náklady v
+sekundách, jde o atribut <span class="dbcolumn">cost_s</span>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">geom</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_dijkstra</span><span class="p">(</span><span class="s1">&#39;</span>
+<span class="s1"> SELECT gid AS id,</span>
+<span class="s1"> source,</span>
+<span class="s1"> target,</span>
+<span class="s1"> cost_s AS cost,</span>
+<span class="s1"> reverse_cost_s AS reverse_cost</span>
+<span class="s1"> FROM routing.ways JOIN routing.configuration</span>
+<span class="s1"> USING (tag_id)&#39;</span><span class="p">,</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Aviatická&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1017</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Wilsonova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">),</span>
+<span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">a</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">ways</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">b</span>
+<span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">edge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">gid</span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">seq</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Zkusme závést penaltizaci, která povede k realističtějšímu
+výsledku.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">penalty</span><span class="w"> </span><span class="nb">FLOAT</span><span class="p">;</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">penalty</span><span class="o">=</span><span class="mi">100</span><span class="p">;</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">penalty</span><span class="o">=</span><span class="mi">0</span><span class="p">.</span><span class="mi">8</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">tag_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;highway&#39;</span><span class="w"> </span><span class="k">AND</span>
+<span class="w"> </span><span class="n">tag_value</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;secondary&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;secondary_link&#39;</span><span class="p">,</span>
+<span class="w">               </span><span class="s1">&#39;tertiary&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;tertiary_link&#39;</span><span class="p">);</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">penalty</span><span class="o">=</span><span class="mi">0</span><span class="p">.</span><span class="mi">6</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">tag_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;highway&#39;</span><span class="w"> </span><span class="k">AND</span>
+<span class="w"> </span><span class="n">tag_value</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;primary&#39;</span><span class="p">,</span><span class="s1">&#39;primary_link&#39;</span><span class="p">);</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">penalty</span><span class="o">=</span><span class="mi">0</span><span class="p">.</span><span class="mi">4</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">tag_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;highway&#39;</span><span class="w"> </span><span class="k">AND</span>
+<span class="w"> </span><span class="n">tag_value</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;trunk&#39;</span><span class="p">,</span><span class="s1">&#39;trunk_link&#39;</span><span class="p">);</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">penalty</span><span class="o">=</span><span class="mi">0</span><span class="p">.</span><span class="mi">3</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">tag_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;highway&#39;</span><span class="w"> </span><span class="k">AND</span>
+<span class="w"> </span><span class="n">tag_value</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;motorway&#39;</span><span class="p">,</span><span class="s1">&#39;motorway_junction&#39;</span><span class="p">,</span><span class="s1">&#39;motorway_link&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Nalezená trasa by neměla vést přes území letiště.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">geom</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_dijkstra</span><span class="p">(</span><span class="s1">&#39;</span>
+<span class="s1"> SELECT gid AS id,</span>
+<span class="s1"> source,</span>
+<span class="s1"> target,</span>
+<span class="s1"> cost_s * penalty AS cost,</span>
+<span class="s1"> reverse_cost_s * penalty AS reverse_cost</span>
+<span class="s1"> FROM routing.ways JOIN routing.configuration</span>
+<span class="s1"> USING (tag_id)&#39;</span><span class="p">,</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Aviatická&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1017</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Wilsonova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">),</span>
+<span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">a</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">ways</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">b</span>
+<span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">edge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">gid</span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">seq</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="task admonition">
+<p class="admonition-title">Úkol</p>
+<p>Zkuste zavést penaltizaci také do vyhledání nejkratší cesty.</p>
+</div>
+<figure class="align-center" id="id4">
+<img alt="../_images/route-auto.png" src="../_images/route-auto.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 15 </span><span class="caption-text">Porovnání nejkratší (červeně) a nejrychlejší (modře) trasy z
+Letiště Václava Havla na Hlavní nádraží.</span><a class="headerlink" href="#id4" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+<section id="servisni-sit">
+<h2>Servisní síť<a class="headerlink" href="#servisni-sit" title="Permalink to this heading">¶</a></h2>
+<p>Častou operací v síťových analýzách je výpočet servisní sítě. Zajímá
+nás, kam je možné se v rámci sítě dostat do určitého času. V našem
+případě nastavíme 300 sekund.</p>
+<p>Upravíme penalizaci pro průchod, aby se více blížil realitě. Budeme
+uvažovat, že můžeme jet kdekoli jen o něco málo pomaleji než po
+hlavních silnicích a zásadně zvýhodníme jen dálnice.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">penalty</span><span class="o">=</span><span class="mi">1</span><span class="p">.</span><span class="mi">2</span><span class="p">;</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">penalty</span><span class="o">=</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">tag_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;highway&#39;</span><span class="w"> </span><span class="k">AND</span>
+<span class="w"> </span><span class="n">tag_value</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;secondary&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;secondary_link&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;tertiary&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;tertiary_link&#39;</span><span class="p">);</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">penalty</span><span class="o">=</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">tag_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;highway&#39;</span><span class="w"> </span><span class="k">AND</span>
+<span class="w"> </span><span class="n">tag_value</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;primary&#39;</span><span class="p">,</span><span class="s1">&#39;primary_link&#39;</span><span class="p">);</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">penalty</span><span class="o">=</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">tag_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;highway&#39;</span><span class="w"> </span><span class="k">AND</span>
+<span class="w"> </span><span class="n">tag_value</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;trunk&#39;</span><span class="p">,</span><span class="s1">&#39;trunk_link&#39;</span><span class="p">);</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">penalty</span><span class="o">=</span><span class="mi">0</span><span class="p">.</span><span class="mi">8</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">tag_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;highway&#39;</span><span class="w"> </span><span class="k">AND</span>
+<span class="w"> </span><span class="n">tag_value</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;motorway&#39;</span><span class="p">,</span><span class="s1">&#39;motorway_junction&#39;</span><span class="p">,</span><span class="s1">&#39;motorway_link&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">geom</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_drivingDistance</span><span class="p">(</span><span class="s1">&#39;</span>
+<span class="s1"> SELECT gid AS id,</span>
+<span class="s1"> source,</span>
+<span class="s1"> target,</span>
+<span class="s1"> cost_s * penalty AS cost,</span>
+<span class="s1"> reverse_cost_s * penalty AS reverse_cost</span>
+<span class="s1"> FROM routing.ways JOIN routing.configuration</span>
+<span class="s1"> USING (tag_id)&#39;</span><span class="p">,</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;routing.ways_vertices_pgr&#39;</span><span class="p">),</span>
+<span class="w"> </span><span class="mi">300</span><span class="p">,</span>
+<span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">a</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">ways</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">b</span>
+<span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">edge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">gid</span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">seq</span><span class="p">;</span>
+</pre></div>
+</div>
+<figure class="align-center" id="id5">
+<img alt="../_images/route-distance.png" src="../_images/route-distance.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 16 </span><span class="caption-text">Servisní síť z vybraného místa.</span><a class="headerlink" href="#id5" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Algoritmus má limity, které jsme zatím podrobně netestovali,
+přesto pro určení přibližného servisního území (sítě) může posloužit.</p>
+</div>
+</section>
+<section id="cesta-obchodniho-cestujiciho">
+<h2>Cesta obchodního cestujícího<a class="headerlink" href="#cesta-obchodniho-cestujiciho" title="Permalink to this heading">¶</a></h2>
+<p>Vyjíždíme z Dejvic (Thákurova 2077/7). Chceme se cestou zastavit na
+výstavišti v Holešovicích (U Výstaviště, 1286/21), v Europarku
+(Černokostelecká 128/161) a na Andělu (Plzeňská 344/1) a pak dojet zpátky
+do Dejvic. Algoritimus naplánuje cestu tak, abychom navštívili každé
+místo pouze jednou a urazili cestu s nejmenšími náklady.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;U Výstaviště&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1286</span><span class="p">,</span><span class="w"> </span><span class="mi">21</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Černokostelecká&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">161</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Plzeňská&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">344</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">60880</span>
+<span class="mi">41489</span>
+<span class="mi">109366</span>
+<span class="mi">161370</span>
+</pre></div>
+</div>
+<section id="vyuziti-vzdalenosti-po-siti">
+<h3>Využití vzdálenosti po síti<a class="headerlink" href="#vyuziti-vzdalenosti-po-siti" title="Permalink to this heading">¶</a></h3>
+<p>Navržená cesta je přes zastávky Anděl, Europark, Holešovice.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>SELECT * FROM pgr_TSP(
+    $$
+    SELECT * FROM pgr_dijkstraCostMatrix(
+        &#39;SELECT gid as id, source, target, cost, reverse_cost FROM routing.ways&#39;,
+        (SELECT array_agg(id) FROM routing.ways_vertices_pgr WHERE id IN
+        (60880, 41489, 109366, 161370)),
+        directed := false
+    )
+    $$,
+    start_id := 60880,
+    randomize := false
+);
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">seq</span> <span class="o">|</span>  <span class="n">node</span>  <span class="o">|</span>        <span class="n">cost</span>        <span class="o">|</span>      <span class="n">agg_cost</span>
+<span class="o">-----+--------+--------------------+--------------------</span>
+   <span class="mi">1</span> <span class="o">|</span>  <span class="mi">12333</span> <span class="o">|</span> <span class="mf">0.0484455749225172</span> <span class="o">|</span>                  <span class="mi">0</span>
+   <span class="mi">2</span> <span class="o">|</span> <span class="mi">116748</span> <span class="o">|</span>  <span class="mf">0.148717683986367</span> <span class="o">|</span> <span class="mf">0.0484455749225172</span>
+   <span class="mi">3</span> <span class="o">|</span> <span class="mi">144884</span> <span class="o">|</span>  <span class="mf">0.133988564693275</span> <span class="o">|</span>  <span class="mf">0.197163258908885</span>
+   <span class="mi">4</span> <span class="o">|</span>   <span class="mi">7436</span> <span class="o">|</span> <span class="mf">0.0443240851172554</span> <span class="o">|</span>   <span class="mf">0.33115182360216</span>
+   <span class="mi">5</span> <span class="o">|</span>  <span class="mi">12333</span> <span class="o">|</span>                  <span class="mi">0</span> <span class="o">|</span>  <span class="mf">0.375475908719415</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>S využitím <span class="dbcolumn">cost_s</span> a <span class="dbcolumn">reverse_cost_s</span>
+spočítejte náklady v sekundách.</p>
+</div>
+</section>
+<section id="vyuziti-euklidovske-vzdalenosti">
+<h3>Využití euklidovské vzdálenosti<a class="headerlink" href="#vyuziti-euklidovske-vzdalenosti" title="Permalink to this heading">¶</a></h3>
+<p>K dispozici je také výpočet cesty obchodního cestujícího, která
+využívá pouze euklidovský prostor. Tento výpočet je sice méně přesný,
+ale měl by být o dost rychlejší, zejména v případě většího počtu míst.
+Rychlost jsme netestovali.</p>
+<p>Navržená cesta je přes Anděla, Holešovice a Europark. Tedy jinak než
+v případě předchozího algoritmu.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_eucledianTSP</span><span class="p">(</span><span class="s1">&#39;SELECT *</span>
+<span class="s1">FROM (</span>
+<span class="s1">  SELECT DISTINCT id AS source_id,</span>
+<span class="s1">                    ST_X(geom) AS x,</span>
+<span class="s1">                    ST_Y(geom) AS y FROM routing.ways_vertices_pgr</span>
+<span class="s1">          WHERE id IN (60880, 41489, 109366, 161370)</span>
+<span class="s1">) t</span>
+<span class="s1">ORDER BY</span>
+<span class="s1">CASE source_id</span>
+<span class="s1">  WHEN 60880 THEN 1</span>
+<span class="s1">  WHEN 41489 THEN 2</span>
+<span class="s1">  WHEN 109366 THEN 3</span>
+<span class="s1">  WHEN 161370 THEN 4</span>
+<span class="s1"> END&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">seq</span> <span class="o">|</span> <span class="n">node</span> <span class="o">|</span>         <span class="n">cost</span>          <span class="o">|</span>      <span class="n">agg_cost</span>
+<span class="o">-----+------+-----------------------+--------------------</span>
+   <span class="mi">1</span> <span class="o">|</span>    <span class="mi">1</span> <span class="o">|</span>    <span class="mf">0.0382006302085469</span> <span class="o">|</span>                  <span class="mi">0</span>
+   <span class="mi">2</span> <span class="o">|</span>    <span class="mi">4</span> <span class="o">|</span>    <span class="mf">0.0462512161967639</span> <span class="o">|</span> <span class="mf">0.0382006302085469</span>
+   <span class="mi">3</span> <span class="o">|</span>    <span class="mi">2</span> <span class="o">|</span>     <span class="mf">0.117270931512459</span> <span class="o">|</span> <span class="mf">0.0844518464053108</span>
+   <span class="mi">4</span> <span class="o">|</span>    <span class="mi">3</span> <span class="o">|</span> <span class="mf">4.64686056594346e-310</span> <span class="o">|</span>   <span class="mf">0.20172277791777</span>
+   <span class="mi">5</span> <span class="o">|</span>    <span class="mi">1</span> <span class="o">|</span>                     <span class="mi">0</span> <span class="o">|</span>   <span class="mf">0.20172277791777</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="vytvoreni-site">
+<h2>Vytvoření sítě<a class="headerlink" href="#vytvoreni-site" title="Permalink to this heading">¶</a></h2>
+<p>Ne vždy je možné pracovat se sítí postavenou nad daty OSM.
+Pokud máme vlastní síť, můžeme se pokusit vybudovat graf nad ní.</p>
+<section id="id1">
+<h3>Příprava dat<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p>Pokud nemáme data připravena pro síťové analýzy, např. nám chybí uzly
+v místech křížení silnic, pak je nutné před vlastním vybudováním grafu
+realizovat úpravu dat.</p>
+<p>K dispozici je funce <a class="reference external" href="http://docs.pgrouting.org/latest/en/pgr_nodeNetwork.html">pgr_nodeNetwork</a>,
+která dokáže doplnit uzly v místech křížení, případně dotáhnout linie
+k jiným liniím, v případě nedotahů.</p>
+<p>V případě, že funkce selže, jako v následujícím ukázce nad ulicemi
+Prahy, můžeme zkusit alternativní postup popsaný dále.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">pgr_nodeNetwork</span><span class="p">(</span><span class="s1">&#39;ruian_praha.ulice&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;ogc_fid&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;geom&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span>  <span class="n">line_locate_point</span><span class="p">:</span> <span class="mi">1</span><span class="n">st</span> <span class="n">arg</span> <span class="n">isn</span><span class="s1">&#39;t a line</span>
+<span class="n">CONTEXT</span><span class="p">:</span>  <span class="n">SQL</span> <span class="n">statement</span> <span class="s2">&quot;create temp table inter_loc on commit drop as ( select * from (</span>
+     <span class="p">(</span><span class="n">select</span> <span class="n">l1id</span><span class="p">,</span> <span class="n">l2id</span><span class="p">,</span> <span class="n">st_linelocatepoint</span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="n">source</span><span class="p">)</span> <span class="k">as</span> <span class="n">locus</span> <span class="kn">from</span> <span class="nn">intergeom</span><span class="p">)</span>
+      <span class="n">union</span>
+     <span class="p">(</span><span class="n">select</span> <span class="n">l1id</span><span class="p">,</span> <span class="n">l2id</span><span class="p">,</span> <span class="n">st_linelocatepoint</span><span class="p">(</span><span class="n">line</span><span class="p">,</span><span class="n">target</span><span class="p">)</span> <span class="k">as</span> <span class="n">locus</span> <span class="kn">from</span> <span class="nn">intergeom</span><span class="p">))</span> <span class="k">as</span> <span class="n">foo</span>
+     <span class="n">where</span> <span class="n">locus</span><span class="o">&lt;&gt;</span><span class="mi">0</span> <span class="ow">and</span> <span class="n">locus</span><span class="o">&lt;&gt;</span><span class="mi">1</span><span class="p">)</span><span class="s2">&quot;</span>
+<span class="n">PL</span><span class="o">/</span><span class="n">pgSQL</span> <span class="n">function</span> <span class="n">pgr_nodenetwork</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="n">double</span> <span class="n">precision</span><span class="p">,</span><span class="n">text</span><span class="p">,</span><span class="n">text</span><span class="p">,</span><span class="n">text</span><span class="p">,</span><span class="n">text</span><span class="p">,</span><span class="n">boolean</span><span class="p">)</span> <span class="n">line</span> <span class="mi">191</span> <span class="n">at</span> <span class="n">EXECUTE</span>
+</pre></div>
+</div>
+<p>Alternativní způsob využívá běžných nástrojů PostGIS a snahu o
+vytvoření multilinie agregací z existující kolekce linií.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ulice_noded</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Union</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">g</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ruian_praha</span><span class="p">.</span><span class="n">ulice</span>
+<span class="p">)</span><span class="w"> </span><span class="n">dta</span>
+<span class="p">,</span><span class="w"> </span><span class="n">ST_Dump</span><span class="p">(</span><span class="k">g</span><span class="p">)</span><span class="w"> </span><span class="n">d</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+<section id="vytvoreni-grafu">
+<h3>Vytvoření grafu<a class="headerlink" href="#vytvoreni-grafu" title="Permalink to this heading">¶</a></h3>
+<p>Před vytvořením grafu, který realizuje funkce <a class="reference external" href="http://docs.pgrouting.org/latest/en/pgr_createTopology.html">pgr_createTopology</a>,
+je nutné přidat sloupce <span class="dbcolumn">source</span> a <span class="dbcolumn">target</span>, kam jsou zapsány
+identifikátory uzlů.</p>
+<p>Vhodné je také vytvořit primární klíč a indexovat geometrii.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ulice_noded</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">path</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">ulice_noded</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gist</span><span class="p">(</span><span class="n">geom</span><span class="p">);</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ulice_noded</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="ss">&quot;source&quot;</span><span class="w"> </span><span class="nb">integer</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ulice_noded</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="ss">&quot;target&quot;</span><span class="w"> </span><span class="nb">integer</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Graf se vytvoří pomocí funkce <code class="docutils literal notranslate"><span class="pre">pgr_createTopology()</span></code>, kde se zadají
+názvy sloupců s geometrií, id a sloupce pro zápis id nodů
+(<span class="dbcolumn">source</span>, <span class="dbcolumn">target</span>). Hodnota 1 ve funkci
+představuje toleranci pro tvorbu grafu (v mapových jednotkách, tj. v
+našem případě jde o 1 metr).</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">pgr_createTopology</span><span class="p">(</span><span class="s1">&#39;ulice_noded&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;geom&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;path&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;source&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;target&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Na závěr je vhodné ohodnotit graf pomocí např. délky úseků.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ulice_noded</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="k">length</span><span class="w"> </span><span class="nb">FLOAT</span><span class="p">;</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">ulice_noded</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="k">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ST_Length</span><span class="p">(</span><span class="n">geom</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="dalsi-materialy">
+<h2>Další materiály<a class="headerlink" href="#dalsi-materialy" title="Permalink to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="http://workshop.pgrouting.org">http://workshop.pgrouting.org</a></p></li>
+</ul>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="0_uvod.html">Úvod</a></li>
+<li class="toctree-l1"><a class="reference internal" href="1_vytvarime_prostorovou_db.html">Vytváříme prostorovou databázi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2_tvorba_jednoduche_prostorove_tabulky.html">Vytváříme prostorovou tabulku</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3_shp2pgsql_a_davkove_nahrani.html">Dávkové nahrání dat</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4_prostorove_operatory.html">Operátory datového typu geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5_prostorove_funkce.html">Prostorové funkce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6_obludy.html">Praktické příklady</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7_finty.html">Efektivní práce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8_topologie.html">Topologie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9_rastry.html">Rastrová data</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Síťové analýzy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#priprava-dat">Příprava dat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nalezeni-optimalni-cesty">Nalezení optimální cesty</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#priklad-chodec">Příklad - chodec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nejkratsi-trasa-jeden-chodec">Nejkratší trasa (jeden chodec)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nejkratsi-trasa-vice-chodcu-jeden-cil">Nejkratší trasa (více chodců, jeden cíl)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nejrychlejsi-trasa-vice-chodcu-a-cilu">Nejrychlejší trasa (více chodců a cílů)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#priklad-automobil">Příklad - automobil</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nejkratsi-trasa">Nejkratší trasa</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nejrychlejsi-trasa">Nejrychlejší trasa</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#servisni-sit">Servisní síť</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cesta-obchodniho-cestujiciho">Cesta obchodního cestujícího</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#vyuziti-vzdalenosti-po-siti">Využití vzdálenosti po síti</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#vyuziti-euklidovske-vzdalenosti">Využití euklidovské vzdálenosti</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#vytvoreni-site">Vytvoření sítě</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Příprava dat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#vytvoreni-grafu">Vytvoření grafu</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#dalsi-materialy">Další materiály</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="11_zaver.html">A co dál?</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Vyhledávání</h3>
+            <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="OK" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="9_rastry.html" title="Rastrová data"
+              >předchozí</a> |
+            <a href="11_zaver.html" title="A co dál?"
+              >další</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2023 GISMentors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

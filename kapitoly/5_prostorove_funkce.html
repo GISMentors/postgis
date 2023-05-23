@@ -1,0 +1,452 @@
+
+<!DOCTYPE html>
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Prostorové funkce &#8212; Školení PostGIS pro pokročilé</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gismentors.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/translations.js"></script>
+    <link rel="search" title="Vyhledávání" href="../search.html" />
+    <link rel="next" title="Praktické příklady" href="6_obludy.html" />
+    <link rel="prev" title="Operátory datového typu geometry" href="4_prostorove_operatory.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">Školení PostGIS pro pokročilé</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="4_prostorove_operatory.html" title="Operátory datového typu geometry"
+             accesskey="P">předchozí</a> |
+          <a href="6_obludy.html" title="Praktické příklady"
+             accesskey="N">další</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="prostorove-funkce">
+<h1>Prostorové funkce<a class="headerlink" href="#prostorove-funkce" title="Permalink to this heading">¶</a></h1>
+<p>Z mnoha funkcí a funkcionalit nabízených PostGISem se zaměříme jen
+na vybrané a to <a class="reference external" href="http://postgis.net/docs/reference.html#Spatial_Relationships_Measurements">analytické funkce</a>
+a <a class="reference external" href="http://postgis.net/docs/reference.html#Geometry_Processing">funkce pro zpracování geometrií</a>.</p>
+<section id="vypocet-plochy-obvodu-delky-a-dalsich-charakteristik-geometrie">
+<h2>Výpočet plochy, obvodu, délky a dalších charakteristik geometrie<a class="headerlink" href="#vypocet-plochy-obvodu-delky-a-dalsich-charakteristik-geometrie" title="Permalink to this heading">¶</a></h2>
+<p>Asi nejzákladnější informace, kterou můžeme o plošném prvku (polygonu)
+zjistit je její výměru. Kromě typického zadání „zjisti, jak velkou
+mají Vomáčkovi zahrádku“ je nezbytná pro provedení pokročilejších úloh
+typu „vyber obce, jejichž rozloha leží alespoň z osmdesáti procent v
+národním parku atp“.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Poměr výměry a obvodu polygonu se používá při odstraňování
+„sliverů“ (mezer mezi polygony).</p>
+</div>
+<p>Jedná se o následující funkce:</p>
+<dl class="simple">
+<dt><a class="reference external" href="http://postgis.net/docs/ST_Length.html">ST_Length</a></dt><dd><p>Délka linie lomené čáry</p>
+</dd>
+<dt><a class="reference external" href="http://postgis.net/docs/ST_Area.html">ST_Area</a></dt><dd><p>Výpočet výměry polygonu</p>
+</dd>
+<dt><a class="reference external" href="http://postgis.net/docs/ST_Perimeter.html">ST_Perimeter</a></dt><dd><p>Vrací obvod polygonu</p>
+</dd>
+<dt><a class="reference external" href="http://postgis.net/docs/ST_Centroid.html">ST_Centroid</a></dt><dd><p>Vrací centroid polygonu</p>
+</dd>
+<dt><a class="reference external" href="http://postgis.net/docs/ST_PointOnSurface.html">ST_PointOnSurface</a></dt><dd><p>Bod ležící uvnitř geometrie</p>
+</dd>
+</dl>
+</section>
+<section id="informace-o-vzajemnem-prostorovem-vztahu-prvku">
+<h2>Informace o vzájemném prostorovém vztahu prvků<a class="headerlink" href="#informace-o-vzajemnem-prostorovem-vztahu-prvku" title="Permalink to this heading">¶</a></h2>
+<p>PostGIS definuje funkce pro určení prostorového vztahu prvků dle OGC
+standardu <a class="reference external" href="http://www.opengeospatial.org/standards/sfa">Simple Features</a> a to:</p>
+<section id="st-intesects-a-dalsi">
+<h3>ST_Intesects a další<a class="headerlink" href="#st-intesects-a-dalsi" title="Permalink to this heading">¶</a></h3>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Intersects.html">ST_Intersects</a></p>
+<blockquote>
+<div><p>Prvky sdílejí alespoň jeden bod, dochází k jejich prostorovému průniku.</p>
+</div></blockquote>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Intersects</span><span class="p">(</span><span class="s1">&#39;POLYGON((0 0,4 0,4 3,0 0))&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;POLYGON((2 0,6 0,6 3,2 0))&#39;</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Intersects</span><span class="p">(</span><span class="s1">&#39;POLYGON((0 0,4 0,4 3,0 0))&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;POLYGON((4 0,8 0,8 3,4 0))&#39;</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Intersects</span><span class="p">(</span><span class="s1">&#39;POLYGON((0 0,4 0,4 3,0 0))&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;POLYGON((5 0,9 0,9 3,5 0))&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Disjoint.html">ST_Disjoint</a></p>
+<blockquote>
+<div><p>Doplněk k funkci <a class="reference external" href="http://postgis.net/docs/ST_Intersects.html">ST_Intersects</a>, prvky jsou prostorově různé.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Contains.html">ST_Contains</a></p>
+<blockquote>
+<div><p>Prvek A prostorově obsahuje prvek B, tj. žádný bod z
+geometrie B neleží vně geometrie A a alespoň jeden bod z B
+leží uvnitř A.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Covers.html">ST_Covers</a></p>
+<blockquote>
+<div><p>Podobné jako <a class="reference external" href="http://postgis.net/docs/ST_Contains.html">ST_Contains</a></p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_CoveredBy.html">ST_CoveredBy</a></p>
+<blockquote>
+<div><p>Opačné pořadí argumentů, než u předešlých funkcí.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Within.html">ST_Within</a></p>
+<blockquote>
+<div><p>Doplněk k funkci <a class="reference external" href="http://postgis.net/docs/ST_Contains.html">ST_Contains</a>, žádný bod z
+geometrie A neleží vně geometrie B a alespoň jeden bod z A
+leží uvnitř B.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_DWithin.html">ST_DWithin</a></p>
+<blockquote>
+<div><p>Podobná jako funkce <a class="reference external" href="http://postgis.net/docs/ST_Within.html">ST_Within</a>, geometrie leží v zadané
+vzdálenosti od jiné geometrie.</p>
+</div></blockquote>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Within</span><span class="p">(</span><span class="s1">&#39;POLYGON((0 0,4 0,4 3,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;POLYGON((0 0,8 0,8 6,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Contains</span><span class="p">(</span><span class="s1">&#39;POLYGON((0 0,4 0,4 3,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;POLYGON((0 0,8 0,8 6,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Covers</span><span class="p">(</span><span class="s1">&#39;POLYGON((0 0,4 0,4 3,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;POLYGON((0 0,8 0,8 6,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Contains</span><span class="p">(</span><span class="s1">&#39;POLYGON((0 0,8 0,8 6,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;POLYGON((0 0,4 0,4 6,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Covers</span><span class="p">(</span><span class="s1">&#39;POLYGON((0 0,8 0,8 6,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;POLYGON((0 0,4 0,4 6,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_CoveredBy</span><span class="p">(</span><span class="s1">&#39;POLYGON((0 0,4 0,4 3,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;POLYGON((0 0,8 0,8 6,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Covers</span><span class="p">(</span><span class="w"> </span><span class="s1">&#39;POLYGON((0 0,8 0,8 8,0 8,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="s1">&#39;POLYGON((1 1,5 1,5 4,1 1))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Důležité</p>
+<p>Tyto funkce jsou často velmi podobné a liší se v
+<a class="reference external" href="http://lin-ear-th-inking.blogspot.cz/2007/06/subtleties-of-ogc-covers-spatial.html">detailech</a>
+(které však mohou být podstatné).</p>
+</div>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Overlaps.html">ST_Overlaps</a></p>
+<blockquote>
+<div><p>Obdoba <a class="reference external" href="http://postgis.net/docs/ST_Intersects.html">ST_Intersects</a>, vrací true pouze tehdy,
+pokud průnik je stejného typu jako vstupní prvky (tedy,
+průnikem ploch je plocha, průnikem linií linie a tak dále) a
+zároveň ani jeden prvek zcela nezakrývá druhý.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Crosses.html">ST_Crosses</a></p>
+<blockquote>
+<div><p>Prvky se prostorově kříží, tj. mají společný bod, ne však
+všechny.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Touches.html">ST_Touches</a></p>
+<blockquote>
+<div><p>Prvky se prostorově dotýkají, tj. mají společný bod, ne však
+společný vnitřek.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Equals.html">ST_Equals</a></p>
+<blockquote>
+<div><p>Geometrická shoda prvků.</p>
+</div></blockquote>
+</section>
+<section id="st-relate">
+<h3>ST_Relate<a class="headerlink" href="#st-relate" title="Permalink to this heading">¶</a></h3>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Relate.html">ST_Relate</a></p>
+<blockquote>
+<div><p>Obecné určení vzájemného prostorového vztahu prkvů vychází z takzvané
+„matice devíti průniků“ (DE-9IM), viz <a class="reference external" href="http://postgis.net/docs/using_postgis_dbmanagement.html#DE-9IM">manuál</a>. Bližší
+informace o této problematice <a class="reference external" href="http://geo.fsv.cvut.cz/~gin/uzpd/uzpd.pdf#41">zde</a>.</p>
+<p>Matice průniků vypadá následovně:</p>
+<table class="border docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><strong>A/B</strong></p></td>
+<td><p><strong>vnitřní část</strong></p></td>
+<td><p><strong>hranice</strong></p></td>
+<td><p><strong>vnější část</strong></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>vnitřní část</strong></p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>hranice</strong></p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>vnější část</strong></p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>V každém políčku se objeví požadovaná dimenze prvku, který vznikne
+průnikem prvků A a B. Tedy pro bod <code class="xref std std-option docutils literal notranslate"><span class="pre">0</span></code>, linii <code class="xref std std-option docutils literal notranslate"><span class="pre">1</span></code> a
+polygon <code class="xref std std-option docutils literal notranslate"><span class="pre">2</span></code>. Další povolené hodnody jsou <code class="xref std std-option docutils literal notranslate"><span class="pre">F</span></code> pro
+prázdný průnik, <code class="xref std std-option docutils literal notranslate"><span class="pre">T</span></code> pro libovolný neprázdný průnik a
+<code class="xref std std-option docutils literal notranslate"><span class="pre">*</span></code> v případě, že informaci o průniku na tomto místě matice
+nepovažujeme za směrodatnou.</p>
+<p>Tuto funkcionalitu v PostGISu zajištuje funkce <a class="reference external" href="http://postgis.net/docs/ST_Relate.html">ST_Relate</a>.
+Funkci můžeme použít ve dvou tvarech. Pokud zadáme jako třetí argument
+matici průniku (i s využitím „divokých karet“), tak funkce vrací
+hodnoty true/false podle toho, zda jsou všechny podmínky v matici
+splněny. Případně funkci můžeme použít jen se dvěma argumenty,
+geometriemi. Potom funkce vrací matici průniku, případně můžeme přidat
+argument pro číslo pro pravidlo uzlů hranice.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- výpis matice průniku</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Relate</span><span class="p">(</span><span class="s1">&#39;POLYGON((1 1,1 3,3 3,3 1,1 1))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;POLYGON((1 1,1 3,3 3,3 1,1 1))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Relate</span><span class="p">(</span><span class="s1">&#39;POLYGON((1 1,1 3,3 3,3 1,1 1))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;POLYGON((0 0,0 3,3 3,3 0,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Relate</span><span class="p">(</span><span class="s1">&#39;POLYGON((1 1,1 4,4 4,4 1,1 1))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;POLYGON((0 0,0 3,3 3,3 0,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Relate</span><span class="p">(</span><span class="s1">&#39;POLYGON((3 3,3 4,4 4,4 3,3 3))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;POLYGON((0 0,0 3,3 3,3 0,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Relate</span><span class="p">(</span><span class="s1">&#39;POLYGON((0 3,0 6,3 6,3 3,0 3))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;POLYGON((0 0,0 3,3 3,3 0,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+
+<span class="c1">-- mají dva polygony společný prostor?</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Relate</span><span class="p">(</span><span class="s1">&#39;POLYGON((1 1,1 4,4 4,4 1,1 1))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;POLYGON((0 0,0 3,3 3,3 0,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;2********&#39;</span><span class="p">);</span>
+
+<span class="c1">--dva polygony se vzájemně nepřekrývají</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Relate</span><span class="p">(</span><span class="s1">&#39;POLYGON((1 1,1 4,4 4,4 1,1 1))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;POLYGON((0 0,0 3,3 3,3 0,0 0))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;F********&#39;</span><span class="p">);</span>
+
+<span class="c1">-- polygony se nepřekrývají a nemají ani společnou hranici</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Relate</span><span class="p">(</span><span class="s1">&#39;POLYGON((1 1,1 4,4 4,4 1,1 1))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span>
+<span class="w">   </span><span class="s1">&#39;POLYGON((5 5,9 5,9 9,5 9,5 5))&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;F***F****&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="st-distance">
+<h3>ST_Distance<a class="headerlink" href="#st-distance" title="Permalink to this heading">¶</a></h3>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Distance.html">ST_Distance</a> vrací minimální vzdálenost mezi dvěma prvky.</p>
+<div class="admonition important">
+<p class="admonition-title">Důležité</p>
+<p>U funkcí, které pracují s prostorovými vztahy je třeba brát v
+potaz zda použitá funkce pracuje interně s MOO a indexy.
+Například funkce <a class="reference external" href="http://postgis.net/docs/ST_Intersects.html">ST_Intersects</a> s nimi pracuje a funkce
+<a class="reference external" href="http://postgis.net/docs/ST_Relate.html">ST_Relate</a> nikoliv. V případě, že funkce nepoužívá
+index je vhodné ji optimalizovat použitím poddotazu s operátorem.</p>
+<p>Pokud chcete použít funkci bez předchozího použití operátoru,
+přidejte před název funkce podtržítko. (_ST_DWithin místo
+ST_DWithin)</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Podívejte se na zdrojové kódy variant funkce ST_DWithin,
+najdete je v tabulce pg_proc.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="geometricke-analyzy">
+<h2>Geometrické analýzy<a class="headerlink" href="#geometricke-analyzy" title="Permalink to this heading">¶</a></h2>
+<p>V této části se zaměříme na funkce, které vrací modifikovanou
+geometrii vstupních prvků.</p>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Buffer.html">ST_Buffer</a></p>
+<blockquote>
+<div><p>Obalová zóna. Funkce má dva parametry: vstupní geometrii a
+šířka zóny. Je možné zadat ještě nějaké další parametry
+(počet segmentů na čtvrtinu kruhu, „čepičky“, „kolínka“ atp).</p>
+<div class="admonition warning">
+<p class="admonition-title">Varování</p>
+<dl class="simple">
+<dt>Různý počet segmentů se může projevit i v počtu vybraných</dt><dd><p>bodů.</p>
+</dd>
+</dl>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="n">SEARCH_PATH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="p">;</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">NULLIF</span><span class="p">(</span><span class="n">ST_Intersects</span><span class="p">(</span><span class="n">adresnibod</span><span class="p">,</span><span class="w"> </span><span class="n">ST_Buffer</span><span class="p">(</span><span class="n">geom_p</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">)),</span><span class="w"> </span><span class="k">false</span><span class="p">))</span>
+<span class="k">FROM</span>
+<span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">geom_p</span><span class="p">,</span><span class="w"> </span><span class="n">adresnibod</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">adresy</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="n">v</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">   </span><span class="k">AND</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">adresnibod</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">ST_Buffer</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="n">geom_p</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">)</span>
+<span class="p">)</span><span class="w"> </span><span class="k">data</span><span class="p">;</span>
+
+<span class="c1">-- počet segmentů 100</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">NULLIF</span><span class="p">(</span><span class="n">ST_Intersects</span><span class="p">(</span><span class="n">adresnibod</span><span class="p">,</span><span class="w"> </span><span class="n">ST_Buffer</span><span class="p">(</span><span class="n">geom_p</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">)),</span><span class="w"> </span><span class="k">false</span><span class="p">))</span>
+<span class="k">FROM</span>
+<span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">geom_p</span><span class="p">,</span><span class="w"> </span><span class="n">adresnibod</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">adresy</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="n">v</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">   </span><span class="k">AND</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">adresnibod</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">ST_Buffer</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="n">geom_p</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span>
+<span class="p">)</span><span class="w"> </span><span class="k">data</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Expand.html">ST_Expand</a></p>
+<blockquote>
+<div><p>Vrací MOO prvku zvětšený na každou stranu o zadaný rozměr. Je možné
+zadat jednu hodnotu, nebo hodnoty dvě, jednu pro osu x a druhou pro osu
+y.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Srovnejte rychlost dotazu s použitím operátoru &amp;&amp; při použití
+ST_Buffer a ST_Expand.</p>
+</div>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Difference.html">ST_Difference</a></p>
+<blockquote>
+<div><p>Vrací prostorový rozdíl prvků.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Intersection.html">ST_Intersection</a></p>
+<blockquote>
+<div><p>Vrací prostorový průnik prvků.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Union.html">ST_Union</a></p>
+<blockquote>
+<div><p>Vrací prostorové sjednocení prvků.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Split.html">ST_Split</a></p>
+<blockquote>
+<div><p>Rozdělí prvek podle jiného prvku a vrátí typ <em>geometry
+collection</em>. Možné použít například pro dělení prvků na
+základě mřížky.</p>
+</div></blockquote>
+</section>
+<section id="agregacni-funkce">
+<h2>Agregační funkce<a class="headerlink" href="#agregacni-funkce" title="Permalink to this heading">¶</a></h2>
+<p>Sloučí geometrii z více záznamů do jednoho.</p>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Collect.html">ST_Collect</a>, <a class="reference external" href="http://postgis.net/docs/ST_UnaryUnion.html">ST_UnaryUnion</a>, <a class="reference external" href="http://postgis.net/docs/ST_Union.html">ST_Union</a></p>
+<blockquote>
+<div><p>Různé typy sjednocení.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_MakeLine.html">ST_MakeLine</a></p>
+<blockquote>
+<div><p>Vytvoří linii z množiny bodů.</p>
+</div></blockquote>
+</section>
+<section id="dalsi-funkce">
+<h2>Další funkce<a class="headerlink" href="#dalsi-funkce" title="Permalink to this heading">¶</a></h2>
+<p>Výběr z oblíbených funkcí.</p>
+<section id="st-isvalid-a-st-makevalid">
+<h3>ST_IsValid a ST_MakeValid<a class="headerlink" href="#st-isvalid-a-st-makevalid" title="Permalink to this heading">¶</a></h3>
+<p><a class="reference external" href="http://postgis.net/docs/ST_IsValid.html">ST_IsValid</a>, <a class="reference external" href="http://postgis.net/docs/ST_IsValidDetail.html">ST_IsValidDetail</a>, případně
+<a class="reference external" href="http://postgis.net/docs/ST_IsValidReason.html">ST_IsValidReason</a></p>
+<blockquote>
+<div><p>Slouží ke zjištění, zda je prvek geometricky validní.</p>
+</div></blockquote>
+<p><a class="reference external" href="http://postgis.net/docs/ST_MakeValid.html">ST_MakeValid</a></p>
+<blockquote>
+<div><p>Nahradí invalidní geometrii validní geometrií, zkrátka prvek zvaliduje.</p>
+</div></blockquote>
+</section>
+<section id="st-multi">
+<h3>ST_Multi<a class="headerlink" href="#st-multi" title="Permalink to this heading">¶</a></h3>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Multi.html">ST_Multi</a></p>
+<blockquote>
+<div><p>Mění typ geometrie z jednoduché na <em>multigeometrii</em>.</p>
+</div></blockquote>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_AsText</span><span class="p">(</span><span class="n">ST_Multi</span><span class="p">(</span><span class="s1">&#39;LINESTRING(1 1,5 5)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">));</span>
+</pre></div>
+</div>
+</section>
+<section id="st-dump">
+<h3>ST_Dump<a class="headerlink" href="#st-dump" title="Permalink to this heading">¶</a></h3>
+<p><a class="reference external" href="http://postgis.net/docs/ST_Dump.html">ST_Dump</a></p>
+<blockquote>
+<div><p>Rozpustí „multi“ geometrii, nebo
+<em>GEOMETRYCOLLECTION</em> na jednotlivé komponenty.  Vrací typ record s
+geometrií a cestou ke geometrii v <em>GEOMETRYCOLLECTION</em>.</p>
+</div></blockquote>
+</section>
+<section id="st-collectionextract">
+<h3>ST_CollectionExtract<a class="headerlink" href="#st-collectionextract" title="Permalink to this heading">¶</a></h3>
+<p><a class="reference external" href="http://postgis.net/docs/ST_CollectionExtract.html">ST_CollectionExtract</a></p>
+<blockquote>
+<div><p>Vyfiltruje z <em>GEOMETRYCOLLECTION</em> bodové, liniové, nebo plošné prvky.</p>
+</div></blockquote>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="0_uvod.html">Úvod</a></li>
+<li class="toctree-l1"><a class="reference internal" href="1_vytvarime_prostorovou_db.html">Vytváříme prostorovou databázi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2_tvorba_jednoduche_prostorove_tabulky.html">Vytváříme prostorovou tabulku</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3_shp2pgsql_a_davkove_nahrani.html">Dávkové nahrání dat</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4_prostorove_operatory.html">Operátory datového typu geometry</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Prostorové funkce</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#vypocet-plochy-obvodu-delky-a-dalsich-charakteristik-geometrie">Výpočet plochy, obvodu, délky a dalších charakteristik geometrie</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#informace-o-vzajemnem-prostorovem-vztahu-prvku">Informace o vzájemném prostorovém vztahu prvků</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#st-intesects-a-dalsi">ST_Intesects a další</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#st-relate">ST_Relate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#st-distance">ST_Distance</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#geometricke-analyzy">Geometrické analýzy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#agregacni-funkce">Agregační funkce</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dalsi-funkce">Další funkce</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#st-isvalid-a-st-makevalid">ST_IsValid a ST_MakeValid</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#st-multi">ST_Multi</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#st-dump">ST_Dump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#st-collectionextract">ST_CollectionExtract</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="6_obludy.html">Praktické příklady</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7_finty.html">Efektivní práce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8_topologie.html">Topologie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9_rastry.html">Rastrová data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10_routing.html">Síťové analýzy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11_zaver.html">A co dál?</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Vyhledávání</h3>
+            <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="OK" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="4_prostorove_operatory.html" title="Operátory datového typu geometry"
+              >předchozí</a> |
+            <a href="6_obludy.html" title="Praktické příklady"
+              >další</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2023 GISMentors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

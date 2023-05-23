@@ -1,0 +1,606 @@
+
+<!DOCTYPE html>
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Extra buřty &#8212; Školení PostGIS pro pokročilé</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gismentors.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/translations.js"></script>
+    <link rel="search" title="Vyhledávání" href="../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">Školení PostGIS pro pokročilé</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="extra-burty">
+<h1>Extra buřty<a class="headerlink" href="#extra-burty" title="Permalink to this heading">¶</a></h1>
+<section id="lovkyne-misa-jede-do-afriky">
+<h2>Lovkyně Míša jede do Afriky<a class="headerlink" href="#lovkyne-misa-jede-do-afriky" title="Permalink to this heading">¶</a></h2>
+<p><em>Světoznámá lovkyně Míša plánuje cestu do Afriky. Ráda by zastřelila
+slona, hrocha a opici. Poraďte jí, kam se má vypravit.</em></p>
+<figure class="align-center">
+<img alt="../_images/zvirata_v_africe_01.png" class="big" src="../_images/zvirata_v_africe_01.png" />
+</figure>
+<p>Zde si předvedeme příklad s mnohonásobným průnikem jedné vrstvy. Jedná
+se o typickou ukázku příkladu, který se v PostGIS neřeší snadno. Jádro pudla je
+v tom, že v PostGISu je každý záznam uložen odděleně, bez ohledu na polohu
+zbytku vrstvy (viz. SFA), pakliže provádíme průnik, pracujeme s dvěma
+geometrickými operandy.</p>
+<p>V podstatě potřebujeme získat vrstvu s nejmenšími společnými jmenovateli a k ní
+tabulku popisující vazby na původní prvky, nebo kategorie. Teoreticky toho lze
+dosáhnout několika různými způsoby. Můžeme například cyklicky přidávat prvky po
+jednom a provádět postupně průnik a rozdíl.</p>
+<p>Použít jde třeba rekurzivní common table expression, nebo anonymní blok
+kódu a smyčka, eventuelně funkce, ať již napsaná v plpgsql, nebo v jiném
+programovacím jazyce.</p>
+<p>Řešení s CTE by mohlo vypadat například takto.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">--pouziju id_0, v id je mezera</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">prunik_a</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">WITH</span><span class="w"> </span><span class="k">RECURSIVE</span><span class="w"> </span><span class="n">cte</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">id_0</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="c1">--, array[id_0] r_id</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">zver</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id_0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">   </span><span class="c1">--prunik</span>
+<span class="w">   </span><span class="k">UNION</span><span class="w"> </span><span class="k">ALL</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">id_0</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">ST_Dump</span><span class="p">(</span>
+<span class="w">         </span><span class="n">ST_CollectionExtract</span><span class="p">(</span>
+<span class="w">            </span><span class="n">ST_Collect</span><span class="p">(</span>
+<span class="w">               </span><span class="n">ST_Intersection</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span>
+<span class="w">               </span><span class="p">,</span><span class="w"> </span><span class="n">ST_SymDifference</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span>
+<span class="w">         </span><span class="p">)</span>
+<span class="w">      </span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+<span class="w">   </span><span class="p">)).</span><span class="w"> </span><span class="n">geom</span>
+<span class="w">   </span><span class="c1">--, r_id || a.id_0 r_id</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">zver</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">cte</span><span class="w"> </span><span class="n">b</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">id_0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">id_0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">   </span><span class="c1">--jeste treba poresit, aby bralo jen nejvetsi z b</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">cte</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id_0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">19</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>To je ovšem pomalé, škaredé, neefktivní a navíc to nebude fungovat,
+rekurze v CTE má své limity. Ale ve smyčce v plpgsql by to fungovat mohlo,
+nebo v trigeru…</p>
+<p>Podíváme se tedy na problém uplně z druhé strany. Potřebujeme vlastně vytvořit
+topologickou vrstvu, prvky uložené v SFA o sobě však navzájem neví. Co se ale
+dodržuje je OGC validita, tedy topologická správnost jednotlivých prvků. Pokud
+sloučíme plochy, rozpustí se nám hranice a plochy se slijí. Proto nejdříve
+pomocí funkce <a class="reference external" href="http://postgis.net/docs/ST_ExteriorRing.html">ST_ExteriorRing</a> získáme vnější hranice polygonů.</p>
+<p>Zde narážíme na dva problémy. Za prvé, <a class="reference external" href="http://postgis.net/docs/ST_ExteriorRing.html">ST_ExteriorRing</a> pracuje pouze
+s polygony a za druhé, nezajímá nás jen vnější hranice, ale i hranice děr.
+Musíme tedy rozpusti multipolygony pomocí funkce <a class="reference external" href="http://postgis.net/docs/ST_Dump.html">ST_Dump</a> a převést
+polygony s dírami na soubor plných polygonů pomocí funkce
+<a class="reference external" href="http://postgis.net/docs/ST_DumpRings.html">ST_DumpRings</a>.</p>
+<p>Celý dotaz pak může vypadat následovně.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_ExteriorRing</span><span class="p">(</span>
+<span class="w">   </span><span class="p">(</span><span class="n">ST_DumpRings</span><span class="p">((</span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span>
+<span class="p">)</span><span class="w"> </span><span class="n">geom</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">zver</span><span class="p">;</span>
+</pre></div>
+</div>
+<figure class="align-center">
+<img alt="../_images/zvirata_v_africe_02.png" class="big" src="../_images/zvirata_v_africe_02.png" />
+</figure>
+<p>Linie zunionujeme a následně rozpustíme. Použijeme common table expression.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">WITH</span><span class="w"> </span><span class="n">bound</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_ExteriorRing</span><span class="p">((</span><span class="n">ST_DumpRings</span><span class="p">((</span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">zver</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">uni</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Union</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">bound</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">uni</span><span class="p">;</span>
+</pre></div>
+</div>
+<figure class="align-center">
+<img alt="../_images/zvirata_v_africe_03.png" class="big" src="../_images/zvirata_v_africe_03.png" />
+</figure>
+<p>Výsledek můžeme zaplochovat.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">WITH</span><span class="w"> </span><span class="n">bound</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_ExteriorRing</span><span class="p">((</span><span class="n">ST_DumpRings</span><span class="p">((</span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">zver</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">uni</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Union</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">bound</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">dump</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">ST_Polygonize</span><span class="p">(</span><span class="n">geom</span><span class="p">))</span><span class="w"> </span><span class="n">dump</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">uni</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="n">dump</span><span class="p">).</span><span class="n">path</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">dump</span><span class="p">).</span><span class="n">geom</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">dump</span><span class="p">;</span>
+</pre></div>
+</div>
+<figure class="align-center">
+<img alt="../_images/zvirata_v_africe_04.png" class="big" src="../_images/zvirata_v_africe_04.png" />
+</figure>
+<p>Teď už zbývá jen přiřadit k nově vytvořeným polygonům původní hodnoty.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">WITH</span><span class="w"> </span><span class="n">bound</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_ExteriorRing</span><span class="p">((</span><span class="n">ST_DumpRings</span><span class="p">((</span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">zver</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">uni</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Union</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">bound</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">dump</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">ST_Polygonize</span><span class="p">(</span><span class="n">geom</span><span class="p">))</span><span class="w"> </span><span class="n">dump</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">uni</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">base_geom</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="n">dump</span><span class="p">).</span><span class="n">path</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">dump</span><span class="p">).</span><span class="n">geom</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">dump</span>
+<span class="p">)</span>
+<span class="k">SELECT</span>
+<span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">array_agg</span><span class="p">(</span><span class="n">z</span><span class="p">.</span><span class="n">zvire</span><span class="p">)</span><span class="w"> </span><span class="n">zvirata</span><span class="w"> </span><span class="k">FROM</span>
+<span class="n">zver</span><span class="w"> </span><span class="n">z</span><span class="p">,</span><span class="n">base_geom</span><span class="w"> </span><span class="n">b</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">ST_Contains</span><span class="p">(</span><span class="n">z</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">ST_PointOnSurface</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">geom</span><span class="p">))</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
+</pre></div>
+</div>
+<table class="border docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>id</p></th>
+<th class="head"><p>zvirata</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>129</p></td>
+<td><p>{zebra,opice,velbloud}</p></td>
+</tr>
+<tr class="row-odd"><td><p>106</p></td>
+<td><p>{slon,zebra,zirafa,velbloud}</p></td>
+</tr>
+<tr class="row-even"><td><p>120</p></td>
+<td><p>{hroch,opice}</p></td>
+</tr>
+<tr class="row-odd"><td><p>171</p></td>
+<td><p>{slon,hroch,opice,buvol}</p></td>
+</tr>
+<tr class="row-even"><td><p>8</p></td>
+<td><p>{opice,prasatko,slon,hyena}</p></td>
+</tr>
+<tr class="row-odd"><td colspan="2"><p>…</p></td>
+</tr>
+<tr class="row-even"><td><p>138</p></td>
+<td><p>{slon,lev,opice,velbloud}</p></td>
+</tr>
+<tr class="row-odd"><td><p>80</p></td>
+<td><p>{slon,hroch,zebra,zirafa,opice,velbloud}</p></td>
+</tr>
+<tr class="row-even"><td><p>16</p></td>
+<td><p>{buvol,prasatko,slon}</p></td>
+</tr>
+<tr class="row-odd"><td><p>163</p></td>
+<td><p>{slon,hroch,opice}</p></td>
+</tr>
+<tr class="row-even"><td><p>6</p></td>
+<td><p>{opice,prasatko,hyena}</p></td>
+</tr>
+<tr class="row-odd"><td><p>102</p></td>
+<td><p>{slon,hroch,zebra,zirafa,opice}</p></td>
+</tr>
+<tr class="row-even"><td><p>71</p></td>
+<td><p>{slon,hroch,opice}</p></td>
+</tr>
+<tr class="row-odd"><td><p>29</p></td>
+<td><p>{zirafa,buvol,prasatko}</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>{opice,hyena}</p></td>
+</tr>
+<tr class="row-odd"><td><p>159</p></td>
+<td><p>{plamenak,slon}</p></td>
+</tr>
+<tr class="row-even"><td><p>72</p></td>
+<td><p>{slon,opice}</p></td>
+</tr>
+<tr class="row-odd"><td><p>41</p></td>
+<td><p>{buvol,lev}</p></td>
+</tr>
+<tr class="row-even"><td><p>177</p></td>
+<td><p>{lev,opice,velbloud}</p></td>
+</tr>
+</tbody>
+</table>
+<p>A úplně nakonec můžeme vybrat požadovaná zvířata.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">WITH</span><span class="w"> </span><span class="n">bound</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_ExteriorRing</span><span class="p">((</span><span class="n">ST_DumpRings</span><span class="p">((</span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">zver</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">uni</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Union</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">bound</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">dump</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">ST_Polygonize</span><span class="p">(</span><span class="n">geom</span><span class="p">))</span><span class="w"> </span><span class="n">dump</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">uni</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">base_geom</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="n">dump</span><span class="p">).</span><span class="n">path</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">dump</span><span class="p">).</span><span class="n">geom</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">dump</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">pary</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span>
+<span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">array_agg</span><span class="p">(</span><span class="n">z</span><span class="p">.</span><span class="n">zvire</span><span class="p">)</span><span class="w"> </span><span class="n">zvirata</span><span class="w"> </span><span class="k">FROM</span>
+<span class="n">zver</span><span class="w"> </span><span class="n">z</span><span class="p">,</span><span class="n">base_geom</span><span class="w"> </span><span class="n">b</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">ST_Contains</span><span class="p">(</span><span class="n">z</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">ST_PointOnSurface</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">geom</span><span class="p">))</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">id</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">ST_Union</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pary</span><span class="w"> </span><span class="n">p</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">base_geom</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="k">using</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">zvirata</span><span class="w"> </span><span class="o">@&gt;</span><span class="w"> </span><span class="nb">ARRAY</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;slon&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;hroch&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;opice&#39;</span><span class="p">]::</span><span class="nb">varchar</span><span class="p">[];</span>
+</pre></div>
+</div>
+<p>Zde je na místě poukázat na operátor <cite>&#64;&gt;</cite> typu pole.</p>
+<figure class="align-center">
+<img alt="../_images/zvirata_v_africe_05.png" class="big" src="../_images/zvirata_v_africe_05.png" />
+</figure>
+<p>Výpočetně efektivnější by samozřejmě bylo na začátku vyselektovat jen polygony vybraných zvířat.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">WITH</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">zver</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">zvire</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;slon&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;hroch&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;opice&#39;</span><span class="p">)</span>
+<span class="p">)</span><span class="w"> </span><span class="p">,</span><span class="w"> </span><span class="n">bound</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_ExteriorRing</span><span class="p">((</span><span class="n">ST_DumpRings</span><span class="p">((</span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="p">)).</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">z</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">uni</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Union</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">bound</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">dump</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">ST_Polygonize</span><span class="p">(</span><span class="n">geom</span><span class="p">))</span><span class="w"> </span><span class="n">dump</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">uni</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">base_geom</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="n">dump</span><span class="p">).</span><span class="n">path</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">dump</span><span class="p">).</span><span class="n">geom</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">dump</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">pary</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="k">SELECT</span>
+<span class="n">b</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">array_agg</span><span class="p">(</span><span class="n">z</span><span class="p">.</span><span class="n">zvire</span><span class="p">)</span><span class="w"> </span><span class="n">zvirata</span><span class="w"> </span><span class="k">FROM</span>
+<span class="n">zver</span><span class="w"> </span><span class="n">z</span><span class="p">,</span><span class="n">base_geom</span><span class="w"> </span><span class="n">b</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">ST_Contains</span><span class="p">(</span><span class="n">z</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">ST_PointOnSurface</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">geom</span><span class="p">))</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">id</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">ST_Union</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pary</span><span class="w"> </span><span class="n">p</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">base_geom</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="k">using</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">zvirata</span><span class="w"> </span><span class="o">@&gt;</span><span class="w"> </span><span class="nb">ARRAY</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;slon&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;hroch&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;opice&#39;</span><span class="p">]::</span><span class="nb">varchar</span><span class="p">[];</span>
+</pre></div>
+</div>
+<p>Použité řešení je založeno na <a class="reference external" href="http://boundlessgeo.com/2014/10/postgis-training-creating-overlays/">blogu</a>
+Paula Ramseyho.</p>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>U této metody je na první pohled patrný její limit. Do jednoho
+prvku nemůžeme nacpat neomezeně velkou geometrii a i kdyby, práce s ní
+nebude efektivní, ale naopak výpočetně náročná. U tabulek s větším
+množstvím záznamů nezbude než si vypomoct smyčkou, případně trigerem
+a postupným přidáváním prvků s tím, že se pro každý další prvek
+provede výše uvedená metoda jen s jeho nejbližšími sousedy.</p>
+</div>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>Tuto úlohu je možné řešit také pomocí topologie.</p>
+</div>
+</section>
+<section id="hratky-s-povodim-jizery">
+<h2>Hrátky s povodím Jizery<a class="headerlink" href="#hratky-s-povodim-jizery" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">BEGIN</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">SCHEMA</span><span class="w"> </span><span class="n">jizera</span><span class="p">;</span>
+
+<span class="k">SET</span><span class="w"> </span><span class="n">SEARCH_PATH</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">jizera</span><span class="p">,</span><span class="w"> </span><span class="n">dibavod</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">povodi_jizery</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">gid</span><span class="w"> </span><span class="nb">SERIAL</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tok_id</span><span class="w"> </span><span class="nb">numeric</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">max_utokjn</span><span class="w"> </span><span class="nb">numeric</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tokrec_id</span><span class="w"> </span><span class="nb">numeric</span><span class="p">,</span>
+<span class="w">    </span><span class="n">idvt</span><span class="w"> </span><span class="nb">numeric</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span>
+<span class="w">    </span><span class="n">naz_tok</span><span class="w"> </span><span class="nb">character</span><span class="w"> </span><span class="nb">varying</span><span class="p">(</span><span class="mi">30</span><span class="p">),</span>
+<span class="w">    </span><span class="n">shape_len</span><span class="w"> </span><span class="nb">numeric</span><span class="p">,</span>
+<span class="w">    </span><span class="n">geom</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">geometry</span><span class="p">(</span><span class="n">MultiLineString</span><span class="p">,</span><span class="mi">5514</span><span class="p">),</span>
+<span class="w">    </span><span class="n">rad</span><span class="w"> </span><span class="nb">int</span>
+<span class="p">);</span>
+
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">povodi_jizery</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gist</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">);</span>
+
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">povodi_jizery</span>
+<span class="p">(</span><span class="n">tok_id</span><span class="p">,</span><span class="w"> </span><span class="n">max_utokjn</span><span class="p">,</span><span class="w"> </span><span class="n">tokrec_id</span><span class="p">,</span><span class="w"> </span><span class="n">idvt</span><span class="p">,</span><span class="w"> </span><span class="n">naz_tok</span><span class="p">,</span><span class="w"> </span><span class="n">shape_len</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">rad</span><span class="p">)</span>
+<span class="k">WITH</span><span class="w"> </span><span class="k">RECURSIVE</span><span class="w"> </span><span class="n">povodi</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">tok_id</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">max_utokjn</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">tokrec_id</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">idvt</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">naz_tok</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">shape_len</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">geom</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">::</span><span class="nb">int</span><span class="w"> </span><span class="n">rad</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">vodni_toky</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">tok_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">110740000100</span>
+<span class="w">   </span><span class="k">UNION</span><span class="w"> </span><span class="k">ALL</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">tok_id</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">max_utokjn</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">tokrec_id</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">idvt</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">naz_tok</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">shape_len</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">geom</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">rad</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">vodni_toky</span><span class="w"> </span><span class="n">v</span>
+<span class="w">   </span><span class="k">JOIN</span><span class="w"> </span><span class="n">povodi</span>
+<span class="w">   </span><span class="k">ON</span><span class="w"> </span><span class="n">povodi</span><span class="p">.</span><span class="n">tok_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">tokrec_id</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">rad</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100000</span>
+<span class="p">)</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">povodi</span><span class="p">;</span>
+
+<span class="k">COMMIT</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>SET SEARCH_PATH TO jizera, dibavod, public;
+
+CREATE TABLE jizera.jize (ogc_fid serial primary key, geom geometry(LINESTRING, 5514));
+
+INSERT INTO jizera.jize (geom)
+SELECT (ST_Dump(geom)).geom FROM
+(
+   SELECT ST_Union(geom) geom FROM jizera.povodi_jizery
+) uni
+;
+
+BEGIN;
+
+CREATE INDEX ON jize USING gist(geom);
+
+ALTER TABLE jize ADD rad smallint, ADD parent int;
+
+UPDATE jize
+SET parent = 0, rad = 1 WHERE ogc_fid = 1733;
+
+
+DO $$
+   DECLARE i int;
+   BEGIN
+      WHILE (SELECT count(*) FROM jize WHERE rad IS NULL) &gt; 0
+         LOOP
+            UPDATE jize j
+            SET rad = r.rad+1, parent = r.ogc_fid
+            FROM jize r
+            WHERE r.rad IS NOT NULL
+            AND j.rad IS NULL
+            AND ST_Touches(j.geom, r.geom)
+            ;
+
+            RAISE NOTICE &#39;%&#39;, count(*) FROM jize WHERE rad IS NULL;
+
+
+
+         END LOOP;
+
+   END
+   $$;
+
+
+
+
+COMMIT;
+</pre></div>
+</div>
+</section>
+<section id="agregace-podle-touch">
+<h2>Agregace podle touch<a class="headerlink" href="#agregace-podle-touch" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="pseudokonflace">
+<h2>Pseudokonflace<a class="headerlink" href="#pseudokonflace" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>SET SEARCH_PATH = :schema, public;
+
+
+CREATE OR REPLACE FUNCTION f_konflace_na_i(_manmade_surface geometry)
+RETURNS geometry AS
+$ddd$
+   DECLARE
+   _manmade_surface_puv geometry;--(POLYGON, 2154);
+   _msf geometry(POLYGON, 2154);
+   _input geometry;
+   _output geometry;
+   _m_rings geometry(MULTILINESTRING, 2154);
+   _i_rings geometry(MULTILINESTRING, 2154);
+   _i_segments geometry(MULTILINESTRING, 2154);
+   _triangles geometry;
+   _doplnek geometry;
+   BEGIN
+      _msf := _manmade_surface;
+
+      BEGIN
+         _input := ST_Collect(wkb_geometry) FROM input
+         WHERE type = &#39;ilot&#39;
+         AND (wkb_geometry &lt;#&gt; _manmade_surface) &lt;= 1.8;
+
+         IF _input IS NULL THEN
+            --RAISE NOTICE &#39;3&#39;;
+            RETURN _manmade_surface;
+         END IF;
+
+         _manmade_surface_puv := ST_MakeValid(ST_Segmentize(_manmade_surface, 2.5));
+
+         _manmade_surface := ST_CollectionExtract(ST_Difference(_manmade_surface_puv, ST_MakeValid(ST_Union(_input))),3);
+
+         _m_rings := ST_Multi(ST_Union(geom)) FROM
+         (
+            SELECT
+            ST_ExteriorRing((ST_DumpRings((ST_Dump(_manmade_surface)).geom)).geom) geom
+         ) a;
+
+         _i_rings := ST_Multi(ST_Union(geom)) FROM
+         (
+            SELECT
+            ST_ExteriorRing((ST_DumpRings((ST_Dump(_input)).geom)).geom) geom
+         ) a;
+
+         _i_segments := ST_Multi(
+            ST_CollectionExtract(
+               ST_Intersection(_i_rings, ST_Buffer(_m_rings, 1.8, &#39;endcap=flat&#39;))
+            , 2)
+         );
+
+         IF _i_segments IS NULL OR ST_IsEmpty(_i_segments) THEN
+            --RAISE NOTICE &#39;2&#39;;
+            RETURN _manmade_surface_puv;
+         END IF;
+
+
+         WITH body AS
+         (
+            SELECT (ST_DumpPoints(_manmade_surface)).geom
+            UNION ALL
+            SELECT (ST_DumpPoints(_input)).geom
+         )
+         , segmenty AS (
+            SELECT (dump).geom, (dump).path
+            FROM
+            (
+               SELECT ST_Dump(_i_segments) dump
+            ) d
+         )
+         , triangles AS (
+            SELECT
+            ST_DelaunayTriangles(ST_Collect(body.geom)) geom
+            FROM segmenty, body
+            WHERE ST_Intersects(ST_Buffer(segmenty.geom, 3) , body.geom)
+            AND NOT ST_Within(body.geom, _input)
+            AND NOT ST_Within(body.geom, _manmade_surface)
+            GROUP BY path
+         )
+         SELECT ST_Collect(geom) INTO _triangles FROM triangles;
+
+         _doplnek :=
+         ST_Collect(geom)
+         FROM
+         (
+            SELECT (ST_Dump(ST_CollectionExtract(
+                     --ST_Split(
+                        _triangles
+                        --, ST_ExteriorRing(_manmade_surface))
+                     , 3))).geom
+         ) triangles
+         WHERE ST_Touches(geom, _m_rings)
+         AND ST_Touches(geom, _i_rings)
+         AND ST_Relate(geom, ST_UnaryUnion(_input), &#39;F********&#39;)
+         ;
+
+         IF _doplnek IS NULL THEN
+            --RAISE NOTICE &#39;1&#39;;
+            RETURN _manmade_surface_puv;
+         ELSIF ST_IsEmpty(_doplnek) THEN RETURN _manmade_surface_puv;
+         ELSE
+            --RAISE NOTICE &#39;%&#39;, ST_AsText(_doplnek);
+            _manmade_surface_puv :=
+            ST_UnaryUnion(
+               ST_CollectionExtract(ST_Union(_manmade_surface_puv, ST_MakeValid(ST_UnaryUnion(_doplnek))), 3)
+            );
+            IF ST_GeometryType(_manmade_surface_puv) = &#39;ST_MultiPolygon&#39;
+               THEN
+               _manmade_surface_puv := geom
+               FROM
+               (
+                  SELECT (ST_Dump(_manmade_surface_puv)).geom
+               )g WHERE ST_Relate(_manmade_surface, geom, &#39;T********&#39;);
+            END IF;
+            RETURN _manmade_surface_puv;
+         END IF;
+
+      EXCEPTION WHEN others THEN
+         RAISE NOTICE &#39;zuchlo&#39;;
+         RETURN _msf;
+      END;
+
+
+
+   END
+$ddd$ LANGUAGE plpgsql;
+
+
+UPDATE manmade_surface
+SET geom = f_konflace_na_ilot(geom)
+WHERE EXISTS
+(SELECT 1 FROM input_prunik_s_grid p WHERE ST_Intersects(manmade_surface.geom,p.geom)  LIMIT 1);
+</pre></div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="0_uvod.html">Úvod</a></li>
+<li class="toctree-l1"><a class="reference internal" href="1_vytvarime_prostorovou_db.html">Vytváříme prostorovou databázi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2_tvorba_jednoduche_prostorove_tabulky.html">Vytváříme prostorovou tabulku</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3_shp2pgsql_a_davkove_nahrani.html">Dávkové nahrání dat</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4_prostorove_operatory.html">Operátory datového typu geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5_prostorove_funkce.html">Prostorové funkce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6_obludy.html">Praktické příklady</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7_finty.html">Efektivní práce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8_topologie.html">Topologie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9_rastry.html">Rastrová data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10_routing.html">Síťové analýzy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11_zaver.html">A co dál?</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Vyhledávání</h3>
+            <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="OK" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2023 GISMentors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>A co dál? &#8212; Školení PostGIS pro pokročilé</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gismentors.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/translations.js"></script>
+    <link rel="search" title="Vyhledávání" href="../search.html" />
+    <link rel="prev" title="Síťové analýzy" href="10_routing.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">Školení PostGIS pro pokročilé</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="10_routing.html" title="Síťové analýzy"
+             accesskey="P">předchozí</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="a-co-dal">
+<h1>A co dál?<a class="headerlink" href="#a-co-dal" title="Permalink to this heading">¶</a></h1>
+<section id="prenos-dat-mezi-databazemi">
+<h2>Přenos dat mezi databázemi<a class="headerlink" href="#prenos-dat-mezi-databazemi" title="Permalink to this heading">¶</a></h2>
+<div class="notecmd admonition">
+<p class="admonition-title">Export vybrané tabulky do formátu PGDump z příkazové řádky</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pg_dump<span class="w"> </span>pokusnik<span class="w"> </span>-t<span class="w"> </span>ukol_1.budovy<span class="w"> </span>-f<span class="w"> </span>stav_objekty.dump<span class="w"> </span>-Fc<span class="w"> </span>-Z<span class="w"> </span><span class="m">7</span><span class="w"> </span>-x
+</pre></div>
+</div>
+</div>
+<div class="notecmd admonition">
+<p class="admonition-title">Import PGDump dávky do databáze z příkazové řádky</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pg_restore<span class="w"> </span>-d<span class="w"> </span>pokusnik<span class="w"> </span>-x<span class="w"> </span>-O<span class="w"> </span>stav_objekty.dump
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="0_uvod.html">Úvod</a></li>
+<li class="toctree-l1"><a class="reference internal" href="1_vytvarime_prostorovou_db.html">Vytváříme prostorovou databázi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2_tvorba_jednoduche_prostorove_tabulky.html">Vytváříme prostorovou tabulku</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3_shp2pgsql_a_davkove_nahrani.html">Dávkové nahrání dat</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4_prostorove_operatory.html">Operátory datového typu geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5_prostorove_funkce.html">Prostorové funkce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6_obludy.html">Praktické příklady</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7_finty.html">Efektivní práce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8_topologie.html">Topologie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9_rastry.html">Rastrová data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10_routing.html">Síťové analýzy</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">A co dál?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prenos-dat-mezi-databazemi">Přenos dat mezi databázemi</a></li>
+</ul>
+</li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Vyhledávání</h3>
+            <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="OK" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="10_routing.html" title="Síťové analýzy"
+              >předchozí</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2023 GISMentors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

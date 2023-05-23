@@ -1,0 +1,393 @@
+
+<!DOCTYPE html>
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Obsah &#8212; Školení PostGIS pro pokročilé</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/gismentors.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/translations.js"></script>
+    <link rel="search" title="Vyhledávání" href="search.html" />
+    <link rel="next" title="Úvod" href="kapitoly/0_uvod.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="#">Školení PostGIS pro pokročilé</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="kapitoly/0_uvod.html" title="Úvod"
+             accesskey="N">další</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <p><a class="reference external" href="http://gismentors.cz">GISMentors</a> | Školení <a class="reference external" href="http://gismentors.cz/skoleni/grass-gis">GRASS GIS</a> | <a class="reference external" href="http://gismentors.cz/skoleni/qgis">QGIS</a> | <a class="reference external" href="http://gismentors.cz/skoleni/postgis">PostGIS</a> | <a class="reference external" href="http://gismentors.cz/skoleni/geopython">GeoPython</a></p>
+<section id="uvod">
+<h1>Úvod<a class="headerlink" href="#uvod" title="Permalink to this heading">¶</a></h1>
+</section>
+<a class="reference internal image-reference" href="_images/postgis-logo.png"><img alt="_images/postgis-logo.png" class="align-left" src="_images/postgis-logo.png" style="width: 140px;" /></a>
+<p><strong>PostGIS</strong> je rozšíření objektově-relačního databázového systému
+<a class="reference external" href="http://cs.wikipedia.org/wiki/PostgreSQL">PostgreSQL</a> pro podporu geografických objektů. PostGIS
+implementuje specifikaci <a class="reference external" href="http://www.opengeospatial.org/standards/sfa">Simple Features</a> konsorcia
+<a class="reference external" href="http://cs.wikipedia.org/wiki/Open Geospatial Consortium">Open Geospatial Consortium</a>.</p>
+<p>Kromě podpory práce s vektorovými daty v podobě jednoduchých geoprvků
+(simple features) podporuje PostGIS 3.0 i vektorová data v
+topologickém formátu a bezešvý přístup k uložení rastrových dat a
+jejich využití v prostorovém SQL v souvislosti s daty vektorovými.</p>
+<p>PostGIS je multiplatformní a plně funkční na platformách jako
+GNU/Linux, MS Windows či Mac OSX.</p>
+<div class="note admonition" id="index-0">
+<p class="admonition-title">Poznámka k datové sadě GISMentors</p>
+<p>Datová sada je stažitelná pro PostgreSQL ve <a class="reference external" href="http://training.gismentors.eu/geodata/postgis/gismentors.dump">formátu dump</a>
+(595 MB). Blížší informace o importu ve <a class="reference external" href="http://training.gismentors.eu/postgis-zacatecnik/kapitoly/7_instalace.html">školení pro
+začátečníky</a>, na které
+toto školení do jisté míry navazuje.
+Datová sada GISMentors je založena na datech pocházejících pouze z otevřených či veřejných zdrojů jako je <a class="reference external" href="http://www.eea.europa.eu/data-and-maps/data/eu-dem">EU-DEM</a>, <a class="reference external" href="http://www.cuzk.cz/ruian/RUIAN.aspx">RÚIAN</a>, <a class="reference external" href="http://wiki.openstreetmap.org/wiki/Main_Page">OpenStreetMap</a>, <a class="reference external" href="http://www.dibavod.cz/">Dibavod</a>,  <a class="reference external" href="http://gis-aopkcr.opendata.arcgis.com/">AOPK</a> a <a class="reference external" href="http://www.geoportalpraha.cz/cs/opendata">IPR</a>.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Varování</p>
+<p><span class="red">Toto je pracovní verze školení, která je aktuálně
+ve vývoji!</span></p>
+</div>
+<p><strong>Vstupní znalost</strong></p>
+<ul class="simple">
+<li><p>Uživatel zná základy <a class="reference external" href="http://cs.wikipedia.org/wiki/SQL">SQL</a></p></li>
+</ul>
+<p><strong>Výstupní dovednost</strong></p>
+<ul class="simple">
+<li><p>Uživatel zvládne naimportovat data do PostGIS a to i dávkově</p></li>
+<li><p>Uživatel zvládne exportovat data z PostGIS do jiných GIS formátů</p></li>
+<li><p>Uživatel je schopen data vizualizovat</p></li>
+<li><p>Uživatel má povědomí s čím rámcově musí počítat, když chce pracovat
+s většími objemy data (dejme tomu RÚIAN pro Prahu na slabším stroji)</p></li>
+<li><p>Uživatel je schopen provádět prostorové dotazy</p></li>
+<li><p>Uživatel zvládá samostatně řešit jednoduché analýzy v PostGIS</p></li>
+</ul>
+<p><strong>Požadavky</strong></p>
+<ul class="simple">
+<li><p>PC s OS GNU/Linux (např. <a class="reference external" href="http://live.osgeo.org">OSGeoLive</a>),
+<a class="reference external" href="http://www.postgresql.org">PostgreSQL</a> a připojení k internetu,
+volitelně <a class="reference external" href="http://www.pgadmin.org/">pgAdmin</a>, <a class="reference external" href="http://www.libreoffice.org/">LibreOffice</a></p></li>
+<li><p>Alternativně přístup na server přes <em>ssh</em>, na kterém běží
+PostgreSQL, na klientovi <em>psql</em>. Data stačí prohlížet přes
+webový prohlížeč (webový QGIS).</p></li>
+<li><p><a class="reference external" href="http://www.qgis.org">QGIS</a> 3.4 a vyšší</p></li>
+<li><p><a class="reference external" href="http://www.postgis.net">PostGIS</a> 3.0 a vyšší</p></li>
+</ul>
+<section id="id3">
+<h1>Obsah<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h1>
+</section>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/0_uvod.html">Úvod</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/0_uvod.html#obecna-doporuceni">Obecná doporučení</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/0_uvod.html#indexujte">Indexujte</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/0_uvod.html#pouzivejte-transakce">Používejte transakce</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/0_uvod.html#venujte-dostatecnou-pozornost-navrhu-struktur">Věnujte dostatečnou pozornost návrhu struktur</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/0_uvod.html#naladte-si-postgresql">Nalaďte si PostgreSQL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/0_uvod.html#naucte-se-pouzivat-psql">Naučte se používat psql</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/0_uvod.html#kdy-je-vyhodnejsi-pouzit-jiny-nastroj">Kdy je výhodnější použít jiný nástroj</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/1_vytvarime_prostorovou_db.html">Vytváříme prostorovou databázi</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/1_vytvarime_prostorovou_db.html#tvorba-prostorove-databaze">Tvorba prostorové databáze</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/1_vytvarime_prostorovou_db.html#tvorba-pomoci-rozsireni">Tvorba pomocí rozšíření</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/1_vytvarime_prostorovou_db.html#tvorba-pomoci-skriptu">Tvorba pomocí skriptů</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/1_vytvarime_prostorovou_db.html#kopie-jiz-existujici-databaze">Kopie již existující databáze</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/1_vytvarime_prostorovou_db.html#pridavame-vlastni-srs">Přidáváme vlastní SRS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html">Vytváříme prostorovou tabulku</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#import-dat-do-postgresql">Import dat do PostgreSQL</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#copy">COPY</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#dump-format">Dump formát</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#roura">Roura</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#metacommand-copy">Metacommand \copy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#vytvarime-tabulku">Vytváříme tabulku</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#pridani-sloupce-z-geometrii">Přidání sloupce z geometrií</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#vytvarime-geometrii-prvku">Vytváříme geometrii prvků</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#st-point-x-y">ST_Point(x,y)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#st-geomfrom">ST_GeomFrom*</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#st-astext">ST_AsText</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#pridavame-geometrii-do-tabulky">Přidáváme geometrii do tabulky</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#update">UPDATE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#trigger">Trigger</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#prostorove-indexy">Prostorové indexy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#gist">GIST</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#sp-gist">SP-GIST</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#rychlost-zapisu">Rychlost zápisu</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#rychlost-vytvoreni">Rychlost vytvoření</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#velikost-indexu">Velikost indexu</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#vyber-bodu-v-polygonu">Výběr bodů v polygonu</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#jina-distribuce-bodu-pro-gist-a-spgist">Jiná distribuce bodů pro GIST a SPGIST</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#vyuziti-indexu-brin-pro-casoprostorova-data">Využití indexu BRIN pro časoprostorová data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html#zdroje">Zdroje</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/3_shp2pgsql_a_davkove_nahrani.html">Dávkové nahrání dat</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/3_shp2pgsql_a_davkove_nahrani.html#shp2pgsql">shp2pgsql</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/3_shp2pgsql_a_davkove_nahrani.html#ogr2ogr">ogr2ogr</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/3_shp2pgsql_a_davkove_nahrani.html#driver-postgresql">Driver PostgreSQL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/3_shp2pgsql_a_davkove_nahrani.html#driver-pgdump">Driver PGDump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/3_shp2pgsql_a_davkove_nahrani.html#poznamky-k-dalsim-formatum">Poznámky k dalším formátům</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/3_shp2pgsql_a_davkove_nahrani.html#zobrazeni-dat">Zobrazení dat</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/4_prostorove_operatory.html">Operátory datového typu geometry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/4_prostorove_operatory.html#prekryv-moo">Překryv MOO</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/4_prostorove_operatory.html#operator">Operátor &amp;&amp;</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/4_prostorove_operatory.html#operator-a">Operátor &#64; a ~</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/4_prostorove_operatory.html#operatory-a-vzdalenost">Operátory &lt;-&gt; a &lt;#&gt;, vzdálenost</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html">Prostorové funkce</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html#vypocet-plochy-obvodu-delky-a-dalsich-charakteristik-geometrie">Výpočet plochy, obvodu, délky a dalších charakteristik geometrie</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html#informace-o-vzajemnem-prostorovem-vztahu-prvku">Informace o vzájemném prostorovém vztahu prvků</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html#st-intesects-a-dalsi">ST_Intesects a další</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html#st-relate">ST_Relate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html#st-distance">ST_Distance</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html#geometricke-analyzy">Geometrické analýzy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html#agregacni-funkce">Agregační funkce</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html#dalsi-funkce">Další funkce</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html#st-isvalid-a-st-makevalid">ST_IsValid a ST_MakeValid</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html#st-multi">ST_Multi</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html#st-dump">ST_Dump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html#st-collectionextract">ST_CollectionExtract</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/6_obludy.html">Praktické příklady</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/6_obludy.html#nejblizsi-bod">Nejbližší bod</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/6_obludy.html#zadani">Zadání</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/6_obludy.html#rozbor">Rozbor</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/6_obludy.html#vyber-podle-obalove-zony">Výběr podle obalové zóny</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/6_obludy.html#id1">Zadání</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/6_obludy.html#id2">Rozbor</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/6_obludy.html#soucet-ploch-v-urcitem-okruhu">Součet ploch v určitém okruhu</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/6_obludy.html#id3">Zadání</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/6_obludy.html#postup">Postup</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/6_obludy.html#nejblizsi-bod-2">Nejbližší bod 2</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/6_obludy.html#id4">Zadání</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/7_finty.html">Efektivní práce</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/7_finty.html#pohledy">Pohledy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/7_finty.html#materializovane-pohledy">Materializované pohledy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/7_finty.html#udf-funkce">UDF funkce</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/7_finty.html#common-table-expression">Common table expression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/7_finty.html#anonymni-blok-kodu">Anonymní blok kódu</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/7_finty.html#lateral">LATERAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/7_finty.html#group-by-podle-primarniho-klice">GROUP BY podle primárního klíče</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/7_finty.html#klastrovani">Klastrování</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/7_finty.html#zadani">Zadání</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/7_finty.html#reseni">Řešení</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/7_finty.html#rozbor">Rozbor</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/8_topologie.html">Topologie</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/8_topologie.html#topologicky-datovy-model">Topologický datový model</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/8_topologie.html#jednoduche-prvky">Jednoduché prvky</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/8_topologie.html#id1">Topologický datový model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/8_topologie.html#priklad">Příklad</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/8_topologie.html#datovy-typ-topogeometry">Datový typ TopoGeometry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/8_topologie.html#tabulky-s-topologickymi-primitivy">Tabulky s topologickými primitivy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/8_topologie.html#kontrola-konzistence-dat">Kontrola konzistence dat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/8_topologie.html#prakticka-ukazka">Praktická ukázka</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/8_topologie.html#zadani">Zadání</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/8_topologie.html#reseni">Řešení</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/8_topologie.html#prakticka-ukazka-brloh-u-drhovle">Praktická ukázka <em>Brloh u Drhovle</em></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/8_topologie.html#id2">Zadání</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/8_topologie.html#postup">Postup</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/8_topologie.html#uzitecne-odkazy">Užitečné odkazy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/9_rastry.html">Rastrová data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/9_rastry.html#nahrani-rastrovych-dat-do-databaze">Nahraní rastrových dat do databáze</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/9_rastry.html#raster2pgsql">raster2pgsql</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/9_rastry.html#zakladni-metadata">Základní metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/9_rastry.html#priklad">Příklad</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/9_rastry.html#zadani">Zadání</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/9_rastry.html#reseni">Řešení</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/9_rastry.html#uzitecne-odkazy">Užitečné odkazy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/10_routing.html">Síťové analýzy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/10_routing.html#priprava-dat">Příprava dat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/10_routing.html#nalezeni-optimalni-cesty">Nalezení optimální cesty</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/10_routing.html#priklad-chodec">Příklad - chodec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/10_routing.html#nejkratsi-trasa-jeden-chodec">Nejkratší trasa (jeden chodec)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/10_routing.html#nejkratsi-trasa-vice-chodcu-jeden-cil">Nejkratší trasa (více chodců, jeden cíl)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/10_routing.html#nejrychlejsi-trasa-vice-chodcu-a-cilu">Nejrychlejší trasa (více chodců a cílů)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/10_routing.html#priklad-automobil">Příklad - automobil</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/10_routing.html#nejkratsi-trasa">Nejkratší trasa</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/10_routing.html#nejrychlejsi-trasa">Nejrychlejší trasa</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/10_routing.html#servisni-sit">Servisní síť</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/10_routing.html#cesta-obchodniho-cestujiciho">Cesta obchodního cestujícího</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/10_routing.html#vyuziti-vzdalenosti-po-siti">Využití vzdálenosti po síti</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/10_routing.html#vyuziti-euklidovske-vzdalenosti">Využití euklidovské vzdálenosti</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/10_routing.html#vytvoreni-site">Vytvoření sítě</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/10_routing.html#id1">Příprava dat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="kapitoly/10_routing.html#vytvoreni-grafu">Vytvoření grafu</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/10_routing.html#dalsi-materialy">Další materiály</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/11_zaver.html">A co dál?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kapitoly/11_zaver.html#prenos-dat-mezi-databazemi">Přenos dat mezi databázemi</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<section id="dodatky">
+<h1>Dodatky<a class="headerlink" href="#dodatky" title="Permalink to this heading">¶</a></h1>
+<section id="o-dokumentu">
+<h2>O dokumentu<a class="headerlink" href="#o-dokumentu" title="Permalink to this heading">¶</a></h2>
+<p>Text dokumentu je licencován pod <a class="reference external" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons
+Attribution-ShareAlike 4.0 International License</a>.</p>
+<figure class="align-center">
+<a class="reference internal image-reference" href="_images/cc-by-sa.png"><img alt="_images/cc-by-sa.png" src="_images/cc-by-sa.png" style="width: 130px;" /></a>
+</figure>
+<p><em>Verze textu dokumentu:</em> 0.2beta (sestaveno 23.05.2023)</p>
+<section id="autori">
+<h3>Autoři<a class="headerlink" href="#autori" title="Permalink to this heading">¶</a></h3>
+<p>Za <a class="reference external" href="http://www.gismentors.cz/">GISMentors</a>:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://www.gismentors.cz/mentors/michalek">Jan Michálek</a> <code class="docutils literal notranslate"><span class="pre">&lt;godzilalalala</span> <span class="pre">gmail.com&gt;</span></code></p></li>
+<li><p><a class="reference external" href="http://www.gismentors.cz/mentors/landa">Martin Landa</a> <code class="docutils literal notranslate"><span class="pre">&lt;martin.landa</span> <span class="pre">opengeolabs.cz&gt;</span></code></p></li>
+<li><p><a class="reference external" href="http://www.gismentors.cz/mentors/ruzicka">Jan Růžička</a> <code class="docutils literal notranslate"><span class="pre">&lt;jan.ruzicka</span> <span class="pre">opengeolabs.cz&gt;</span></code></p></li>
+</ul>
+</section>
+<section id="text-dokumentu">
+<h3>Text dokumentu<a class="headerlink" href="#text-dokumentu" title="Permalink to this heading">¶</a></h3>
+<p>Zdrojové texty školení jsou dostupné na adrese:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/GISMentors/postgis-pokrocily">https://github.com/GISMentors/postgis-pokrocily</a></p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/0_uvod.html">Úvod</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/1_vytvarime_prostorovou_db.html">Vytváříme prostorovou databázi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/2_tvorba_jednoduche_prostorove_tabulky.html">Vytváříme prostorovou tabulku</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/3_shp2pgsql_a_davkove_nahrani.html">Dávkové nahrání dat</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/4_prostorove_operatory.html">Operátory datového typu geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/5_prostorove_funkce.html">Prostorové funkce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/6_obludy.html">Praktické příklady</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/7_finty.html">Efektivní práce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/8_topologie.html">Topologie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/9_rastry.html">Rastrová data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/10_routing.html">Síťové analýzy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kapitoly/11_zaver.html">A co dál?</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Vyhledávání</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="OK" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="kapitoly/0_uvod.html" title="Úvod"
+              >další</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2023 GISMentors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

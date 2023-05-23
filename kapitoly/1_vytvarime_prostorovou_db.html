@@ -1,0 +1,351 @@
+
+<!DOCTYPE html>
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Vytváříme prostorovou databázi &#8212; Školení PostGIS pro pokročilé</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gismentors.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/translations.js"></script>
+    <link rel="search" title="Vyhledávání" href="../search.html" />
+    <link rel="next" title="Vytváříme prostorovou tabulku" href="2_tvorba_jednoduche_prostorove_tabulky.html" />
+    <link rel="prev" title="Úvod" href="0_uvod.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">Školení PostGIS pro pokročilé</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="0_uvod.html" title="Úvod"
+             accesskey="P">předchozí</a> |
+          <a href="2_tvorba_jednoduche_prostorove_tabulky.html" title="Vytváříme prostorovou tabulku"
+             accesskey="N">další</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="vytvarime-prostorovou-databazi">
+<h1>Vytváříme prostorovou databázi<a class="headerlink" href="#vytvarime-prostorovou-databazi" title="Permalink to this heading">¶</a></h1>
+<p>Je nezbytné, aby byl PostGIS nainstalován na témže stroji, na kterém
+běží databázový server. K tomu poslouží balíčky v balíčkovacím systému
+vaší distribuce. Návod pro operační systém Windows <a class="reference external" href="http://training.gismentors.eu/postgis-zacatecnik/kapitoly/7_instalace.html">zde</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>V případě PostGIS a PostgreSQL je výhodné používat
+nejnovější verze s ohledem na to, že odráží trendy v rychle
+se vyvíjejícím oboru. Novější verze obsahují velice užitečné
+<em>featury</em>, které často odráží aktuální požadavky. Proto je
+rozumné toto zohlednit při volbě distribuce pro provoz
+vašeho databázového serveru.</p>
+</div>
+<section id="tvorba-prostorove-databaze">
+<h2>Tvorba prostorové databáze<a class="headerlink" href="#tvorba-prostorove-databaze" title="Permalink to this heading">¶</a></h2>
+<p>Prostorovou databázi je možné vytvořit několika způsoby. Pomocí
+skriptů, extenze (rozšíření) či zkopírováním již existující prostorové
+databáze.</p>
+<section id="tvorba-pomoci-rozsireni">
+<h3>Tvorba pomocí rozšíření<a class="headerlink" href="#tvorba-pomoci-rozsireni" title="Permalink to this heading">¶</a></h3>
+<p><em>Od PostgreSQL verze 9.1</em> můžeme vytvořit prostorovou databázi
+příkazem <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">EXTENSION</span></code>, viz <a class="reference external" href="http://postgis.net/docs/manual-2.1/postgis_installation.html#create_new_db_extensions">podrobný návod pro PostGIS 2.1</a>.</p>
+<section id="postup-instalace-postgis-pomoci-create-extension">
+<h4>Postup instalace PostGIS pomocí <em>CREATE EXTENSION</em><a class="headerlink" href="#postup-instalace-postgis-pomoci-create-extension" title="Permalink to this heading">¶</a></h4>
+<div class="notecmd admonition">
+<p class="admonition-title">Spuštění psql z příkazové řádky</p>
+<p>V tomto případě předpokládáme existenci databáze <cite>pokusnik</cite>.</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>psql<span class="w"> </span>pokusnik
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">postgis</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Velká výhoda tohoto postupu je snadný upgrade na vyšší verzi PostGISu,
+viz příklad níže.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">postgis</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="ss">&quot;2.1.0&quot;</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>V případě, že máme databázi přemigrovanou z nějaké starší
+verze, kdy postgis nebyl instalován prostřednictvím extenze,
+je možné požít dotaz <span class="sqlcmd">CREATE EXTENSION postgis FROM
+unpackaged</span>. Což předpokládá, že máte postgis v odpovídající
+verzi, v opačném případě se to nemusí podařit. Jinou možností,
+jak přiřadit funkce k extenzi je dotaz <span class="sqlcmd">ALTER
+EXTENSION postgis ADD …</span>.</p>
+</div>
+<p>Instalace rozšíření pomocí extenze také umožňuje nahrát rozšíření do vybraného
+schéma (defaultně je to obvykle public), což může být praktické, pokud budete
+chtít zálohovat databázi pomocí <a class="reference external" href="http://www.postgresql.org/docs/current/static/app-pgdump.html">pg_dump</a> bez postgisu
+a budete chtít, z nějakého důvodu, ukládat do <em>public</em> nějaká svá data.</p>
+</section>
+</section>
+<section id="tvorba-pomoci-skriptu">
+<h3>Tvorba pomocí skriptů<a class="headerlink" href="#tvorba-pomoci-skriptu" title="Permalink to this heading">¶</a></h3>
+<p>V některých případech není možné použít výše zmíněný postup kvůli
+starší verzi PostgreSQL, nastavení práv nebo problémům s balíčky. Pak
+je možné provést tvorbu databáze <cite>po staru</cite> pomocí skriptů. Umístění
+skriptů se může lišit podle distribuce a verze PostGISu, viz <a class="reference external" href="http://postgis.net/docs/manual-2.1/postgis_installation.html#create_new_db">podrobný
+postup pro PostGIS 2.1</a>.</p>
+<div class="notecmd admonition">
+<p class="admonition-title">Dohledání instalačních skriptů PostGIS z příkazové řádky</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>locate<span class="w"> </span>postgis.sql
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">share</span><span class="o">/</span><span class="n">postgresql</span><span class="o">/</span><span class="n">contrib</span><span class="o">/</span><span class="n">postgis</span><span class="o">-</span><span class="mf">2.1</span><span class="o">/</span><span class="n">postgis</span><span class="o">.</span><span class="n">sql</span>
+<span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">share</span><span class="o">/</span><span class="n">postgresql</span><span class="o">/</span><span class="n">contrib</span><span class="o">/</span><span class="n">postgis</span><span class="o">-</span><span class="mf">2.1</span><span class="o">/</span><span class="n">rtpostgis</span><span class="o">.</span><span class="n">sql</span>
+<span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">share</span><span class="o">/</span><span class="n">postgresql</span><span class="o">/</span><span class="n">contrib</span><span class="o">/</span><span class="n">postgis</span><span class="o">-</span><span class="mf">2.1</span><span class="o">/</span><span class="n">uninstall_postgis</span><span class="o">.</span><span class="n">sql</span>
+<span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">share</span><span class="o">/</span><span class="n">postgresql</span><span class="o">/</span><span class="n">contrib</span><span class="o">/</span><span class="n">postgis</span><span class="o">-</span><span class="mf">2.1</span><span class="o">/</span><span class="n">uninstall_rtpostgis</span><span class="o">.</span><span class="n">sql</span>
+</pre></div>
+</div>
+</div>
+<div class="notecmd admonition">
+<p class="admonition-title">Instalace PostGIS pomocí skriptů z příkazové řádky</p>
+<p>PostGIS nainstalujeme a naplníme tabulku souřadnicových
+systémů základní sadou předpřipravených <abbr title="Spatial Reference Systems">SRS</abbr>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>psql<span class="w"> </span>-d<span class="w"> </span>db_s_postgis<span class="w"> </span>-f<span class="w"> </span>postgis.sql
+psql<span class="w"> </span>-d<span class="w"> </span>db_s_postgis<span class="w"> </span>-f<span class="w"> </span>spatial_ref_sys.sql
+</pre></div>
+</div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Varování</p>
+<p>V základní sadě nemusí být obsažena nejnovější definice
+souřadnicového systému S-JTSK (<a class="reference external" href="http://epsg.io/5514">EPSG:5514</a>), ale pouze
+jeho starší verze. Tento souřadnicový systém je třeba
+<a class="reference internal" href="#epsg-5514"><span class="std std-ref">doplnit ručně</span></a>.</p>
+</div>
+<p>V tuto chvíli již máme vytvořenu plně funkční prostorovou databázi pro
+práci s vektorovými daty ve formě tzv. <em>simple features</em>.</p>
+<p>Ve složce se skripty jsou však některé další užitečné skripty, které
+stojí za to zmínit.</p>
+<dl class="simple">
+<dt><em>postgis_comments.sql</em></dt><dd><p>Doplní k funkcím komentáře</p>
+</dd>
+<dt><em>rtpostgis.sql, raster_comments.sql</em></dt><dd><p>Podpora a komentáře pro rastrovými daty</p>
+</dd>
+<dt><em>topology.sql, topology_comments.sql</em></dt><dd><p>Nástroje na práci s topologií vektorových dat a komentáře</p>
+</dd>
+<dt><em>legacy.sql</em></dt><dd><p>Zpětná kompatibilita.</p>
+</dd>
+</dl>
+</section>
+<section id="kopie-jiz-existujici-databaze">
+<h3>Kopie již existující databáze<a class="headerlink" href="#kopie-jiz-existujici-databaze" title="Permalink to this heading">¶</a></h3>
+<p>Pokud kopírujeme databázi, kopírujeme ji se vším všudy, je-li v ní
+nahrán PostGIS, kopírujeme ji i s ním.</p>
+<div class="admonition important">
+<p class="admonition-title">Důležité</p>
+<p>To samé platí, pochopitelně, i pro zálohování pomocí
+<em>pg_dump</em>. Proto je dobré u prostorových databází
+vytvářet pro pracovní data samostatné schéma a
+neukládat tato data do <em>public</em>. Kromě záležitostí
+souvisejících s nastavováním práv a pod. totiž snadno
+oddělíte data od samotného PostGISu. Díky tomu jednak
+ušetříte místo při zálohování a přenosu souborů, ale
+hlavně si ušetříte mnohou nepříjemnost při přenosu
+vyexportovaných dat na server s jinou verzí PostGISu
+nebo distribucí Linuxu.</p>
+</div>
+<p>PostgreSQL umožňuje kopírovat databázi pomocí parametru
+<code class="xref std std-option docutils literal notranslate"><span class="pre">template</span></code>.</p>
+<p>Buď v <strong class="program">psql</strong> nebo <strong class="program">pgAdminIII</strong>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="n">moje_nova_databaze</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="k">TEMPLATE</span><span class="w"> </span><span class="n">predem_pripravena_predloha</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Nebo pomocí příkazu <cite>createdb</cite>:</p>
+<div class="notecmd admonition">
+<p class="admonition-title">Kopírování databáze z příkazové řádky</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>createdb<span class="w"> </span>moje_nova_databaze<span class="w"> </span>-T<span class="w"> </span>predem_pripravena_predloha
+</pre></div>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Toho se využívalo u verzí PostgreSQL starších než 9.1 k
+tomu, že si správce databáze na serveru vytvořil prázdnou databázi s
+PostGISem jako šablonu pro další databáze tak, aby se vyhnul otravnému
+vypisování skriptů.</p>
+<p>Ovšem i u novějších verzí PostgreSQL má tato technika svoje
+opodstatnění. Obvykle v případě, že provádíme v databázi nějaké další
+upravy (přidané vlastní SRS ve <em>spatial_ref_sys</em>, přidané funkce,
+zásahy do kódování atp.)</p>
+</div>
+<p>U vytváření prostorové databáze podle <em>TEMPLATE</em> je ale dobré vědět, že ssebou
+nese určitá omezení. Jedním z těch podstatných je nastavení <em>LOCALES</em>, které je
+možné použít pouze s <span class="sqlcmd">TEMPLATE template0</span>. Pokud tedy chcete pracovat s
+daty, která obsahují interpunkci, nebo nějaké národní sady znaků, je třeba
+udělat již předlohu se správným <em>LC_COLLATE</em> a <em>LC_CTYPE</em>, jinak nebudou některé
+funkce (například <em>lower</em>, <em>upper</em>, <em>unaccent</em>) fungovat správně.</p>
+</section>
+</section>
+<section id="pridavame-vlastni-srs">
+<h2>Přidáváme vlastní SRS<a class="headerlink" href="#pridavame-vlastni-srs" title="Permalink to this heading">¶</a></h2>
+<p>Informace o souřadnicových systémech ukládá PostGIS v tabulce
+<span class="dbtable">spatial_ref_sys</span>. Primárním klíčem této tabulky je SRID.</p>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Do PostGISu není možné vkládat geometrii v souřadnicových
+systémech, které nejsou uvedeny v tabulce
+<span class="dbtable">spatial_ref_sys</span>. Tuto tabulku je ovšem možno
+editovat, záznamy s definicemi upravovat, případně vkládat
+své vlastní.</p>
+</div>
+<p>Běžný datař se obvykle domnívá, že souřadnicové systémy se ho
+netýkají, že to je ten druh neštěstí, který obvykle potkává
+jiné lidi. To může a nemusí být pravda. Pokud budete pracovat s daty,
+které jsou definovány v témže souřadnicovém systému, jak v
+originálních datech, tak v databázi a případě při publikaci dat a
+tento souřadnicový systém je již obsažen v tabulce
+<span class="dbtable">spatial_ref_sys</span>, nemusí vás souřadnicové systémy nijak
+zvlášť zajímat. Pokud ovšem budete zpracovávat data v různých
+souřadnicových systémech a budete je chtít v databázi kombinovat, tak
+se jim nevyhnete.</p>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Zde se nabízí lákavá možnost transformovat si prvky před importem.
+To však nemusí být vždy nejvýhodnější řešení. Při každé
+transformaci totiž ztrácíme přesnost. Data se zkreslují,
+degenerují. Výjimku pochopitelně tvoří případy, kdy
+požadovanou transformaci nejsme schopní v databázi provést s
+náležitou přesností, případně pokud nám záleží na výkonu (je
+třeba si uvědomit, že prostorový index nad
+netransformovanými daty nemusí ve všech případech pracovat
+optimálně).</p>
+</div>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p><strong>Geometry vs geography</strong> PostGIS podporuje dva
+datové typy pro uložení geometrie geoprvků, geometry
+a geography. Geometry pracuje s plošným
+kartografickým zobrazením, kdežto geography se
+zeměpisnými souřadnicemi, ve kterých provádí i
+měření a výpočty. V českém prostředí v souvislosti
+se souřadnicovým systémem S-JTSK používáme vždy
+geometry.</p>
+</div>
+<p>V výchozí sadě souřadnicových systémů může chybět nejnovější definice
+souřadnicového systému S-JTSK <a class="reference external" href="http://epsg.io/5514">EPSG:5514</a>, proto si ho do databáze
+doplníme.</p>
+<div class="notecmd admonition" id="epsg-5514">
+<p class="admonition-title">Přidání souřadnicového systému S-JTSK do databáze z příkazové řádky</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>http://epsg.io/5514.sql
+psql<span class="w"> </span>-f<span class="w"> </span><span class="m">5514</span>.sql<span class="w"> </span>moje_nova_databaze
+</pre></div>
+</div>
+</div>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>Definice souřadnicových systémů umožňují využít
+zpřesňující klíče pro transformaci do WGS-84 (GPS,
+zeměpisné souřadnice). Pokud transformační klíče
+budete ignorovat, dopustíte se při transformaci dat
+z S-JTSK do jiného systému chyby, která může
+dosahovat až několika desítek metrů. Trochu
+nešťastné ovšem je, že pro jeden souřadnicový systém
+je možné použít pouze jednu sadu transformačních
+klíčů. Zároveň nefunguje žádná <cite>dědičnost
+souřadnicových systémů</cite>. Pokud tedy pracujete s daty
+pokrývající ČR a Slovensko, použijete v obou
+případech <a class="reference external" href="http://epsg.io/5514">EPSG:5514</a>, pokaždé ale s jiným
+transformačním klíčem. Pro každý stát si tedy budete
+muset nadefinovat vlastní SRS odvozené z SRID 5514
+doplněné transformačním klíčem. Alternativou k
+transformačním klíčům jsou gridy, které poskytují
+vzhledem ke své podrobnosti přesnější výsledky při
+transformaci dat.</p>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="0_uvod.html">Úvod</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Vytváříme prostorovou databázi</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#tvorba-prostorove-databaze">Tvorba prostorové databáze</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#tvorba-pomoci-rozsireni">Tvorba pomocí rozšíření</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tvorba-pomoci-skriptu">Tvorba pomocí skriptů</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kopie-jiz-existujici-databaze">Kopie již existující databáze</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pridavame-vlastni-srs">Přidáváme vlastní SRS</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="2_tvorba_jednoduche_prostorove_tabulky.html">Vytváříme prostorovou tabulku</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3_shp2pgsql_a_davkove_nahrani.html">Dávkové nahrání dat</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4_prostorove_operatory.html">Operátory datového typu geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5_prostorove_funkce.html">Prostorové funkce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6_obludy.html">Praktické příklady</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7_finty.html">Efektivní práce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8_topologie.html">Topologie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9_rastry.html">Rastrová data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10_routing.html">Síťové analýzy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11_zaver.html">A co dál?</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Vyhledávání</h3>
+            <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="OK" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="0_uvod.html" title="Úvod"
+              >předchozí</a> |
+            <a href="2_tvorba_jednoduche_prostorove_tabulky.html" title="Vytváříme prostorovou tabulku"
+              >další</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2023 GISMentors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

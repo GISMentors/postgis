@@ -1,0 +1,740 @@
+
+<!DOCTYPE html>
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Efektivní práce &#8212; Školení PostGIS pro pokročilé</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gismentors.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/translations.js"></script>
+    <link rel="search" title="Vyhledávání" href="../search.html" />
+    <link rel="next" title="Topologie" href="8_topologie.html" />
+    <link rel="prev" title="Praktické příklady" href="6_obludy.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">Školení PostGIS pro pokročilé</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="6_obludy.html" title="Praktické příklady"
+             accesskey="P">předchozí</a> |
+          <a href="8_topologie.html" title="Topologie"
+             accesskey="N">další</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="efektivni-prace">
+<h1>Efektivní práce<a class="headerlink" href="#efektivni-prace" title="Permalink to this heading">¶</a></h1>
+<section id="pohledy">
+<h2>Pohledy<a class="headerlink" href="#pohledy" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference external" href="http://www.postgresql.org/docs/current/static/sql-createview.html">Pohled</a> v databázi je v podstatě dotaz, který se
+tváří jako tabulka. Můžeme mu nastavit práva a dotazovat ho. Výhodou pohledů
+je, že pracují s tabulkami se stejnými právy, jaká měl jejich tvůrce. Můžeme
+tedy pomocí pohledů zpřístupnit uživateli obsah tabulek, které mu nechceme
+ukázat celé.</p>
+<p>Pohledy můžeme zobrazit v QGISu, pakliže obsahují grafickou složku. Můžeme si
+tedy, připravit dotazy, které nás zajímají a pracovat s nimi, aniž bychom museli
+výsledky analýz ukládat do nových tabulek.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="n">SEARCH_PATH</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">parcely_podle_gridu</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">row_number</span><span class="p">()</span><span class="w"> </span><span class="n">over</span><span class="p">()</span><span class="w"> </span><span class="n">id1</span>
+<span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">grid</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="n">grid_id</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">parcely</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">jtsk_grid</span><span class="w"> </span><span class="n">grid</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">definicnibod</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">grid</span><span class="p">.</span><span class="n">geom</span><span class="p">;</span>
+</pre></div>
+</div>
+<figure class="align-center" id="id1">
+<img alt="../_images/parcely_dle_gridu.png" src="../_images/parcely_dle_gridu.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 4 </span><span class="caption-text">Výsledek pohledu - obarvení parcel podle gridu.</span><a class="headerlink" href="#id1" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="materializovane-pohledy">
+<h2>Materializované pohledy<a class="headerlink" href="#materializovane-pohledy" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference external" href="http://www.postgresql.org/docs/current/static/sql-creatematerializedview.html">Materializovaný pohled</a> je v mnoha
+ohledech podobný jako pohled. Liší se jednou zásadní věcí, dotázaná data jsou
+skutečně uložena, podobně, jako když vytvoříte tabulku z výsledku dotazu. Data
+jsou tím pádem statická a nemění se při změně zdrojových dat. Na druhou stranu
+takto uložená data jsou vrácena ihned, v případě složitého a výpočetně náročného
+dotazu může být výsledek vrácen mnohonásobně rychleji.</p>
+<p>Na rozdíl od prostého uložení výsledku dotazu do tabulky si materializovaný
+pohled s sebou nese i původní dotaz ze kterého byl vytvořen. Je možné ho obnovit
+příkatem <a class="reference external" href="http://www.postgresql.org/docs/current/static/sql-refreshmaterializedview.html">REFRESH MATERIALIZED VIEW</a>.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Materializovaný pohled lze indexovat, podobně jako tabulku.</p>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Důležité</p>
+<p>Při obnovení materializovaného pohledu musíte mít stejně
+nastavený search_path jako při jeho tvorbě. To s sebou může nést problémy
+například při obnově databáze ze zálohy vytvořené pomocí pg_dump.</p>
+</div>
+</section>
+<section id="udf-funkce">
+<h2>UDF funkce<a class="headerlink" href="#udf-funkce" title="Permalink to this heading">¶</a></h2>
+<p>Funkce UDF (User Defined Function) vytváříme příkazem <a class="reference external" href="http://www.postgresql.org/docs/current/static/sql-createfunction.html">CREATE FUNCTION</a>. Funkce může být napsaná přímo v jazyce <cite>SQL</cite>, v
+procedurálním jazyce PostgreSQL <cite>PL/pgSQL</cite>, případně v jakémkoliv jazyce,
+který podporuje PostgreSQL.</p>
+<p>Ukažme si jednoduchý příklad funkce, která vrací kolik procent polygonu
+je zakryto druhým polygonem.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>CREATE OR REPLACE FUNCTION procento_prekryvu(geometry, geometry)
+RETURNS float AS $fbody$
+   SELECT
+   (
+      ST_Area(ST_Intersection($1, $2))/
+      ST_Area($1)
+   ) * 100;
+$fbody$
+LANGUAGE SQL;
+
+SELECT procento_prekryvu(
+   ST_Buffer(ST_MakePoint(0,0), 50),
+   ST_Buffer(ST_MakePoint(50,0), 25));
+</pre></div>
+</div>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>U funkcí v PostgreSQL funguje přetěžování proměnných, takže
+je možné napsat celou řadu funkcí pro různé kombinace proměnných.</p>
+</div>
+<p>Složitější funkci si ukážeme v Pl/pgSQL. Bude se jmenovat <cite>šupiny</cite> a bude vracet
+polygon oříznutý o části, které jsou zakryté polygony v tabulce šupiny.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>BEGIN;
+
+CREATE TABLE supiny (
+   id SERIAL PRIMARY KEY
+   , geom geometry(POLYGON, 0)
+);
+
+CREATE OR REPLACE FUNCTION supiny(sup geometry)
+RETURNS geometry AS $$
+DECLARE
+odecist geometry;
+BEGIN
+   odecist := ST_MemUnion(geom) FROM supiny
+   --normální UNION zlobí kvůli topologickým chybám
+   WHERE geom &amp;&amp; sup;
+   /* vyfiltruji prvky z okoli zajmoveho uzemi*/
+   IF odecist IS NULL THEN --odecist je prazdny
+      RETURN sup;
+   ELSE
+      RETURN
+         ST_CollectionExtract(ST_Difference(sup, odecist),3)
+         ;
+      /* Collection extract vybere pouze polygony*/
+   END IF;
+
+END;
+$$ LANGUAGE plpgsql;
+
+--vygeneruji náhodná data
+
+DO $$
+   DECLARE i int;
+   BEGIN
+      FOR i in 1..500 LOOP
+         INSERT INTO supiny(geom)
+         SELECT (ST_Dump(
+               supiny(
+                  ST_Buffer(
+                     ST_Point(
+                        random() * 100
+                        , random() * 100
+                  ), (random() * 10) + 10
+                  , 25
+               )
+            )
+         )).geom;
+      END LOOP;
+   END
+   $$;
+
+
+
+COMMIT;
+</pre></div>
+</div>
+<figure class="align-center" id="id2">
+<img alt="../_images/supiny.png" class="middle" src="../_images/supiny.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 5 </span><span class="caption-text">Výsledek volání funkce supiny.</span><a class="headerlink" href="#id2" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="common-table-expression">
+<h2>Common table expression<a class="headerlink" href="#common-table-expression" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference external" href="http://www.postgresql.org/docs/current/static/queries-with.html">Common table expression</a> (CTE) má hned několik
+zajímavých vlastností. Tou první je možnost rekurze. To je možné využít
+například při generování čtvercové sítě nebo generování hierarchických
+struktur.</p>
+<p>Použití rekruzivního <span class="sqlcmd">CTE</span> si předvedeme v následujícím příkladu.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="n">SEARCH_PATH</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">jtsk_grid</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">WITH</span><span class="w"> </span><span class="k">RECURSIVE</span>
+<span class="n">bb</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Extent</span><span class="p">(</span><span class="n">originalnihranice</span><span class="p">)</span><span class="w"> </span><span class="n">bbgeom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">budovy</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_XMin</span><span class="p">(</span><span class="n">bbgeom</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">bb</span>
+<span class="w">   </span><span class="k">UNION</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_XMax</span><span class="p">(</span><span class="n">bbgeom</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">bb</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_YMin</span><span class="p">(</span><span class="n">bbgeom</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">bb</span>
+<span class="w">   </span><span class="k">UNION</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_YMax</span><span class="p">(</span><span class="n">bbgeom</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">bb</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">SELECT</span>
+<span class="n">row_number</span><span class="p">()</span><span class="w"> </span><span class="n">over</span><span class="p">()</span><span class="w"> </span><span class="n">id</span>
+<span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="n">a</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">.</span><span class="n">a</span><span class="w"> </span><span class="n">y</span>
+<span class="p">,</span><span class="w"> </span><span class="n">ST_SetSRID</span><span class="p">(</span>
+<span class="w">   </span><span class="n">ST_Envelope</span><span class="p">(</span>
+<span class="w">      </span><span class="n">ST_UNION</span><span class="p">(</span><span class="n">ST_MakePoint</span><span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">.</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">)</span>
+<span class="w">         </span><span class="p">,</span><span class="w"> </span><span class="n">ST_MakePoint</span><span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">.</span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">)</span>
+<span class="w">      </span><span class="p">)</span>
+<span class="w">   </span><span class="p">),</span><span class="w"> </span><span class="mi">5514</span>
+<span class="p">)::</span><span class="n">geometry</span><span class="p">(</span><span class="n">POLYGON</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>Místo rekurzivního CTE lze v tomto příkladu použít
+<em>generate_series</em> s týmž výsledkem.</p>
+</div>
+<figure class="align-center" id="id3">
+<img alt="../_images/db_manager_cte.png" class="middle" src="../_images/db_manager_cte.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 6 </span><span class="caption-text">Dotaz můžeme pustit přímo z db manageru QGISu.</span><a class="headerlink" href="#id3" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="id4">
+<img alt="../_images/jtsk_grid.png" src="../_images/jtsk_grid.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 7 </span><span class="caption-text">Výsledek - vytvořený grid v S-JTSK.</span><a class="headerlink" href="#id4" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+<p>Druhá ze zajímavých vlastností CTE je způsob, jakými jsou
+optimalizovány. Každá CTE je totiž optimalizována zvlášť.
+Toho se dá využít při optimalizaci dotazů.</p>
+<p>CTE můžeme libovolně řetězit a navzájem dotazovat. To se dá dobře
+použít, když budeme chtít postupně redukovat množinu dotazovaných
+prvků pomocí stále přesnějších (a tím pádem výpočetně náročnějších)
+dotazů. S pomocí CTE je možné dotáhnout pravidlo <cite>výpočetně náročné
+operace provádějte s nejmenším možným počtem prvků</cite>.</p>
+<p>Dejme tomu, že chceme zjistit výměru průniků budov s pozemky určenými
+k plnění funkce lesa v Praze.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="n">SEARCH_PATH</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="p">;</span>
+
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
+<span class="k">WITH</span><span class="w"> </span><span class="n">zpochr_26</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="c1">--PUPFL</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">parcely</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">zpusobochranykod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">26</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">bud</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="c1">--filtr na boundingbox</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">budovy</span><span class="w"> </span><span class="n">b</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">      </span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">zpochr_26</span><span class="w"> </span><span class="n">z</span>
+<span class="w">      </span><span class="k">WHERE</span><span class="w"> </span><span class="n">z</span><span class="p">.</span><span class="n">originalnihranice</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">originalnihranice</span>
+<span class="w">   </span><span class="p">)</span>
+<span class="p">),</span><span class="w"> </span><span class="n">prunik</span><span class="w"> </span><span class="k">AS</span>
+<span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_CollectionExtract</span><span class="p">(</span>
+<span class="w">         </span><span class="n">ST_Intersection</span><span class="p">(</span>
+<span class="w">         </span><span class="n">ST_UNION</span><span class="p">(</span><span class="n">z</span><span class="p">.</span><span class="n">originalnihranice</span><span class="p">)</span>
+<span class="w">         </span><span class="p">,</span><span class="w"> </span><span class="n">ST_Union</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">originalnihranice</span><span class="p">)</span>
+<span class="w">      </span><span class="p">),</span><span class="w"> </span><span class="mi">3</span>
+<span class="w">   </span><span class="p">)</span><span class="w"> </span><span class="n">geom</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">bud</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">zpochr_26</span><span class="w"> </span><span class="n">z</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">originalnihranice</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">z</span><span class="p">.</span><span class="n">originalnihranice</span>
+<span class="w">   </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">z</span><span class="p">.</span><span class="n">ogc_fid</span>
+<span class="p">)</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="k">sum</span><span class="p">(</span><span class="n">ST_Area</span><span class="p">(</span><span class="n">geom</span><span class="p">))</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">prunik</span><span class="p">;</span>
+
+<span class="c1">-- srovnaní</span>
+
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">sum</span><span class="p">(</span><span class="n">ST_Area</span><span class="p">(</span>
+<span class="w">      </span><span class="n">ST_Intersection</span><span class="p">(</span>
+<span class="w">         </span><span class="n">p</span><span class="p">.</span><span class="n">originalnihranice</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">originalnihranice</span>
+<span class="w">      </span><span class="p">)</span>
+<span class="w">   </span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">parcely</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">budovy</span><span class="w"> </span><span class="n">b</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">zpusobochranykod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">26</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">ST_Intersects</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">originalnihranice</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">originalnihranice</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Tento příklad ukazuje, že ani pokročilé použití CTE nemusí být výhodnější
+než použití jednoduchého dotazu. Je to proto, že se jedná o jednoduchý
+dotaz, který optimalizátor může správně uchopit. U složitější situace
+to může být naopak. Problematické je navíc použití klauzule <span class="sqlcmd">EXISTS</span>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="n">SEARCH_PATH</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="p">;</span>
+
+<span class="k">WITH</span><span class="w"> </span><span class="n">zpochr_26</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="c1">--PUPFL</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">parcely</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">zpusobochranykod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">26</span>
+<span class="p">)</span>
+<span class="p">,</span><span class="w"> </span><span class="n">bud</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="c1">--filtr na boundingbox</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">z</span><span class="p">.</span><span class="n">originalnihranice</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">originalnihranice</span><span class="w"> </span><span class="n">b</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">budovy</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">zpochr_26</span><span class="w"> </span><span class="n">z</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">z</span><span class="p">.</span><span class="n">originalnihranice</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">originalnihranice</span>
+<span class="p">)</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Area</span><span class="p">(</span><span class="n">ST_Union</span><span class="p">(</span><span class="n">ST_Intersection</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)))</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">bud</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Každopádně <a class="reference external" href="http://postgis.net/docs/ST_Intersects.html">ST_Intersects</a> umí využívat operátory a potažmo indexy,
+takže v tomto konkrétním případě má stále navrch.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="n">SEARCH_PATH</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="p">;</span>
+
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">sum</span><span class="p">(</span><span class="n">ST_Area</span><span class="p">(</span>
+<span class="w">      </span><span class="n">ST_Intersection</span><span class="p">(</span>
+<span class="w">         </span><span class="n">p</span><span class="p">.</span><span class="n">originalnihranice</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">originalnihranice</span>
+<span class="w">      </span><span class="p">)</span>
+<span class="w">   </span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">parcely</span><span class="w"> </span><span class="n">p</span><span class="p">,</span><span class="w"> </span><span class="n">budovy</span><span class="w"> </span><span class="n">b</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">zpusobochranykod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">26</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">ST_Relate</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">originalnihranice</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">originalnihranice</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;2********&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="anonymni-blok-kodu">
+<h2>Anonymní blok kódu<a class="headerlink" href="#anonymni-blok-kodu" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference external" href="http://www.postgresql.org/docs/current/static/sql-do.html">Anonymní blok kódu</a> umožňuje spouštět dávku v PL/pgSQL mimo
+funkce.</p>
+<p>Ukázka z příkladu výše ukazuje, jak pustit ve smyčce vytvoření pěti set náhodných
+bublin.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>DO $$
+   DECLARE i int;
+   BEGIN
+      FOR i in 1..500 LOOP
+         INSERT INTO supiny(geom)
+         SELECT (ST_Dump(
+               supiny(
+                  ST_Buffer(
+                     ST_Point(
+                        random() * 100
+                        , random() * 100
+                  ), (random() * 10) + 10
+                  , 25
+               )
+            )
+         )).geom;
+      END LOOP;
+   END
+   $$;
+</pre></div>
+</div>
+<p>Využít se dá s výhodou, když provádíme průnik prvků dvou obsáhlejších tabulek.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>SET SEARCH_PATH TO ukol_1, public;
+
+BEGIN;
+
+CREATE TABLE prunik (
+   ogc_fid int,
+   geom geometry(POLYGON, 5514)
+);
+
+DO $$
+   DECLARE r prunik; --record podle tabulky prunik
+   g geometry;
+   r2 record;
+
+   BEGIN
+      FOR r IN SELECT ogc_fid, (ST_Dump(originalnihranice)).geom geom
+         FROM budovy
+         WHERE ST_IsValid(originalnihranice)
+         LOOP
+         RAISE NOTICE &#39;zpracovávám ogc_fid %&#39;, r.ogc_fid;
+         g := ST_Multi(
+            ST_CollectionExtract(
+               ST_Intersection(
+                  r.geom, ST_Union(ST_MakeValid(originalnihranice))
+               ), 3
+            )
+         )
+         FROM parcely
+         WHERE originalnihranice &amp;&amp; r.geom;
+
+         FOR r2 IN SELECT (ST_Dump(g)).geom LOOP
+
+            IF ST_GeometryType(r2.geom) = &#39;ST_Polygon&#39; THEN
+               r.geom := r2.geom;
+               INSERT INTO prunik VALUES(r.*);
+            END IF;
+
+         END LOOP;
+
+
+
+      END LOOP;
+   END
+   $$;
+
+   SELECT count(*) FROM prunik;
+
+ROLLBACK;
+</pre></div>
+</div>
+</section>
+<section id="lateral">
+<h2>LATERAL<a class="headerlink" href="#lateral" title="Permalink to this heading">¶</a></h2>
+<p>Použití LATERAL je poměrně oblíbené mezi uživateli PostGIS. Může být použito v
+klauzuli <span class="sqlcmd">FROM</span>, nebo <span class="sqlcmd">JOIN</span>. Relace (může se jednat o tabulku,
+pohled, materializovaný pohled, případně funkci vracející recordset, jako třeba
+<span class="sqlcmd">ST_Dump</span>) se dotazuje zvlášť pro každý záznam hlavní tabulky. Obzvláště
+výhodné je její použití s LIMIT u výpočetně náročných podmínek.</p>
+<p>Například pokud chceme najít všechny katastry, na kterých je alespoň jedno
+maloplošné chráněné území. Chceme se vyvarovat toho, aby bylo vybráno
+katastrální území, na kterém je více než jedno katastrální území vícekrát neý
+jednou.</p>
+<p>Použijeme tabulku <span class="dbtable">ruian.katastralniuzemi</span> a tabulku
+<span class="dbtable">ochrana_uzemi.maloplosna_uzemi</span>.</p>
+<p>Klasické je použití klauzule <span class="sqlcmd">EXIST</span></p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">ruian</span><span class="p">.</span><span class="n">katastralniuzemi</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="k">True</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">ochrana_uzemi</span><span class="p">.</span><span class="n">maloplosna_uzemi</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ST_Intersects</span><span class="p">(</span><span class="n">maloplosna_uzemi</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">katastralniuzemi</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p>S využitím <span class="sqlcmd">LATERAL</span></p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">ruian</span><span class="p">.</span><span class="n">katastralniuzemi</span>
+<span class="p">,</span><span class="w"> </span><span class="k">LATERAL</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="k">True</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">ochrana_uzemi</span><span class="p">.</span><span class="n">maloplosna_uzemi</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ST_Intersects</span><span class="p">(</span><span class="n">maloplosna_uzemi</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">katastralniuzemi</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span>
+<span class="w">   </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">1</span>
+<span class="p">)</span><span class="w"> </span><span class="n">xx</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Upravte dotaz tak, aby vybral pouze katastrální území, na kterých je
+více než pět maloplošných ZCHÚ.</p>
+</div>
+</section>
+<section id="group-by-podle-primarniho-klice">
+<h2>GROUP BY podle primárního klíče<a class="headerlink" href="#group-by-podle-primarniho-klice" title="Permalink to this heading">¶</a></h2>
+<p>Pokud použijeme v klauzuli <span class="sqlcmd">GROUP BY</span> primární klíč, umožní dotaz vybrat
+všechny podřízené položky. To je užitečné, pokud chceme vybrat pouze unikátní
+záznamy.</p>
+<p>Pokud provedeme <span class="sqlcmd">JOIN</span> katastrálních území a maloplošných ZCHÚ, budeme
+mít ve výsledku pro každé KÚ tolik záznamů, s kolika MZCHÚ má nenulový průnik.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span>
+<span class="n">katastralniuzemi</span><span class="p">.</span><span class="n">kod</span>
+<span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">ruian</span><span class="p">.</span><span class="n">katastralniuzemi</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">ochrana_uzemi</span><span class="p">.</span><span class="n">maloplosna_uzemi</span>
+<span class="k">ON</span><span class="w"> </span><span class="n">ST_Intersects</span><span class="p">(</span><span class="n">katastralniuzemi</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">maloplosna_uzemi</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">katastralniuzemi</span><span class="p">.</span><span class="n">kod</span>
+<span class="k">HAVING</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span>
+<span class="p">;</span>
+</pre></div>
+</div>
+<p>Pokud v klauzuli <span class="sqlcmd">GROUP BY</span> použijeme primární klíč a v <span class="sqlcmd">SELECT</span>
+dáme pouze záznamy této tabulky a agregační funkce, dostaneme unikátní záznamy.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span>
+<span class="n">katastralniuzemi</span><span class="p">.</span><span class="o">*</span>
+<span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">ruian</span><span class="p">.</span><span class="n">katastralniuzemi</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">ochrana_uzemi</span><span class="p">.</span><span class="n">maloplosna_uzemi</span>
+<span class="k">ON</span><span class="w"> </span><span class="n">ST_Intersects</span><span class="p">(</span><span class="n">katastralniuzemi</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">maloplosna_uzemi</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">katastralniuzemi</span><span class="p">.</span><span class="n">ogc_fid</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+<section id="klastrovani">
+<h2>Klastrování<a class="headerlink" href="#klastrovani" title="Permalink to this heading">¶</a></h2>
+<p>Ve verzi posgisu 2.3.0 a vyšší už je možné najít funkce na klastrování,
+například <a class="reference external" href="http://postgis.net/docs/ST_ClusterKMeans.html">ST_ClusterKMeans</a>. Je to však horká novinka a nese s sebou
+některé nevýhody (například výsledek vracený jako <em>GEOMETRY COLLECTION</em> může
+působit problémy u velkých vrácených klastrů.</p>
+<p>Vyzkoušíme si některé, z výše uvedených postupů, na ukázce klastrování. Jedná se
+o poměrně typickou úlohu, na kterou můžete narazit například v souvislosti s
+potřebou zobrazit velké množství prvků na aplikaci.</p>
+<section id="zadani">
+<h3>Zadání<a class="headerlink" href="#zadani" title="Permalink to this heading">¶</a></h3>
+<p>Z bodů v tabulce <span class="dbtable">ruian_praha.adresnimista</span> vytvořte skupiny tak, aby
+mezi body byla vzdálenost menší, než třicet metrů a zároven nebyl žádný bod
+nepatřící do skupiny blíže, než třicet metrů k libovolnému bodu ve skupině.</p>
+</section>
+<section id="reseni">
+<h3>Řešení<a class="headerlink" href="#reseni" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>CREATE INDEX ON ruian_praha.adresnimista USING btree(psc);
+
+BEGIN;
+
+ALTER TABLE ruian_praha.adresnimista ADD grupa int;
+
+DO $$
+   DECLARE
+   _grupa int := 1;
+   r record;
+   _ogc_fid int;
+   BEGIN
+      LOOP
+         _ogc_fid := ogc_fid
+         FROM ruian_praha.adresnimista
+         WHERE psc = 14000
+         AND grupa IS NULL
+         LIMIT 1;
+
+         RAISE NOTICE &#39;%&#39;, _ogc_fid;
+
+         IF _ogc_fid IS NULL THEN exit; END IF;
+
+         WITH recursive klastr AS (
+            SELECT ogc_fid FROM
+            ruian_praha.adresnimista
+            WHERE ogc_fid = _ogc_fid
+            UNION
+            SELECT
+            a.ogc_fid
+            FROM ruian_praha.adresnimista a
+            , LATERAL (
+               SELECT True
+               FROM
+               (
+                  SELECT *
+                  FROM klastr
+                  JOIN ruian_praha.adresnimista a2 USING (ogc_fid)
+                  WHERE a.geom &amp;&amp; ST_Expand(a2.geom, 30)
+                  AND a2.ogc_fid != a.ogc_fid
+               ) bb
+               WHERE (bb.geom &lt;-&gt; a.geom) &lt;= 30
+               LIMIT 1
+            ) filtr
+            WHERE a.psc = 14000
+         )
+         UPDATE ruian_praha.adresnimista
+         SET grupa = _grupa
+         WHERE ogc_fid IN (
+            SELECT ogc_fid FROM klastr)
+         ;
+
+         _grupa := _grupa + 1;
+
+      END LOOP;
+   END
+   $$;
+
+COMMIT;
+</pre></div>
+</div>
+</section>
+<section id="rozbor">
+<h3>Rozbor<a class="headerlink" href="#rozbor" title="Permalink to this heading">¶</a></h3>
+<p>Kostrou dotazu je anonymní blok kódu, který obsahuje smyčku.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>DO $$
+   DECLARE
+   _grupa int := 1;
+   r record;
+   _ogc_fid int;
+   BEGIN
+      LOOP
+         _ogc_fid := ogc_fid
+         FROM ruian_praha.adresnimista
+         WHERE psc = 14000
+         AND grupa IS NULL
+         LIMIT 1;
+
+         RAISE NOTICE &#39;%&#39;, _ogc_fid;
+
+         IF _ogc_fid IS NULL THEN exit; END IF;
+
+         UPDATE ruian_praha.adresnimista
+         SET grupa = _grupa
+         WHERE ogc_fid IN (
+            SELECT ogc_fid FROM klastr)
+         ;
+
+         _grupa := _grupa + 1;
+
+      END LOOP;
+   END
+   $$;
+</pre></div>
+</div>
+<p>Na začátku každého cyklu se načte hodnota primárního klíče záznamu, který má
+poštovní směrovací číslo 14000 (omezení na psč je kvůli rychlosti, bez něj by
+analýza trvala příliš dlouho a pro účely demonstrace to není třeba) a nemá
+vyplněné číslo skupiny. V případě, že je číslo grupy vyplněno u všech
+relevantních záznamů a tudíž je hodnota proměnné NULL, tak se smyčka přeruší.</p>
+<p>Na konci smyčky se aktualizuje číslo skupiny pro všechny prvky, které sdílejí
+skupinu s vybraným prvkem a číslo skupiny se navýší.</p>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Klauzule <span class="sqlcmd">RAISE NOTICE</span> slouží k vypsání aktuální hodnoty
+proměnné.</p>
+</div>
+<p>Výběr prvků ve skupině je proveden pomocí rekurzivního <a class="reference external" href="http://www.postgresql.org/docs/current/static/queries-with.html">CTE</a>. K vybraným prvkům jsou přidány všechny prvky v zadané
+vzdálenosti. Aby nebyly přidávány znova tytéž prvky zajišťuje klauzule
+<span class="sqlcmd">UNION</span>, která přidává jen nové prvky (což ale znamená, že v každém
+cyklu jsou znova a znova vybírány ty samé prvky, což není uplně efektivní, dotaz
+by pravděpodobně bylo možné ještě zoptimalizovat). K filtrování je použit
+<span class="sqlcmd">LATERAL</span>, který je počítán zvlášť pro každý řádek. Do výběru je tedy
+přidán, každý řádek, pro který už ve výběru existuje alespoň jeden bod splňující
+podmínku. Předvýběr je proveden pomocí operátoru <span class="sqlcmd">&amp;&amp;</span> a funkce
+<span class="sqlcmd">ST_Expand</span>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">WITH</span><span class="w"> </span><span class="k">recursive</span><span class="w"> </span><span class="n">klastr</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">ogc_fid</span><span class="w"> </span><span class="k">FROM</span>
+<span class="w">   </span><span class="n">ruian_praha</span><span class="p">.</span><span class="n">adresnimista</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ogc_fid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_ogc_fid</span>
+<span class="w">   </span><span class="k">UNION</span>
+<span class="w">   </span><span class="k">SELECT</span>
+<span class="w">   </span><span class="n">a</span><span class="p">.</span><span class="n">ogc_fid</span>
+<span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">ruian_praha</span><span class="p">.</span><span class="n">adresnimista</span><span class="w"> </span><span class="n">a</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="k">LATERAL</span><span class="w"> </span><span class="p">(</span>
+<span class="w">      </span><span class="k">SELECT</span><span class="w"> </span><span class="k">True</span>
+<span class="w">      </span><span class="k">FROM</span>
+<span class="w">      </span><span class="p">(</span>
+<span class="w">         </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
+<span class="w">         </span><span class="k">FROM</span><span class="w"> </span><span class="n">klastr</span>
+<span class="w">         </span><span class="k">JOIN</span><span class="w"> </span><span class="n">ruian_praha</span><span class="p">.</span><span class="n">adresnimista</span><span class="w"> </span><span class="n">a2</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">ogc_fid</span><span class="p">)</span>
+<span class="w">         </span><span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">geom</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">ST_Expand</span><span class="p">(</span><span class="n">a2</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">30</span><span class="p">)</span>
+<span class="w">         </span><span class="k">AND</span><span class="w"> </span><span class="n">a2</span><span class="p">.</span><span class="n">ogc_fid</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">ogc_fid</span>
+<span class="w">      </span><span class="p">)</span><span class="w"> </span><span class="n">bb</span>
+<span class="w">      </span><span class="k">WHERE</span><span class="w"> </span><span class="p">(</span><span class="n">bb</span><span class="p">.</span><span class="n">geom</span><span class="w"> </span><span class="o">&lt;-&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">30</span>
+<span class="w">      </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">   </span><span class="p">)</span><span class="w"> </span><span class="n">filtr</span>
+<span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">psc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">14000</span>
+<span class="p">)</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">ruian_praha</span><span class="p">.</span><span class="n">adresnimista</span>
+<span class="k">SET</span><span class="w"> </span><span class="n">grupa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_grupa</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">ogc_fid</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">ogc_fid</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">klastr</span><span class="p">)</span>
+<span class="p">;</span>
+</pre></div>
+</div>
+<p>Jednodušší řešení pomocí <a class="reference external" href="http://postgis.net/docs/ST_Dump.html">ST_Dump</a>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span>
+<span class="n">a</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">ruian_praha</span><span class="p">.</span><span class="n">adresnimista</span><span class="w"> </span><span class="n">a</span>
+<span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span>
+<span class="w">   </span><span class="p">(</span>
+<span class="w">      </span><span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="n">ST_Dump</span><span class="p">(</span><span class="n">ST_Union</span><span class="p">(</span><span class="n">ST_Buffer</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span><span class="mi">50</span><span class="p">)))).</span><span class="o">*</span>
+<span class="w">      </span><span class="k">FROM</span><span class="w"> </span><span class="n">ruian_praha</span><span class="p">.</span><span class="n">adresnimista</span><span class="w"> </span><span class="n">a</span>
+<span class="w">      </span><span class="k">WHERE</span><span class="w"> </span><span class="n">psc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">14000</span>
+<span class="w">   </span><span class="p">)</span><span class="w"> </span><span class="n">x</span>
+<span class="p">)</span><span class="w"> </span><span class="n">b</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">psc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">14000</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">ST_Within</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">geom</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="0_uvod.html">Úvod</a></li>
+<li class="toctree-l1"><a class="reference internal" href="1_vytvarime_prostorovou_db.html">Vytváříme prostorovou databázi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2_tvorba_jednoduche_prostorove_tabulky.html">Vytváříme prostorovou tabulku</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3_shp2pgsql_a_davkove_nahrani.html">Dávkové nahrání dat</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4_prostorove_operatory.html">Operátory datového typu geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5_prostorove_funkce.html">Prostorové funkce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6_obludy.html">Praktické příklady</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Efektivní práce</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pohledy">Pohledy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#materializovane-pohledy">Materializované pohledy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#udf-funkce">UDF funkce</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#common-table-expression">Common table expression</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#anonymni-blok-kodu">Anonymní blok kódu</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lateral">LATERAL</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#group-by-podle-primarniho-klice">GROUP BY podle primárního klíče</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#klastrovani">Klastrování</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#zadani">Zadání</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reseni">Řešení</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rozbor">Rozbor</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="8_topologie.html">Topologie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9_rastry.html">Rastrová data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10_routing.html">Síťové analýzy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11_zaver.html">A co dál?</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Vyhledávání</h3>
+            <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="OK" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="6_obludy.html" title="Praktické příklady"
+              >předchozí</a> |
+            <a href="8_topologie.html" title="Topologie"
+              >další</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2023 GISMentors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

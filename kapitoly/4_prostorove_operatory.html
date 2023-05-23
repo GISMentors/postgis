@@ -1,0 +1,241 @@
+
+<!DOCTYPE html>
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Operátory datového typu geometry &#8212; Školení PostGIS pro pokročilé</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gismentors.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/translations.js"></script>
+    <link rel="search" title="Vyhledávání" href="../search.html" />
+    <link rel="next" title="Prostorové funkce" href="5_prostorove_funkce.html" />
+    <link rel="prev" title="Dávkové nahrání dat" href="3_shp2pgsql_a_davkove_nahrani.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">Školení PostGIS pro pokročilé</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="3_shp2pgsql_a_davkove_nahrani.html" title="Dávkové nahrání dat"
+             accesskey="P">předchozí</a> |
+          <a href="5_prostorove_funkce.html" title="Prostorové funkce"
+             accesskey="N">další</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="operatory-datoveho-typu-geometry">
+<h1>Operátory datového typu geometry<a class="headerlink" href="#operatory-datoveho-typu-geometry" title="Permalink to this heading">¶</a></h1>
+<p><em>S datovým typem geometry nám v PostgreSQL přibude několik poměrně
+zajímavých</em> <a class="reference external" href="http://postgis.net/docs/manual-2.1/reference.html#Operators">operátorů</a>. <em>Rozhodně
+není od věci se s nimi seznámit. Vesměs řeší vzájemnou polohu</em>
+<strong>minimálních ohraničujících obdélníků (MOO)</strong> <em>prvků. Kromě pohodlného a
+přehledného zápisu jsou obvykle velice rychlé.</em></p>
+<section id="prekryv-moo">
+<h2>Překryv MOO<a class="headerlink" href="#prekryv-moo" title="Permalink to this heading">¶</a></h2>
+<section id="operator">
+<h3>Operátor &amp;&amp;<a class="headerlink" href="#operator" title="Permalink to this heading">¶</a></h3>
+<p>Operátor <strong>&amp;&amp;</strong> vrací pravdivou hodnotu, pokud je MOO prvního prvku
+alespoň částečně překryt MOO druhého prvku nebo pokud se
+MOO prvků dotýkají. To se dá využít jako nejjednodušší prostorový
+filtr pro zobrazení, případně jako předvýběr dat pro další analýzu,
+pokud chceme optimalizovat dotaz. Setkáte se s ním například pokud
+budete logovat všechny dotazy v databázi, nad kterou někdo pracuje s
+QGISem.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">adresnibod</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">.</span><span class="n">adresy</span>
+<span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">adresnibod</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="s1">&#39;LINESTRING(-739719.43 -1046851.61,-735806.08 -1043755.06)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+</pre></div>
+</div>
+<figure class="align-center" id="id1">
+<img alt="../_images/fig_002.png" src="../_images/fig_002.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 3 </span><span class="caption-text">Adresní body vybrané pomocí MOO linie.</span><a class="headerlink" href="#id1" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+<p>Dalším využitím je, jak již bylo řečeno <strong>optimalizace dotazů</strong>. Dejme
+tomu, že chceme spočítat počet adresních bodů v okruhu 250 metrů okolo
+bodu vesmírných vajec s <code class="docutils literal notranslate"><span class="pre">id=1</span></code>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="n">SEARCH_PATH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="p">;</span>
+
+<span class="c1">-- neoptimalizovaný dotaz</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
+<span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">adresy</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="n">v</span>
+<span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">ST_Distance</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">adresnibod</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">geom_p</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w">  </span><span class="mi">250</span><span class="p">;</span>
+
+<span class="c1">-- optimalizovaný dotaz</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
+<span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="w">  </span><span class="k">FROM</span>
+<span class="w">  </span><span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span><span class="w"> </span><span class="n">geom_p</span><span class="p">,</span><span class="w"> </span><span class="n">adresnibod</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">adresy</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="n">v</span>
+<span class="w">   </span><span class="k">ON</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">   </span><span class="k">AND</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">adresnibod</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">ST_Expand</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="n">geom_p</span><span class="p">,</span><span class="w"> </span><span class="mi">250</span><span class="p">)</span>
+<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="k">data</span>
+<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="n">ST_Distance</span><span class="p">(</span><span class="n">adresnibod</span><span class="p">,</span><span class="w"> </span><span class="n">geom_p</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">250</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+<section id="operator-a">
+<h3>Operátor &#64; a ~<a class="headerlink" href="#operator-a" title="Permalink to this heading">¶</a></h3>
+<p>Operátor <strong>&#64;</strong> funguje podobně jako operátor <strong>&amp;&amp;</strong>, ovšem s tím
+rozdílem, že vrací prvky, jejichž MOO je zcela překryt MOO druhého
+prvku.</p>
+<p>Použití je podobné jako u předešlého operátoru, s tím rozdílem, že
+nevybereme prvky, které leží na hranici. Pokud bychom, například
+vybírali polygony, které leží celé uvnitř nějakého polygonu,
+zredukujeme počet analyzovaných prvků, už v rámci „hrubého“ filtru (a
+ušetříme výkon), o prvky které nemohou v obalové zóně ležet.</p>
+<p>Operátor <strong>~</strong> funguje stejně jako <strong>&#64;</strong>, ovšem s obráceným pořadím
+prvků. Vrací tedy jen takové prvky, jejichž MOO zcela zakrývá
+MOO prvku za operátorem.</p>
+<p>Příklady:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 1 1)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, -1 -1)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 1 1)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">@</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, -1 -1)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 1 1)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">@</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 2 2)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 2 2)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">@</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 1 1)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, -1 -1)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">@</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 2 2)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, -1 -1)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 2 2)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 2 2)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 1 1)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 1 1)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 1 1)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 1 1)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0, 2 2)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="operatory-a-vzdalenost">
+<h2>Operátory &lt;-&gt; a &lt;#&gt;, vzdálenost<a class="headerlink" href="#operatory-a-vzdalenost" title="Permalink to this heading">¶</a></h2>
+<p>Tyto dva operátory vrací vzdálenost. Operator <strong>&lt;-&gt;</strong> vrací vzdálenost
+centroidů, <strong>&lt;#&gt;</strong> vrací nejkratší vzdálenost MOO prvků. Využít je to
+možné například pro <a class="reference external" href="http://boundlessgeo.com/2011/09/indexed-nearest-neighbour-search-in-postgis/">optimalizaci vyhledávání nejbližšího prvku</a>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- vzdálenost mezi body</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;POINT(0 0)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">&lt;-&gt;</span><span class="w"> </span><span class="s1">&#39;POINT(0 10)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;POINT(0 0)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">&lt;#&gt;</span><span class="w"> </span><span class="s1">&#39;POINT(0 10)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;POINT(0 3)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">&lt;-&gt;</span><span class="w"> </span><span class="s1">&#39;POINT(4 0)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+
+<span class="c1">-- vzdálenost mezi liniemi</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0,10 10)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">&lt;-&gt;</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 5,10 15)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 0,10 10)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="w"> </span><span class="o">&lt;#&gt;</span><span class="w"> </span><span class="s1">&#39;LINESTRING(0 5,10 15)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+
+<span class="c1">-- vzdálenost mezi polygony</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Buffer</span><span class="p">(</span><span class="s1">&#39;POINT(0 0)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;-&gt;</span><span class="w"> </span><span class="n">ST_Buffer</span><span class="p">(</span><span class="s1">&#39;POINT(10 0)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Buffer</span><span class="p">(</span><span class="s1">&#39;POINT(0 0)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;#&gt;</span><span class="w"> </span><span class="n">ST_Buffer</span><span class="p">(</span><span class="s1">&#39;POINT(10 0)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Varování</p>
+<p>Centroid nemusí ležet uvnitř geometrie (např u různých
+dutých tvarů).</p>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Důležité</p>
+<p>Výčet operátorů není kompletní. Určitě není na škodu
+věnovat pozornost <a class="reference external" href="http://postgis.net/docs/manual-2.1/reference.html#Operators">manuálové stránce</a>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Je zjevné, že u některých typů prvků předvýběr pomocí MOO
+nemusí být zase taková výhra (například dlouhé multilinie
+a obecně hodně členité prvky).</p>
+</div>
+<p>Na závěr si ukážeme, jak vyřešit úlohu s body v určité vzdálenosti od
+bodu pomocí operátoru a nikoliv funkce <a class="reference external" href="http://postgis.net/docs/ST_Buffer.html">ST_Buffer</a>. Je jedno,
+zdali použijeme <strong>&lt;-&gt;</strong>, nebo <strong>&lt;#&gt;</strong>, protože se jedná o body.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="n">SEARCH_PATH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="p">;</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
+<span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">adresy</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="n">v</span>
+<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">adresnibod</span><span class="w"> </span><span class="o">&lt;-&gt;</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">geom_p</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">250</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="0_uvod.html">Úvod</a></li>
+<li class="toctree-l1"><a class="reference internal" href="1_vytvarime_prostorovou_db.html">Vytváříme prostorovou databázi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2_tvorba_jednoduche_prostorove_tabulky.html">Vytváříme prostorovou tabulku</a></li>
+<li class="toctree-l1"><a class="reference internal" href="3_shp2pgsql_a_davkove_nahrani.html">Dávkové nahrání dat</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Operátory datového typu geometry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prekryv-moo">Překryv MOO</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#operator">Operátor &amp;&amp;</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#operator-a">Operátor &#64; a ~</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#operatory-a-vzdalenost">Operátory &lt;-&gt; a &lt;#&gt;, vzdálenost</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="5_prostorove_funkce.html">Prostorové funkce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6_obludy.html">Praktické příklady</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7_finty.html">Efektivní práce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8_topologie.html">Topologie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9_rastry.html">Rastrová data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10_routing.html">Síťové analýzy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11_zaver.html">A co dál?</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Vyhledávání</h3>
+            <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="OK" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="3_shp2pgsql_a_davkove_nahrani.html" title="Dávkové nahrání dat"
+              >předchozí</a> |
+            <a href="5_prostorove_funkce.html" title="Prostorové funkce"
+              >další</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2023 GISMentors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

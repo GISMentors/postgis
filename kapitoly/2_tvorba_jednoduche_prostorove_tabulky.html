@@ -1,0 +1,754 @@
+
+<!DOCTYPE html>
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Vytváříme prostorovou tabulku &#8212; Školení PostGIS pro pokročilé</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gismentors.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/translations.js"></script>
+    <link rel="search" title="Vyhledávání" href="../search.html" />
+    <link rel="next" title="Dávkové nahrání dat" href="3_shp2pgsql_a_davkove_nahrani.html" />
+    <link rel="prev" title="Vytváříme prostorovou databázi" href="1_vytvarime_prostorovou_db.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">Školení PostGIS pro pokročilé</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="1_vytvarime_prostorovou_db.html" title="Vytváříme prostorovou databázi"
+             accesskey="P">předchozí</a> |
+          <a href="3_shp2pgsql_a_davkove_nahrani.html" title="Dávkové nahrání dat"
+             accesskey="N">další</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="vytvarime-prostorovou-tabulku">
+<h1>Vytváříme prostorovou tabulku<a class="headerlink" href="#vytvarime-prostorovou-tabulku" title="Permalink to this heading">¶</a></h1>
+<p><em>Záhadná vesmírná obludnost ukryla po Praze svoje zrůdná
+vejce. Podařilo se, s nasazením života, získat jejich
+souřadnice. Nyní musíme vytvořit v PostGISu tabulku, ze které si je
+budou moci zobrazit terénní agenti, aby vejce našli a zneškodnili,
+dřív, než se z nich vylíhnou malé, nepředstavitelně ohavné, obludky.</em></p>
+<section id="import-dat-do-postgresql">
+<h2>Import dat do PostgreSQL<a class="headerlink" href="#import-dat-do-postgresql" title="Permalink to this heading">¶</a></h2>
+<p>Dejme tomu, že <a class="reference external" href="http://training.gismentors.eu/geodata/postgis/body.csv">naše data</a> budou
+vypadat nějak takto:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">1</span>    <span class="o">-</span><span class="mf">750922.065478723</span>       <span class="o">-</span><span class="mf">1042251.84362287</span>
+<span class="mi">2</span>    <span class="o">-</span><span class="mf">740606.682644681</span>       <span class="o">-</span><span class="mf">1050443.47116755</span>
+<span class="mi">3</span>    <span class="o">-</span><span class="mf">734083.719970213</span>       <span class="o">-</span><span class="mf">1041569.20799415</span>
+<span class="mi">4</span>    <span class="o">-</span><span class="mf">748191.52296383</span>        <span class="o">-</span><span class="mf">1055449.46577819</span>
+<span class="mi">5</span>    <span class="o">-</span><span class="mf">739810.27441117</span>        <span class="o">-</span><span class="mf">1038080.18144734</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>S tím, že známe strukturu, která vypadá takto:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">id</span>   <span class="n">x</span>       <span class="n">y</span>
+</pre></div>
+</div>
+<p>Oddělovačem je tabulátor.</p>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Naimportovat tato data do PostgreSQL můžeme různými způsoby. Pomocí
+unixového programu <code class="docutils literal notranslate"><span class="pre">sed</span></code> můžeme např. převést jednotlivé řádky na
+<span class="sqlcmd">INSERT</span> statementy. Nebo můžeme použít Libre/OpenOffice,
+jak je popsáno <a class="reference external" href="http://grasswiki.osgeo.org/wiki/Openoffice.org_with_SQL_Databases#Converting_Excel.2C_CSV.2C_..._to_PostgreSQL.2FMySQL.2F..._via_OO-Base">zde</a>
+(to je, mimochodem, velice užitečná technika, pokud někdy budete
+potřebovat do PostgreSQL převést větší množství dat z MS Excel,
+jako jsou číselníky ČÚZK, data se statistického úřadu
+apod). Tabulku můžeme otevřít v QGISu a ze souřadnic rovnou
+vytvořit geometrii, uložit do formátu Esri Shapefile a použít pro
+import do PostGISu nástroj <code class="docutils literal notranslate"><span class="pre">shp2pgsql</span></code>, který je součástí
+instalace PostGIS. To se hodí, obzvlášť pokud dostanete od někoho
+data opsané ručně z GPS navigace v minutách a vteřinách. QGIS umí
+načíst tato data rovnou a ušetříte si poměrně otravné
+přepočítávání. Nicméně nejpřímější cesta jak dostat textovou
+tabulku do PostgreSQL je použití příkazu <span class="sqlcmd">COPY</span>.</p>
+</div>
+<p>Nejdříve si vytvoříme pracovní schéma.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">SCHEMA</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Tabulku vytvoříme klasicky, příkazem <span class="sqlcmd">CREATE TABLE</span>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">.</span><span class="n">vesmirne_zrudice</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">INT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="nb">FLOAT</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="nb">FLOAT</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Je vhodné, pokud má tabulka celočíslený primární klíč
+(datový typ <em>INTEGER</em>). Pokud je primární klíč jiného datového typu
+nebo dokonce chybí úplně, tak některé programy nemusí s tabulkou
+pracovat korektně.  Například u dat <a class="reference external" href="http://freegis.fsv.cvut.cz/gwiki/VFK">VFK</a>, kde jsou primární klíče v
+typu <em>NUMERIC(30)</em>. Zde ovšem můžeme narazit u skutečně objemných
+dat, nebo číselných řad sdílených mezi více tabulkami. Aktuální
+verze QGISu se, naštěstí, dokaže vypořádat s většinou celočíselných
+primárních klíčů. Přesto je dobré na tento problém pamatovat a v
+případě problémů jej prověřit.</p>
+</div>
+<section id="copy">
+<h3>COPY<a class="headerlink" href="#copy" title="Permalink to this heading">¶</a></h3>
+<p>Příkaz <a class="reference external" href="http://www.postgresql.org/docs/current/static/sql-copy.html">COPY</a> může vypadat například takto</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">COPY</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">.</span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="s1">&#39;/home/user/Downloads/body.csv&#39;</span><span class="w"> </span><span class="k">DELIMITER</span><span class="w"> </span><span class="n">E</span><span class="s1">&#39;\t&#39;</span><span class="w"> </span><span class="n">csv</span><span class="p">;</span>
+</pre></div>
+</div>
+<p><span class="sqlcmd">COPY</span> je příkaz pro kopírování dat mezi databázovou tabulku a
+textovým souborem. A to v obou směrech. Kopírovat můžeme z/do
+souboru, z výstupu skriptu či ze standardního vstupu/na
+standardní výstup. Je možné nastavovat přehršel možností,
+oddělovače polí, řádků, hodnoty NULL, přítomnost řádku s
+hlavičkou, kódování a další. V případě, že máme data v
+exotickém formátování, vyplatí se vyzkoušet, jestli se nám
+nepodaří je nakopírovat přímo příkazem <span class="sqlcmd">COPY</span>, než
+začnete používat specializované programy na přeformátování.</p>
+<div class="notecmd admonition">
+<p class="admonition-title">Příklad využití <span class="sqlcmd">COPY</span> pro přenos dat mezi dvěma databázovými servery z příkazové řádky</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>psql<span class="w"> </span>-h<span class="w"> </span>prvni_server.cz<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;COPY a TO STDOUT&quot;</span><span class="w"> </span>db3<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+psql<span class="w"> </span>-h<span class="w"> </span>druhy_server.cz<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;COPY b (a, b, c) FROM STDIN&quot;</span><span class="w"> </span>db2
+</pre></div>
+</div>
+</div>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>Od verze 9.4 umí PostgreSQL jednu velice šikovnou
+věc a to <em>COPY FROM PROGRAM</em>, pomocí kterého
+nekopírujete ze souboru, ale ze spuštěného
+skriptu. Velice praktické například při pravidelném
+skenování stránek s nějakými uspořádanými daty
+(<a class="reference external" href="http://www.cybertec.at/importing-stock-market-data-into-postgresql/">příklad použití</a>). Je
+však třeba vzít v potaz, že skript je spouštěn pod
+uživatelem, pod kterým běží databázový server a je
+nutné, aby tomu odpovídalo nastavení práv.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="se">\c</span>opy<span class="w"> </span>ukol_1.vesmirne_zrudice<span class="w"> </span><span class="o">(</span>id,<span class="w"> </span>x,<span class="w"> </span>y<span class="o">)</span>
+FROM<span class="w"> </span>program<span class="w"> </span><span class="s1">&#39;wget -qO- http://training.gismentors.eu/geodata/postgis/body.csv&#39;</span>
+</pre></div>
+</div>
+</div>
+<p>Nás ovšem bude zajímat kopírování ze souboru do tabulky. Příkaz
+<span class="sqlcmd">COPY</span>, jakkoliv je skvělý, má jedno omezení. Kopíruje totiž
+soubor, který je umístěn na databázovém serveru a jako uživatel, pod
+kterým je spuštěn PostgreSQL (obvykle <cite>postgres</cite>). Někdy může být
+problematické soubor na server dostat a udělit mu patřičná
+oprávnění. Řeší se to několika triky.</p>
+</section>
+<section id="dump-format">
+<h3>Dump formát<a class="headerlink" href="#dump-format" title="Permalink to this heading">¶</a></h3>
+<p>Upravíme data do podoby v jaké bývají produkována z <code class="docutils literal notranslate"><span class="pre">pg_dump</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>COPY ukol_1.vesmirne_zrudice (id, x, y) FROM stdin;
+1    -750922.065478723       -1042251.84362287
+2    -740606.682644681       -1050443.47116755
+3    -734083.719970213       -1041569.20799415
+4    -748191.52296383        -1055449.46577819
+5    -739810.27441117        -1038080.18144734
+\.
+</pre></div>
+</div>
+<p>Jak patrno, stačí doplnit první řádek s <span class="sqlcmd">COPY</span> a poslední s
+označením konce vkládání (<code class="docutils literal notranslate"><span class="pre">\.</span></code>). Výsledný skript pustíme pomocí
+<strong class="program">psql</strong>.</p>
+<p>Tento postup je výhodný, pokud píšete skripty pro převody dat. Stačí
+doplnit dva jednoduché řádky, potom můžete snadno posílat výstup ze
+skriptu rovnou na <strong class="program">psql</strong>, aniž by bylo třeba ho někam
+ukládat.</p>
+</section>
+<section id="roura">
+<h3>Roura<a class="headerlink" href="#roura" title="Permalink to this heading">¶</a></h3>
+<p>Další možnost je posílat data tzv. rourou. Tento postup je určen pouze
+pro operační systém unixového typu jako je např. GNU/Linux.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat<span class="w"> </span>body.csv<span class="w"> </span><span class="p">|</span><span class="w"> </span>psql<span class="w"> </span>-h<span class="w"> </span>server.cz<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;COPY ukol_1.vesmirne_zrudice (id, x, y) FROM STDIN&quot;</span><span class="w"> </span>db
+</pre></div>
+</div>
+</section>
+<section id="metacommand-copy">
+<h3>Metacommand \copy<a class="headerlink" href="#metacommand-copy" title="Permalink to this heading">¶</a></h3>
+<p>Příkaz <code class="docutils literal notranslate"><span class="pre">\copy</span></code> funguje podobně jako <span class="sqlcmd">COPY</span>, ovšem s tím
+rozdílem, že kopírujete data z počítače, na kterém je spuštěno
+<strong class="program">psql</strong> a pod právy uživatele, který jej spustil. Pokud tedy
+chcete naplnit tabulky daty, které máte na svém počítači, je toto
+nejefektivnější postup.</p>
+<div class="admonition warning">
+<p class="admonition-title">Varování</p>
+<p><code class="docutils literal notranslate"><span class="pre">\copy</span></code> je metacommand <strong class="program">psql</strong>, nikoliv SQL
+dotaz, funguje tedy pouze v <strong class="program">psql</strong>, není možné s
+ním počítat v rámci přístupu k databázi z programovacích
+jazyků, různých grafických nástrojů apod.</p>
+</div>
+</section>
+</section>
+<section id="vytvarime-tabulku">
+<h2>Vytváříme tabulku<a class="headerlink" href="#vytvarime-tabulku" title="Permalink to this heading">¶</a></h2>
+<p>Vytvořit tabulku, do které půjdou uložit prostorová data lze více
+způsoby. Sloupec s geometrii můžete od verze PostGIS 2.0 přidávat
+standardně pomocí <span class="sqlcmd">ALTER TABLE … ADD COLUMN</span>. Ve starších
+verzích (PostGIS a 1.5 a nižších) byla jedinou možností funkce
+<a class="reference external" href="http://postgis.net/docs/AddGeometryColumn.html">AddGeometryColumn</a>, která je nicméně pro zachování zpětné
+kompatibility součástí i novějších verzí.</p>
+<p>Krom samotného přidání sloupce s typem <code class="docutils literal notranslate"><span class="pre">geometry</span></code> se vytvoří
+<em>constrainty</em>, neboli omezení, na geometrický typ, dimenzi prvků a
+souřadnicových systém. V praxi to obnáší dvě podstatné věci. Tou první
+je, jak by se dalo očekávat omezení vkládaných prvků na prvky
+splňující určitá kritéria (typ, SRID, počet dimenzí). Což zamezí tomu,
+aby Vám nezodpovědný uživatel vyrobil v databázi nepořádek, případně
+abyste si ho tam v záchvatu kreativity vyrobili sami.</p>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Druhou věcí, kterou zmíněné <em>constrainty</em> řeší, je generování
+<em>pohledu</em> (view) s metadaty <span class="dbtable">geometry_columns</span>. V případě,
+že constrainty nejsou vytvořené, bude jako typ geometrie uvedeno
+obecné <code class="docutils literal notranslate"><span class="pre">geometry</span></code> a jako SRID „0“. S tím mohou mít některé
+programy přistupující k datům problém, například do QGISu se Vám
+takovou vrstvu nepodaří přidat, natož jí zobrazit. Nicméně, sluší
+se zmínit, že v některých, avšak velice vzácných, případech má
+použití takové tabulky své opodstatnění. Jedním z nich je tvorba
+databázového modelu, kde potřebujete kombinovat v jedné tabulce
+data různých geometrických typů, nebo dat v různých souřadnicových
+systémech. Databáze potom slouží jako úložiště a data jí opouštějí
+(například ve formátu GeoJSON) pomocí specifických procedur, kdy
+jsou potřebné informace doplněny a aparát na udržování
+geometrických metadat je tedy zbytečný. Dalším případem mohou být
+NOSQL databáze, kde vrstva v klasickém, relačním, pojetí pozbývá
+smyslu. Nicméně jedná se o případy specifické, ojedinělé a
+pokročilé, rozhodně nad rámec tohoto školení.</p>
+</div>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>Ve verzích PostGIS nižších než 2.0 nebyl
+<span class="dbtable">geometry_columns</span> definován jako pohled,
+ale jako regulérní tabulka. Při přidání pohledů na
+data nebo při ruční registraci nových tabulek či
+sloupců s prostorovými daty bylo třeba do ní záznamy
+přidávat manuálně. To v aktuálních verzích PostGISu
+odpadá.</p>
+</div>
+<p>Sloupců s geometrií můžeme do tabulky přidat prakticky libovolné
+množství. Například k tabulce budov můžeme přidat sloupec s polygony
+pro obrys a s body pro definiční bod. Jedná se určitě o lepší řešení,
+než obojí uložit do jednoho sloupce do typu <em>GEOMETRY COLLECTION</em>.</p>
+<section id="pridani-sloupce-z-geometrii">
+<h3>Přidání sloupce z geometrií<a class="headerlink" href="#pridani-sloupce-z-geometrii" title="Permalink to this heading">¶</a></h3>
+<p>K tabulce přidáme sloupec s geometrií, v tomto případě použijeme
+geometrický typ <em>POINT</em>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">.</span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">geom_p</span><span class="w"> </span><span class="n">geometry</span><span class="p">(</span><span class="n">point</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Nebo pomocí funkce <code class="docutils literal notranslate"><span class="pre">AddGeometryColumn()</span></code> (v PostGIS verze
+1.x je to jediný způsob). Tento způsob již ale ve verzi
+PostGIS 2.0 a vyšší postrádá smysl.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">AddGeometryColumn</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;ukol_1&#39;</span><span class="p">,</span><span class="s1">&#39;vesmirne_zrudice&#39;</span><span class="p">,</span><span class="s1">&#39;geom_p&#39;</span><span class="p">,</span><span class="mi">5514</span><span class="p">,</span><span class="s1">&#39;POINT&#39;</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<p>Do tabulky <span class="dbtable">vesmirne_zrudice</span> ve schématu <span class="dbtable">ukol_1</span>
+jsme přidali sloupec <span class="dbcolumn">geom_p</span> s 2D bodovými prvky v
+souřadnicovém systému se SRID <em>5514</em>.</p>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>SRID ve většině případů odpovídá EPSG kódu.</p>
+</div>
+<p>Do vytvořené tabulky vložíme data jedním z dříve uvedených způsobů.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Přehled atributů s geometrií v databázi poskytuje tabulka
+(pohled) <span class="dbtable">geometry_columns</span>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">geometry_columns</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">f_table_catalog</span>   <span class="o">|</span> <span class="n">pokusnik</span>
+<span class="n">f_table_schema</span>    <span class="o">|</span> <span class="n">ukol_1</span>
+<span class="n">f_table_name</span>      <span class="o">|</span> <span class="n">vesmirne_zrudice</span>
+<span class="n">f_geometry_column</span> <span class="o">|</span> <span class="n">geom_p</span>
+<span class="n">coord_dimension</span>   <span class="o">|</span> <span class="mi">2</span>
+<span class="n">srid</span>              <span class="o">|</span> <span class="mi">5514</span>
+<span class="nb">type</span>              <span class="o">|</span> <span class="n">POINT</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+<section id="vytvarime-geometrii-prvku">
+<h2>Vytváříme geometrii prvků<a class="headerlink" href="#vytvarime-geometrii-prvku" title="Permalink to this heading">¶</a></h2>
+<p>V následujícím kroku si ze souřadnic x a y vytvoříme geometrii
+prvků. Opět to lze provést několikerým způsobem.</p>
+<p>Abychom nemuseli nadále vypisovat název schématu, přidáme si ho do
+<em>SEARCH_PATH</em>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="n">SEARCH_PATH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">,</span><span class="w"> </span><span class="k">public</span><span class="p">;</span>
+</pre></div>
+</div>
+<section id="st-point-x-y">
+<h3>ST_Point(x,y)<a class="headerlink" href="#st-point-x-y" title="Permalink to this heading">¶</a></h3>
+<p>Nejobvyklejším způsobem je použití funkce <a class="reference external" href="http://postgis.net/docs/ST_Point.html">ST_Point</a>, která
+vytvoří z páru souřadnic geometrický prvek typu bod.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_Point</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+<section id="st-geomfrom">
+<h3>ST_GeomFrom*<a class="headerlink" href="#st-geomfrom" title="Permalink to this heading">¶</a></h3>
+<p>Další možností je sestavit si geometrii ve <a class="reference external" href="http://en.wikipedia.org/wiki/Well-known_text">WKT</a> použít funkci
+<a class="reference external" href="http://postgis.net/docs/ST_GeomFromText.html">ST_GeomFromText</a>. WKT je textový formát dle <a class="reference external" href="http://www.opengeospatial.org/standards">standardu OGC</a> pro zápis vektorové
+geometrie.</p>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Podobným způsobem můžeme využít také binární zápis geometrie
+<em>WKB</em>, a funkci <a class="reference external" href="http://postgis.net/docs/ST_GeomFromWKB.html">ST_GeomFromWKB</a>, což se může hodit
+například při migraci dat pomocí knihovny <a class="reference external" href="http://gdal.org">GDAL</a>. Stejně se může hodit
+<a class="reference external" href="http://postgis.net/docs/ST_GeomFromGML.html">ST_GeomFromGML</a>, případně
+<a class="reference external" href="http://postgis.net/docs/ST_GeomFromGeoJSON.html">ST_GeomFromGeoJSON</a> atd. Další možnosti nabízí
+<a class="reference external" href="http://postgis.net/docs/ST_GeomFromEWKT.html">ST_GeomFromEWKT</a> a
+<a class="reference external" href="http://postgis.net/docs/ST_GeomFromEWKB.html">ST_GeomFromEWKB</a>. EWKT a EWKB je rozšíření OGC
+WKT/WKB o třetí rozměr a zápis souřadnicového systému. Je
+také třeba upozornit na fakt, že funkce ST_GeomFromGML
+neumí, na rozdíl například od knihovny GDAL všechny typy
+prvků, které se mohou v GML vyskytnout. Problematický je
+například kruh a také některé typy oblouků.</p>
+</div>
+<p>Geometrický prvek vytvoříme tedy například takto.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_GeomFromText</span><span class="p">(</span><span class="s1">&#39;POINT(&#39;</span><span class="o">||</span><span class="n">x</span><span class="p">::</span><span class="nb">text</span><span class="o">||</span><span class="s1">&#39; &#39;</span><span class="o">||</span><span class="n">y</span><span class="p">::</span><span class="nb">text</span><span class="o">||</span><span class="s1">&#39;)&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Nebo také:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_GeomFromWKB</span><span class="p">(</span><span class="s1">&#39;\x01010000005c6d862194ea26c13a56efaf97ce2fc1&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Elegantnějším a nepochybně přehlednějším způsobem zápisu, než je
+spojování řetězců je využití funkce <a class="reference external" href="https://www.postgresql.org/docs/current/static/functions-string.html#FUNCTIONS-STRING-FORMAT">format</a>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">format</span><span class="p">(</span>
+<span class="w">   </span><span class="s1">&#39;POINT(%s %s)&#39;</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">x</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">y</span>
+<span class="p">)::</span><span class="n">geometry</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="st-astext">
+<h3>ST_AsText<a class="headerlink" href="#st-astext" title="Permalink to this heading">¶</a></h3>
+<p>PostGIS si také umí inteligentně převádět řetězce na geometrii pomocí
+funkce <a class="reference external" href="http://postgis.net/docs/ST_AsText.html">ST_AsText</a>. Můžeme tedy využít jednoduchý cast, který
+bude fungovat z WKB, WKT, EWKT a EWKB.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">ST_AsText</span><span class="p">(</span><span class="s1">&#39;01010000005c6d862194ea26c13a56efaf97ce2fc1&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Případně:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;POINT(&#39;</span><span class="o">||</span><span class="n">x</span><span class="p">::</span><span class="nb">text</span><span class="o">||</span><span class="s1">&#39; &#39;</span><span class="o">||</span><span class="n">y</span><span class="p">::</span><span class="nb">text</span><span class="o">||</span><span class="s1">&#39;)&#39;</span><span class="p">)::</span><span class="n">geometry</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="pridavame-geometrii-do-tabulky">
+<h2>Přidáváme geometrii do tabulky<a class="headerlink" href="#pridavame-geometrii-do-tabulky" title="Permalink to this heading">¶</a></h2>
+<section id="update">
+<h3>UPDATE<a class="headerlink" href="#update" title="Permalink to this heading">¶</a></h3>
+<p>Geometrii můžeme tvořit různě, u průběžně aktualizované tabulky si
+můžeme například vytvořit <a class="reference internal" href="#geometrie-trigger"><span class="std std-ref">trigger</span></a>, který
+nám už při importu souřadnic geometrii sestaví. Pro jednorázový import
+je ovšem nejsnazší aktualizovat geometrii pomocí <span class="sqlcmd">UPDATE</span>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">geom_p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ST_POINT</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>A vida, nedaří se to.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span><span class="w">  </span><span class="n">Geometry</span><span class="w"> </span><span class="n">SRID</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">does</span><span class="w"> </span><span class="k">not</span><span class="w"> </span><span class="k">match</span><span class="w"> </span><span class="k">column</span><span class="w"> </span><span class="n">SRID</span><span class="w"> </span><span class="p">(</span><span class="mi">5514</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Důvod je zjevný. Naše geometrie nemá požadovaný souřadnicový
+systém. PostGIS totiž ukládá geometrii včetně <em>SRID</em> a to musí, při
+vkládání korespondovat s omezeními. Pokud není SRID nastaveno, je jako
+defaultní považováno SRID=0.</p>
+<p>SRID nastavíme funkcí <a class="reference external" href="http://postgis.net/docs/ST_SetSRID.html">ST_SetSRID</a>.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Srovnejte výstupy z následujících dotazů.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="s1">&#39;POINT(0 0)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ST_SetSRID</span><span class="p">(</span><span class="s1">&#39;POINT(0 0)&#39;</span><span class="p">::</span><span class="n">geometry</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<p>Pokud tedy použijeme funkci <a class="reference external" href="http://postgis.net/docs/ST_SetSRID.html">ST_SetSRID</a> v <span class="sqlcmd">UPDATE</span>,
+bude již dotaz pracovat dle očekávání.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">geom_p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ST_SETSRID</span><span class="p">(</span><span class="n">ST_POINT</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">),</span><span class="w"> </span><span class="mi">5514</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>Zde se opět nabízí využití této funkce v triggeru při importu obsáhlejších datasetů.</p>
+</div>
+<p>Geometrii lze přiřadit i dalšími již zmíněnými postupy.</p>
+<p>Funkce <a class="reference external" href="http://postgis.net/docs/ST_GeomFromText.html">ST_GeomFromText</a> umožňuje použít SRID jako druhý argument.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">geom_p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ST_GeomFromText</span><span class="p">(</span><span class="s1">&#39;POINT(&#39;</span><span class="o">||</span><span class="n">x</span><span class="p">::</span><span class="nb">text</span><span class="o">||</span><span class="s1">&#39; &#39;</span><span class="o">||</span><span class="n">y</span><span class="p">::</span><span class="nb">text</span><span class="o">||</span><span class="s1">&#39;)&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>V rámci <em>CAST</em> si můžeme snadno vypomoci pomocí <a class="reference external" href="http://postgis.net/docs/using_postgis_dbmanagement.html#EWKB_EWKT">EWKT</a>
+.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;SRID=5514;POINT(&#39;</span><span class="o">||</span><span class="n">x</span><span class="p">::</span><span class="nb">text</span><span class="o">||</span><span class="s1">&#39; &#39;</span><span class="o">||</span><span class="n">y</span><span class="p">::</span><span class="nb">text</span><span class="o">||</span><span class="s1">&#39;)&#39;</span><span class="p">)::</span><span class="n">geometry</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Při migraci do položky s geometrií se CAST provede automaticky.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">UPDATE</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">geom_p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;SRID=5514;POINT(&#39;</span><span class="o">||</span><span class="n">x</span><span class="p">::</span><span class="nb">text</span><span class="o">||</span><span class="s1">&#39; &#39;</span><span class="o">||</span><span class="n">y</span><span class="p">::</span><span class="nb">text</span><span class="o">||</span><span class="s1">&#39;)&#39;</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Zkuste si přidat data do sloupce s geometrií všemi výše
+uvedenými způsoby.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Zobrazte si tabulku ve svém oblíbeném GIS desktopu.</p>
+</div>
+<figure class="align-center" id="id1">
+<img alt="../_images/fig_001.png" src="../_images/fig_001.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 2 </span><span class="caption-text">Jako podklad jsou použité pražské ulice.</span><a class="headerlink" href="#id1" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="trigger">
+<span id="geometrie-trigger"></span><h3>Trigger<a class="headerlink" href="#trigger" title="Permalink to this heading">¶</a></h3>
+<p>S pomocí jednoduchého triggeru si můžeme usnadnit podstatně usnadnit
+život. Pokud budeme pravidelně vkládat data do tabulky zbavíme se
+nutnosti spouštět další dotazy a data budou převedena automaticky.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>CREATE OR REPLACE FUNCTION geom_z_xy() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $BODY$
+BEGIN
+   NEW.geom_p := &#39;SRID=5514;POINT(&#39;||NEW.x::text||&#39; &#39;||NEW.y::text||&#39;)&#39;;
+   RETURN NEW;
+END;
+$BODY$;
+
+CREATE TRIGGER geom_z_xy
+BEFORE INSERT OR UPDATE ON vesmirne_zrudice
+FOR EACH ROW EXECUTE PROCEDURE geom_z_xy();
+
+TRUNCATE vesmirne_zrudice;
+
+\copy vesmirne_zrudice (id, x, y) FROM jelen_dta/gismentors/postgis/data/body.csv
+
+SELECT *, ST_AsText(geom_p), ST_SRID(geom_p) FROM vesmirne_zrudice;
+</pre></div>
+</div>
+</section>
+</section>
+<section id="prostorove-indexy">
+<h2>Prostorové indexy<a class="headerlink" href="#prostorove-indexy" title="Permalink to this heading">¶</a></h2>
+<p>Pro efektivní práci s prostorovými daty je nezbytné tato data
+indexovat (pakliže se bavíme o objemu dat od tisícovek záznamů
+výše). Obvykle používáme GIST index, ale můžeme využít i jiné.
+GIST, SP-GIST a BRIN jsou všechny indexové metody využívané v PostgreSQL
+pro efektivní vyhledávání dat v databázi.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">vesmirne_zrudice_geom_p_geom_idx</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gist</span><span class="w"> </span><span class="p">(</span><span class="n">geom_p</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Při definování indexu můžete vynechat jeho název. V tomto
+případě si jej PostgreSQL doplní sám.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gist</span><span class="w"> </span><span class="p">(</span><span class="n">geom_p</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Zda je tabulka indexovaná (a další podrobnosti o tabulce)
+zjistíme v <strong class="program">psql</strong> pomocí metacomandu <code class="docutils literal notranslate"><span class="pre">\d+</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">pg_get_indexdef</span><span class="p">(</span><span class="s1">&#39;vesmirne_zrudice_geom_p_geom_idx&#39;</span><span class="p">::</span><span class="n">regclass</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<section id="gist">
+<h3>GIST<a class="headerlink" href="#gist" title="Permalink to this heading">¶</a></h3>
+<p>GIST (Generalized Search Tree) je indexová metoda pro libovolné datové typy.
+GIST je velmi flexibilní a může být použit pro indexování různých datových typů včetně textových řetězců,
+množin a různých geometrických objektů.</p>
+</section>
+<section id="sp-gist">
+<h3>SP-GIST<a class="headerlink" href="#sp-gist" title="Permalink to this heading">¶</a></h3>
+<p>SP-GIST (Space-Partitioned Generalized Search Tree) je obecná metoda pro vytváření indexů pro libovolné datové typy.
+Jedná se o rozšíření GIST, který pracuje s prostorovými daty. Tento index je výhodný v případě, že jsou data
+nerovnoměrně distribuována v prostoru resp. vytváří shluky dat.</p>
+<section id="brin">
+<h4>BRIN<a class="headerlink" href="#brin" title="Permalink to this heading">¶</a></h4>
+<p>BRIN (Block Range INdex) je indexová metoda, která se zaměřuje na efektivitu při práci s velkými tabulkami.
+BRIN využívá blokovou orientaci, kde v každém bloku je uchováván minimální a maximální hodnota indexovaného sloupce.
+To umožňuje rychlé vyhledávání výsledků v rozsahu hodnot bloku a přiřazení bloku k dotazu,
+který omezuje výsledky na menší část tabulky. BRIN index je vhodný pro rozsáhlá a uspořádaná data,
+kde existuje jasný vztah mezi jednotlivými hodnotami.</p>
+<p>Rozdíl mezi těmito metodami spočívá v tom, jaký typ dat se indexuje a jakým způsobem se index vytváří.
+Každá metoda má své výhody a nevýhody a vhodnost použití závisí na konkrétní situaci a datových typech, které se indexují.</p>
+<p>Dále uvedené časy jsou velmi orientační na neoptimalizovaném PostgreSQL na HW konfiguraci:
+8 CPU Intel(R) Core(TM) i7-6700 CPU &#64; 3.40GHz, 32 GB RAM.</p>
+</section>
+</section>
+<section id="rychlost-zapisu">
+<h3>Rychlost zápisu<a class="headerlink" href="#rychlost-zapisu" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">points_idx_test</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">int</span><span class="p">,</span><span class="w"> </span><span class="n">note</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="n">geometry</span><span class="p">)</span>
+<span class="k">with</span><span class="w"> </span><span class="p">(</span><span class="n">autovacuum_enabled</span><span class="o">=</span><span class="k">off</span><span class="p">,</span><span class="k">toast</span><span class="p">.</span><span class="n">autovacuum_enabled</span><span class="o">=</span><span class="k">off</span><span class="p">);</span>
+<span class="k">create</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="n">idx_points_idx_test</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">points_idx_test</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">gist</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">);</span>
+<span class="k">insert</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="n">points_idx_test</span>
+<span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">md5</span><span class="p">(</span><span class="n">random</span><span class="p">()::</span><span class="nb">text</span><span class="p">),</span><span class="w"> </span><span class="n">ST_SetSRID</span><span class="p">(</span><span class="n">ST_Point</span><span class="p">(</span><span class="mi">180</span><span class="o">-</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">360</span><span class="p">,</span><span class="w"> </span><span class="mi">90</span><span class="o">-</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">180</span><span class="p">),</span><span class="mi">4326</span><span class="p">)</span>
+<span class="k">from</span><span class="w"> </span><span class="n">generate_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">10000000</span><span class="p">)</span><span class="w"> </span><span class="n">t</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Čas: 3m 9s</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">drop</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">points_idx_test</span><span class="p">;</span>
+<span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">points_idx_test</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">int</span><span class="p">,</span><span class="w"> </span><span class="n">note</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="n">geometry</span><span class="p">)</span>
+<span class="k">with</span><span class="w"> </span><span class="p">(</span><span class="n">autovacuum_enabled</span><span class="o">=</span><span class="k">off</span><span class="p">,</span><span class="k">toast</span><span class="p">.</span><span class="n">autovacuum_enabled</span><span class="o">=</span><span class="k">off</span><span class="p">);</span>
+<span class="k">create</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="n">idx_points_idx_test</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">points_idx_test</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">brin</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="p">(</span><span class="n">pages_per_range</span><span class="w"> </span><span class="o">=</span><span class="mi">1</span><span class="p">);</span>
+<span class="k">insert</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="n">points_idx_test</span>
+<span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">md5</span><span class="p">(</span><span class="n">random</span><span class="p">()::</span><span class="nb">text</span><span class="p">),</span><span class="w"> </span><span class="n">ST_SetSRID</span><span class="p">(</span><span class="n">ST_Point</span><span class="p">(</span><span class="mi">180</span><span class="o">-</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">360</span><span class="p">,</span><span class="w"> </span><span class="mi">90</span><span class="o">-</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">180</span><span class="p">),</span><span class="mi">4326</span><span class="p">)</span>
+<span class="k">from</span><span class="w"> </span><span class="n">generate_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">10000000</span><span class="p">)</span><span class="w"> </span><span class="n">t</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Čas: 16s</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">drop</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">points_idx_test</span><span class="p">;</span>
+<span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">points_idx_test</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">int</span><span class="p">,</span><span class="w"> </span><span class="n">note</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="n">geometry</span><span class="p">)</span>
+<span class="k">with</span><span class="w"> </span><span class="p">(</span><span class="n">autovacuum_enabled</span><span class="o">=</span><span class="k">off</span><span class="p">,</span><span class="k">toast</span><span class="p">.</span><span class="n">autovacuum_enabled</span><span class="o">=</span><span class="k">off</span><span class="p">);</span>
+<span class="k">create</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="n">idx_points_idx_test</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">points_idx_test</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">spgist</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">);</span>
+<span class="k">insert</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="n">points_idx_test</span>
+<span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">md5</span><span class="p">(</span><span class="n">random</span><span class="p">()::</span><span class="nb">text</span><span class="p">),</span><span class="w"> </span><span class="n">ST_SetSRID</span><span class="p">(</span><span class="n">ST_Point</span><span class="p">(</span><span class="mi">180</span><span class="o">-</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">360</span><span class="p">,</span><span class="w"> </span><span class="mi">90</span><span class="o">-</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">180</span><span class="p">),</span><span class="mi">4326</span><span class="p">)</span>
+<span class="k">from</span><span class="w"> </span><span class="n">generate_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">10000000</span><span class="p">)</span><span class="w"> </span><span class="n">t</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Čas: 2m 11s</p>
+</section>
+<section id="rychlost-vytvoreni">
+<h3>Rychlost vytvoření<a class="headerlink" href="#rychlost-vytvoreni" title="Permalink to this heading">¶</a></h3>
+<p>Použijeme stejnou tabulku s 10 mil. bodů</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">drop</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="n">idx_points_idx_test</span><span class="p">;</span>
+<span class="k">create</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="n">idx_points_idx_test</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">points_idx_test</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">gist</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Čas: 2m 9s</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">drop</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="n">idx_points_idx_test</span><span class="p">;</span>
+<span class="k">create</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="n">idx_points_idx_test</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">points_idx_test</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">brin</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
+<span class="k">with</span><span class="w"> </span><span class="p">(</span><span class="n">pages_per_range</span><span class="w"> </span><span class="o">=</span><span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Čas: 3s</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">drop</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="n">idx_points_idx_test</span><span class="p">;</span>
+<span class="k">create</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="n">idx_points_idx_test</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">points_idx_test</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">spgist</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Čas: 1m 28s</p>
+</section>
+<section id="velikost-indexu">
+<h3>Velikost indexu<a class="headerlink" href="#velikost-indexu" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-psql notranslate"><div class="highlight"><pre><span></span><span class="kp">\di+</span><span class="w"> </span><span class="ss">idx_points_idx_test</span>
+</pre></div>
+</div>
+<p>GIST: 521 MB</p>
+<p>BRIN: 3.5 MB</p>
+<p>SP-GIST: 443 MB</p>
+</section>
+<section id="vyber-bodu-v-polygonu">
+<h3>Výběr bodů v polygonu<a class="headerlink" href="#vyber-bodu-v-polygonu" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">explain</span><span class="w"> </span><span class="p">(</span><span class="k">analyze</span><span class="p">,</span><span class="k">verbose</span><span class="p">,</span><span class="n">timing</span><span class="p">,</span><span class="n">costs</span><span class="p">,</span><span class="n">buffers</span><span class="p">)</span>
+<span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">points_idx_test</span>
+<span class="k">where</span>
+<span class="n">st_within</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">,</span>
+<span class="n">ST_SetSRID</span><span class="p">(</span><span class="n">ST_GeomFromText</span><span class="p">(</span><span class="s1">&#39;POLYGON ((0 0, 15 0, 7.5 10, 0 0))&#39;</span><span class="p">),</span><span class="mi">4326</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>GIST: 115 ms</p>
+<p>BRIN: 830 ms</p>
+<p>SP-GIST: 142 ms</p>
+<p>NOINDEX: 830 ms</p>
+<p>Z výsledků je vidět, že BRIN nebyl použit vůbec.
+V případě SP-GIST indexu je dotaz poněkud pomalejší než u indexu GIST,
+protože data jsou distribuována rovnoměrně v rámci celého světa. V následujícím příkladu si ukážeme,
+jak se index SPGIST chová u jinak distribuovaných dat.</p>
+</section>
+<section id="jina-distribuce-bodu-pro-gist-a-spgist">
+<h3>Jiná distribuce bodů pro GIST a SPGIST<a class="headerlink" href="#jina-distribuce-bodu-pro-gist-a-spgist" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">drop</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">points_idx_test</span><span class="p">;</span>
+<span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">points_idx_test</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">int</span><span class="p">,</span><span class="w"> </span><span class="n">note</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="n">geometry</span><span class="p">)</span>
+<span class="k">with</span><span class="w"> </span><span class="p">(</span><span class="n">autovacuum_enabled</span><span class="o">=</span><span class="k">off</span><span class="p">,</span><span class="k">toast</span><span class="p">.</span><span class="n">autovacuum_enabled</span><span class="o">=</span><span class="k">off</span><span class="p">);</span>
+
+<span class="k">insert</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="n">points_idx_test</span>
+<span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">md5</span><span class="p">(</span><span class="n">random</span><span class="p">()::</span><span class="nb">text</span><span class="p">),</span><span class="w"> </span><span class="n">ST_SetSRID</span><span class="p">(</span><span class="n">ST_Point</span><span class="p">(</span><span class="mi">180</span><span class="o">-</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">90</span><span class="p">,</span><span class="w"> </span><span class="mi">90</span><span class="o">-</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">180</span><span class="p">),</span><span class="mi">4326</span><span class="p">)</span>
+<span class="k">from</span><span class="w"> </span><span class="n">generate_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">5000000</span><span class="p">)</span><span class="w"> </span><span class="n">t</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+
+<span class="k">insert</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="n">points_idx_test</span>
+<span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">md5</span><span class="p">(</span><span class="n">random</span><span class="p">()::</span><span class="nb">text</span><span class="p">),</span><span class="w"> </span><span class="n">ST_SetSRID</span><span class="p">(</span><span class="n">ST_Point</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="o">+</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">90</span><span class="p">,</span><span class="w"> </span><span class="mi">90</span><span class="o">-</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">180</span><span class="p">),</span><span class="mi">4326</span><span class="p">)</span>
+<span class="k">from</span><span class="w"> </span><span class="n">generate_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">5000000</span><span class="p">)</span><span class="w"> </span><span class="n">t</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>GIST: 152 ms</p>
+<p>SP-GIS: 74 ms</p>
+<p>Zde je vidět, jak SP-GIST index funguje. Pokud máme data rozmístěna do oblastí, které je možno separovat
+pomocí obdélníků, pak je dotaz výrazně rychlejší.</p>
+</section>
+<section id="vyuziti-indexu-brin-pro-casoprostorova-data">
+<h3>Využití indexu BRIN pro časoprostorová data<a class="headerlink" href="#vyuziti-indexu-brin-pro-casoprostorova-data" title="Permalink to this heading">¶</a></h3>
+<p>Pakliže máme časoprostorová data, např. získáváme informace o pohybu flotily aut, pak pro nás může být zajímavé
+využít kombinaci indexu BRIN a GIST (případně SP-GIST).</p>
+<p>Časovou značku indexujeme pomocí indexu BRIN a prostorovu pomocí GIST (SP-GIST).</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">create</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="n">points_time_idx_test</span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">int</span><span class="p">,</span><span class="w"> </span><span class="n">dt</span><span class="w"> </span><span class="k">timestamp</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="n">geometry</span><span class="p">)</span>
+<span class="k">with</span><span class="w"> </span><span class="p">(</span><span class="n">autovacuum_enabled</span><span class="o">=</span><span class="k">off</span><span class="p">,</span><span class="k">toast</span><span class="p">.</span><span class="n">autovacuum_enabled</span><span class="o">=</span><span class="k">off</span><span class="p">);</span>
+
+<span class="k">with</span><span class="w"> </span><span class="n">dts</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">dd</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">dt</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">generate_series</span>
+<span class="w">      </span><span class="p">(</span><span class="w"> </span><span class="s1">&#39;2023-02-01&#39;</span><span class="p">::</span><span class="k">timestamp</span>
+<span class="w">      </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;2023-02-07&#39;</span><span class="p">::</span><span class="k">timestamp</span>
+<span class="w">      </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;1 second&#39;</span><span class="p">::</span><span class="nb">interval</span><span class="p">)</span><span class="w"> </span><span class="n">dd</span><span class="p">)</span>
+<span class="k">insert</span><span class="w"> </span><span class="k">into</span><span class="w"> </span><span class="n">points_time_idx_test</span><span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">dts</span><span class="p">.</span><span class="n">dt</span><span class="p">,</span>
+<span class="n">ST_SetSRID</span><span class="p">(</span><span class="n">ST_Point</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="o">+</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">90</span><span class="p">,</span><span class="w"> </span><span class="mi">90</span><span class="o">-</span><span class="n">random</span><span class="p">()</span><span class="o">*</span><span class="mi">180</span><span class="p">),</span><span class="mi">4326</span><span class="p">)</span><span class="w"> </span><span class="n">geom</span>
+<span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">generate_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="n">t</span><span class="p">(</span><span class="n">id</span><span class="p">),</span><span class="w"> </span><span class="n">dts</span><span class="w"> </span><span class="k">order</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">dt</span><span class="p">;</span>
+
+<span class="k">create</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">points_time_idx_test</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">GIST</span><span class="p">(</span><span class="n">geom</span><span class="p">);</span>
+<span class="k">create</span><span class="w"> </span><span class="k">index</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">points_time_idx_test</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="n">BRIN</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="p">(</span><span class="n">pages_per_range</span><span class="w"> </span><span class="o">=</span><span class="mi">1</span><span class="p">);</span>
+
+<span class="k">analyze</span><span class="w"> </span><span class="n">points_time_idx_test</span><span class="p">;</span>
+
+<span class="k">explain</span><span class="w"> </span><span class="p">(</span><span class="k">analyze</span><span class="p">,</span><span class="k">verbose</span><span class="p">,</span><span class="n">timing</span><span class="p">,</span><span class="n">costs</span><span class="p">,</span><span class="n">buffers</span><span class="p">)</span>
+<span class="w">  </span><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">points_time_idx_test</span>
+<span class="w">  </span><span class="k">where</span>
+<span class="w">  </span><span class="n">st_within</span><span class="w"> </span><span class="p">(</span><span class="n">geom</span><span class="p">,</span>
+<span class="w">  </span><span class="n">ST_SetSRID</span><span class="p">(</span><span class="n">ST_GeomFromText</span><span class="p">(</span><span class="s1">&#39;POLYGON ((0 0, 15 0, 7.5 10, 0 0))&#39;</span><span class="p">),</span><span class="mi">4326</span><span class="p">))</span>
+<span class="w">  </span><span class="k">and</span><span class="w"> </span><span class="n">dt</span><span class="w"> </span><span class="k">between</span><span class="w"> </span><span class="s1">&#39;2023-02-01 01:00:00&#39;</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="s1">&#39;2023-02-01 02:00:00&#39;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>NOINDEX: 1380 ms</p>
+<p>BRIN: 164 ms</p>
+<p>GIST a BRIN: 7 ms</p>
+<p>Pokud tedy potřebujeme pracovat s malým indexem a rychle zapisovat do databáze
+velké množství dat a víme, že dotazy budou primárně na časovou složku, můžeme použít pouze index BRIN.
+Pokud budou dotazy vždy vracet jen tisíce záznamů před prostorovou filtrací, můžeme prostorový index vynechat.</p>
+<p>Pokud však množství zapisovaných dat nebude extrémní, což v našem případě neplatí,
+jedná se o stovku řádků každou sekundu. V tomto případě zápis i s existencí indexu GIST trvá cca 20 ms,
+což je bez problémů.</p>
+<p>Pokud by se však jednalo o 30 tis. záznamů každou sekundu, pak už nám doba zápisu přesáhne 1 s.
+V případě, že tabulka nebude obsahovat index GIST, ale pouze index BRIN dobaz bude výrazně nižší
+v mém případě 80 ms i při zápisu 30 tis záznamů.</p>
+</section>
+<section id="zdroje">
+<h3>Zdroje<a class="headerlink" href="#zdroje" title="Permalink to this heading">¶</a></h3>
+<p><a class="reference external" href="https://www.alibabacloud.com/blog/postgresql-best-practices-selection-and-optimization-of-postgis-spatial-indexes-gist-brin-and-r-tree_597034">https://www.alibabacloud.com/blog/postgresql-best-practices-selection-and-optimization-of-postgis-spatial-indexes-gist-brin-and-r-tree_597034</a>
+<a class="reference external" href="https://www.crunchydata.com/blog/the-many-spatial-indexes-of-postgis">https://www.crunchydata.com/blog/the-many-spatial-indexes-of-postgis</a>
+<a class="reference external" href="https://pgsessions.com/assets/archives/gbroccolo_jrouhaud_pgsession_brin4postgis.pdf">https://pgsessions.com/assets/archives/gbroccolo_jrouhaud_pgsession_brin4postgis.pdf</a>
+<a class="reference external" href="https://www.crunchydata.com/blog/postgres-indexing-when-does-brin-win">https://www.crunchydata.com/blog/postgres-indexing-when-does-brin-win</a></p>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="0_uvod.html">Úvod</a></li>
+<li class="toctree-l1"><a class="reference internal" href="1_vytvarime_prostorovou_db.html">Vytváříme prostorovou databázi</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Vytváříme prostorovou tabulku</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#import-dat-do-postgresql">Import dat do PostgreSQL</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#copy">COPY</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dump-format">Dump formát</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#roura">Roura</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#metacommand-copy">Metacommand \copy</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#vytvarime-tabulku">Vytváříme tabulku</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pridani-sloupce-z-geometrii">Přidání sloupce z geometrií</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#vytvarime-geometrii-prvku">Vytváříme geometrii prvků</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#st-point-x-y">ST_Point(x,y)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#st-geomfrom">ST_GeomFrom*</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#st-astext">ST_AsText</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pridavame-geometrii-do-tabulky">Přidáváme geometrii do tabulky</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#update">UPDATE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#trigger">Trigger</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#prostorove-indexy">Prostorové indexy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#gist">GIST</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sp-gist">SP-GIST</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rychlost-zapisu">Rychlost zápisu</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rychlost-vytvoreni">Rychlost vytvoření</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#velikost-indexu">Velikost indexu</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#vyber-bodu-v-polygonu">Výběr bodů v polygonu</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#jina-distribuce-bodu-pro-gist-a-spgist">Jiná distribuce bodů pro GIST a SPGIST</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#vyuziti-indexu-brin-pro-casoprostorova-data">Využití indexu BRIN pro časoprostorová data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#zdroje">Zdroje</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="3_shp2pgsql_a_davkove_nahrani.html">Dávkové nahrání dat</a></li>
+<li class="toctree-l1"><a class="reference internal" href="4_prostorove_operatory.html">Operátory datového typu geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5_prostorove_funkce.html">Prostorové funkce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6_obludy.html">Praktické příklady</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7_finty.html">Efektivní práce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8_topologie.html">Topologie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9_rastry.html">Rastrová data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10_routing.html">Síťové analýzy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11_zaver.html">A co dál?</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Vyhledávání</h3>
+            <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="OK" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="1_vytvarime_prostorovou_db.html" title="Vytváříme prostorovou databázi"
+              >předchozí</a> |
+            <a href="3_shp2pgsql_a_davkove_nahrani.html" title="Dávkové nahrání dat"
+              >další</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2023 GISMentors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

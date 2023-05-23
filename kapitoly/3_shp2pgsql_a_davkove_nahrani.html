@@ -1,0 +1,494 @@
+
+<!DOCTYPE html>
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Dávkové nahrání dat &#8212; Školení PostGIS pro pokročilé</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gismentors.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/translations.js"></script>
+    <link rel="search" title="Vyhledávání" href="../search.html" />
+    <link rel="next" title="Operátory datového typu geometry" href="4_prostorove_operatory.html" />
+    <link rel="prev" title="Vytváříme prostorovou tabulku" href="2_tvorba_jednoduche_prostorove_tabulky.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">Školení PostGIS pro pokročilé</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="2_tvorba_jednoduche_prostorove_tabulky.html" title="Vytváříme prostorovou tabulku"
+             accesskey="P">předchozí</a> |
+          <a href="4_prostorove_operatory.html" title="Operátory datového typu geometry"
+             accesskey="N">další</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="davkove-nahrani-dat">
+<h1>Dávkové nahrání dat<a class="headerlink" href="#davkove-nahrani-dat" title="Permalink to this heading">¶</a></h1>
+<p><em>Dávkové zpracování a následné nahrávání dat z různých zdrojů do
+databáze je nejzákladnějším úkonem při budování databáze prostorových
+dat. Data obvykle nahráváme ze souborových formátů, případně z
+webových služeb. Řetězec úkonů mezi uchopením nějakého zdroje dat a
+jeho konečným umístěním do databáze bychom nejspíš označili termínem</em>
+<strong>ETL</strong>. <em>Pro standardní formáty s úspěchem můžeme využít utility
+knihovny</em> <a class="reference external" href="http://gdal.org">GDAL</a>, <em>jmenovitě</em> <a class="reference internal" href="#ogr2ogr"><span class="std std-ref">ogr2ogr</span></a>. <em>Pro
+import</em> <a class="reference external" href="http://en.wikipedia.org/wiki/Esri Shapefile">Esri Shapefile</a> <em>můžeme využít loader</em>
+<a class="reference internal" href="#import-shp2pgsql"><span class="std std-ref">shp2pgsql</span></a> <em>instalovaný spolu s PostGISem.</em></p>
+<section id="shp2pgsql">
+<span id="import-shp2pgsql"></span><h2>shp2pgsql<a class="headerlink" href="#shp2pgsql" title="Permalink to this heading">¶</a></h2>
+<p><a class="reference external" href="http://www.bostongis.com/pgsql2shp_shp2pgsql_quickguide.bqg">shp2pgsql</a> je
+utilitka distribuovaná spolu s PostGISem, která vrací data v dump
+formátu na standardní výstup. Je tedy možné, v případě potřeby,
+upravit výstup z této utility například unixovým nástrojem
+<strong class="program">sed</strong> či případně uložit do souboru a ručně zeditovat.</p>
+<p><strong class="program">shp2pgsql</strong> umí data přidat do již existující tabulky,
+tak potřebnou tabulku vytvořit. Lze také pouze vytvořit na
+základě dat prázdnou tabulku a samotná data do ní
+nenahrávat. Více v <a class="reference external" href="http://postgis.net/docs/using_postgis_dbmanagement.html#shp2pgsql_usage">manuálu</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Poznámka</p>
+<p>Hlavním limitem pro použití <strong class="program">shp2pgsql</strong> jsou
+samotné limity formátu Esri Shapefile. Jde například o
+zkracování názvů sloupců, formát nedovoluje délku názvu
+sloupce větší než 10 znaků. Dále můžete mít problém s
+některými datovými typy, například <code class="docutils literal notranslate"><span class="pre">numeric</span></code> bude surově
+zakrácen na <code class="docutils literal notranslate"><span class="pre">int</span></code>, což může způsobit problémy mimo jiné u
+dat ve formátu VFK, které používají primární klíče
+<code class="docutils literal notranslate"><span class="pre">numeric(30)</span></code>.</p>
+</div>
+<p>V našem příkladě zkusíme nahrát <a class="reference external" href="http://training.gismentors.eu/geodata/postgis/Ulice_cp1250.zip">datovou vrstvu ulic</a>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>shp2pgsql<span class="w"> </span>Ulice_cp1250.shp<span class="w"> </span>ukol_1.ulice<span class="w"> </span><span class="p">|</span><span class="w"> </span>psql<span class="w"> </span>pokusnik<span class="w"> </span><span class="m">2</span>&gt;<span class="w"> </span>err
+</pre></div>
+</div>
+<p>Tabulka se vůbec nevytvoří, problém je s kódováním. Atributová tabulka
+vstupních dat je v kódování cp1250 a naše databáze v UTF8. Použijeme
+proto přepínač <code class="xref std std-option docutils literal notranslate"><span class="pre">-W</span></code> pro nastavení kódování vstupního souboru.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>shp2pgsql<span class="w"> </span>-W<span class="w"> </span>cp1250<span class="w"> </span>Ulice_cp1250.shp<span class="w"> </span>ukol_1.ulice<span class="w"> </span><span class="p">|</span><span class="w"> </span>psql<span class="w"> </span>pokusnik<span class="w"> </span><span class="m">2</span>&gt;<span class="w"> </span>err
+</pre></div>
+</div>
+<p>Pohled do <span class="dbtable">geometry_columns</span> nám odhalí poměrně nepříjemný
+fakt a to, že naše nově přidaná vrstva nemá správný souřadnicový
+systém (SRID 5514), nýbrž neznámý souřadnicový systém s kódem 0.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">geometry_columns</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">f_table_schema</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;ukol_1&#39;</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">f_table_catalog</span>   <span class="o">|</span> <span class="n">skoleni</span>
+<span class="n">f_table_schema</span>    <span class="o">|</span> <span class="n">ukol_1</span>
+<span class="n">f_table_name</span>      <span class="o">|</span> <span class="n">ulice</span>
+<span class="n">f_geometry_column</span> <span class="o">|</span> <span class="n">geom</span>
+<span class="n">coord_dimension</span>   <span class="o">|</span> <span class="mi">2</span>
+<span class="n">srid</span>              <span class="o">|</span> <span class="mi">0</span>
+<span class="nb">type</span>              <span class="o">|</span> <span class="n">MULTILINESTRING</span>
+</pre></div>
+</div>
+<p>Musíme tedy rozšířit předešlý příkaz o zadání <em>SRID</em>, které má být
+nové vrstvě přiřazeno (přídáme přepínačý <code class="xref std std-option docutils literal notranslate"><span class="pre">-d</span></code>, který stavající
+tabulku nejprve odstraní).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>shp2pgsql<span class="w"> </span>-d<span class="w"> </span>-W<span class="w"> </span>cp1250<span class="w"> </span>-s<span class="w"> </span><span class="m">5514</span><span class="w"> </span>Ulice_cp1250.shp<span class="w"> </span>ukol_1.ulice<span class="w"> </span><span class="p">|</span><span class="w"> </span>psql<span class="w"> </span>pokusnik<span class="w"> </span><span class="m">2</span>&gt;<span class="w"> </span>err
+</pre></div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>SRID vrstvy, je samozřejmě možné změnit u hotové vrstvy a to
+příkazem <a class="reference external" href="http://postgis.net/docs/UpdateGeometrySRID.html">UpdateGeometrySRID</a>, nicméně v případě, že
+nad takovou tabulkou už máte kupříkladu postavené pohledy,
+bude to nutně znamenat je všechny přegenerovat, přičemž si
+můžete (a také nemusíte) vyrobit nepříjemný chaos v
+právech. Je tedy lepší na toto pamatovat a tabulky již
+vytvářet se správným SRID.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>K utilitě <strong class="program">shp2pgsql</strong> existuje také obrácený nástroj
+<strong class="program">pgsql2shp</strong>, který slouží k exportu tabulek do
+formátu Esri Shapefile. Jeho použití je jednoduché a najdete
+ho na každém stroji s PostGISem. Nicméně, jak již bylo
+zmíněno, Esri Shapefile je zastaralý formát. Při jeho použití
+může dojít k degradaci dat, tudíž ho má smysl použít jen
+pokud příjemce dat vyžaduje výslovně tento formát.</p>
+</div>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>Příklad jednoduchého skriptu pro dávkový
+import souborů ve formátu Esri Shapefile z
+aktuálního adresáře</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/sh</span>
+
+<span class="k">for</span><span class="w"> </span>f<span class="w"> </span><span class="k">in</span><span class="w"> </span>*.shp<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="nv">$f</span>
+<span class="w">    </span>shp2pgsql<span class="w"> </span>-d<span class="w"> </span>-D<span class="w"> </span><span class="nv">$f</span><span class="w"> </span>ukol_1.<span class="si">${</span><span class="nv">f</span><span class="p">%%.shp</span><span class="si">}</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>psql<span class="w"> </span>pokusnik<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;err
+<span class="k">done</span>
+
+<span class="nb">exit</span><span class="w"> </span><span class="m">0</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="ogr2ogr">
+<span id="id1"></span><h2>ogr2ogr<a class="headerlink" href="#ogr2ogr" title="Permalink to this heading">¶</a></h2>
+<p>Nástroj <a class="reference external" href="http://www.gdal.org/ogr2ogr.html">ogr2ogr</a> je součástí
+balíku utilit distribuovaných s knihovnou <a class="reference external" href="http://cs.wikipedia.org/wiki/GDAL">GDAL</a>. Slouží k
+převodu dat mezi nejrůznějšími GIS formáty. Mimo jiné, od verze 1.11
+podporuje také <a class="reference external" href="http://freegis.fsv.cvut.cz/gwiki/RUIAN_/_GDAL">Výměnný formát RÚIAN</a>, což je v našich
+podmínkách velice užitečné. Kromě převodů mezi různými formáty geodat
+můžeme <strong class="program">ogr2ogr</strong> použít i pro transformaci mezi
+souřadnicovými systémy.</p>
+<p><strong class="program">ogr2ogr</strong> se umí buď připojit rovnou do databáze, nebo umí
+generovat (případně posílat na <em>STDOUT</em>) data v <em>dump</em>
+formátu PostgreSQL.</p>
+<section id="driver-postgresql">
+<h3>Driver PostgreSQL<a class="headerlink" href="#driver-postgresql" title="Permalink to this heading">¶</a></h3>
+<p>Nejdříve převedeme data z předešlého příkladu. Použijeme driver
+<a class="reference external" href="http://www.gdal.org/drv_pg.html">PostgreSQL</a>, který se připojuje
+přímo k databázi.</p>
+<div class="notecmd admonition">
+<p class="admonition-title">Nahrání Esri Shapefile pomocí ogr2ogr z příkazové řádky</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">SHAPE_ENCODING</span><span class="o">=</span><span class="s2">&quot;cp1250&quot;</span>
+ogr2ogr<span class="w"> </span>-f<span class="w"> </span>PostgreSQL<span class="w"> </span>PG:dbname<span class="o">=</span>pokusnik<span class="w"> </span>-a_srs<span class="w"> </span><span class="s1">&#39;EPSG:5514&#39;</span><span class="w"> </span>Ulice_cp1250.shp<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>-nlt<span class="w"> </span>MULTILINESTRING<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>-lco<span class="w"> </span><span class="s1">&#39;GEOMETRY_NAME=geom&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>-nln<span class="w"> </span>ukol_1.ulice
+</pre></div>
+</div>
+</div>
+<p>V prvním řádku uvedeme kódování atributových dat vstupního souboru.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>V případě, že bychom chtěli použít pro import jiné kódování,
+než je UTF8, nastavíme kódování pro PostgreSQL do proměnné
+prostředí <span class="target" id="index-0"></span><code class="xref std std-envvar docutils literal notranslate"><span class="pre">PGCLIENTENCODING</span></code>.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Varování</p>
+<p>Příkaz <em>export</em> funguje pod Linuxem, ve Windows se
+proměnné prostředí nastavují <a class="reference external" href="http://ss64.com/nt/syntax-variables.html">jinak</a>.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Proměnnou prostředí <span class="target" id="index-1"></span><code class="xref std std-envvar docutils literal notranslate"><span class="pre">SHAPE_ENCODING</span></code> použijeme v
+případě, že chceme použít při výstupu do <em>Esri Shapefile</em>
+jiné kódování, než je UTF8.</p>
+</div>
+<p>Parametr <code class="xref std std-option docutils literal notranslate"><span class="pre">-f</span></code> nastaví výstupní formát na <em>PostgreSQL</em>,
+<code class="xref std std-option docutils literal notranslate"><span class="pre">PG:</span></code> nastaví <a class="reference external" href="http://www.postgresql.org/docs/current/static/libpq-connect.html">parametry připojení k databázi</a>. Lze
+také nastavit např. aktivní schéma - tj. schéma, do kterého budou
+vstupní data importována.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>U dávkového nahrávání je výhodné nastavit si heslo do
+<a class="reference external" href="http://www.postgresql.org/docs/current/static/libpq-pgpass.html">souboru s autentizací</a>.</p>
+</div>
+<p>Parametr <code class="xref std std-option docutils literal notranslate"><span class="pre">-a_srs</span></code> slouží k nastavení výstupního souřadnicovýho
+systému, v tomto případě nastavíme souřadnicový systém na
+<a class="reference external" href="http://epsg.io/5514">EPSG:5514</a>, tedy <em>S-JTSK</em>.</p>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>Pokud bychom chtěli data v rámci importu
+transformovat, tak použijeme volby <code class="xref std std-option docutils literal notranslate"><span class="pre">t_srs</span></code> a
+<code class="xref std std-option docutils literal notranslate"><span class="pre">s_srs</span></code>. Souřadnicový systém můžeme zadávat
+i v zápisu knihovny Proj.4.</p>
+</div>
+<p>Následuje název vstupního souboru. Po něm je použit parametr
+<code class="xref std std-option docutils literal notranslate"><span class="pre">-nlt</span></code>, který slouží k zadání typu geometrie, v našem případě
+je to <em>MULTILINESTRING</em>, <strong class="program">ogr2ogr</strong> totiž z nějakého důvodu v
+tomto případě chybně identifikuje geometrii vstupního souboru jako
+<em>LINESTRING</em>.</p>
+<p>Nakonec pomoci <code class="xref std std-option docutils literal notranslate"><span class="pre">-nln</span></code> nastavíme nový název vrstvy (včetně
+názvu schématu, které ovšem musí být předem vytvořeno).</p>
+</section>
+<section id="driver-pgdump">
+<h3>Driver PGDump<a class="headerlink" href="#driver-pgdump" title="Permalink to this heading">¶</a></h3>
+<p>Driver <a class="reference external" href="http://www.gdal.org/drv_pgdump.html">PGDump</a> místo přímého
+spojení s databází zapisuje do souboru (nebo na <em>STDOUT</em>). To může být
+užitečné například v případě, že nemáme přímé připojení k databázi,
+nebo když chceme převedený soubor nějakým způsobem dále
+upravit. Můžeme ho například poslat rourou přes <strong class="program">sed</strong> a potom
+rovnou na <strong class="program">psql</strong>. Tento postup však bude fungovat na OS, kde
+je tento nástroj dosupný, např. GNU/Linux.</p>
+<div class="notecmd admonition">
+<p class="admonition-title">Nahrání Esri Shapefile pomocí ogr2ogr (PGDump) z příkazové řádky</p>
+<p>Zde přejmenujeme ulici <em>Kaštanová</em> na <em>Jírovcová</em>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">PG_USE_COPY</span><span class="o">=</span>YES
+ogr2ogr<span class="w"> </span>-f<span class="w"> </span>PGDump<span class="w"> </span>/dev/stdout<span class="w"> </span>-a_srs<span class="w"> </span><span class="s1">&#39;EPSG:5514&#39;</span><span class="w"> </span>Ulice_cp1250.shp<span class="w"> </span><span class="se">\</span>
+-lco<span class="w"> </span><span class="s1">&#39;GEOMETRY_NAME=geom&#39;</span><span class="w"> </span><span class="se">\</span>
+-nlt<span class="w"> </span>MULTILINESTRING<span class="w"> </span>-nln<span class="w"> </span>ukol_1.ulice_3<span class="w"> </span><span class="se">\</span>
+<span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/Kaštanová/Jírovcová/g&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="p">|</span><span class="w"> </span>psql<span class="w"> </span>pokusnik<span class="w"> </span><span class="m">2</span>&gt;<span class="w"> </span>err
+</pre></div>
+</div>
+</div>
+<p>V prvním řádku nastavíme proměnnou prostředí
+<span class="target" id="index-2"></span><code class="xref std std-envvar docutils literal notranslate"><span class="pre">PG_USE_COPY</span></code>. Tím řekneme, že data mají být přenesena jako
+<span class="sqlcmd">COPY tabname FROM STDIN</span>, namísto řady <span class="sqlcmd">INSERT</span>
+statementů. Stejným způsobem by fungoval i <em>PostgreSQL</em> driver.</p>
+<p>Parametry na dalším řádku již známe. Jedná se o formát, následuje
+název výstupního souboru (v našem případě odesíláme na stdout),
+výstupní souřadnicový systém a vstupní soubor. Další řádek též
+nepřináší nic nového. Nakonec nahradíme pomocí sedu „Kaštanová“ za
+„Jírovcová“ a odešleme rourou na <strong class="program">psql</strong>.</p>
+<div class="admonition important">
+<p class="admonition-title">Důležité</p>
+<p>PostgreSQL driver může mít problém vytvořit tabulku s
+více geometrickými sloupci, potom nezbývá než použít
+PGDump driver nebo vytvořit tabulku ručně.</p>
+</div>
+</section>
+<section id="poznamky-k-dalsim-formatum">
+<h3>Poznámky k dalším formátům<a class="headerlink" href="#poznamky-k-dalsim-formatum" title="Permalink to this heading">¶</a></h3>
+<p><em>Esri Shapefile</em> není samozřejmě jediný formát, se kterým
+<strong class="program">ogr2ogr</strong> pracuje. Předvedeme si, jak snadno nahrát soubor
+ve formátu <a class="reference external" href="http://en.wikipedia.org/wiki/Geography Markup Language">GML</a>.</p>
+<section id="gml">
+<h4>GML<a class="headerlink" href="#gml" title="Permalink to this heading">¶</a></h4>
+<div class="notecmd admonition">
+<p class="admonition-title">Nahrání GML pomocí ogr2ogr z příkazové řádky</p>
+<p>Data ke stažení <a class="reference external" href="http://training.gismentors.eu/geodata/postgis/adres_mista.gml.gz">zde</a>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ogr2ogr<span class="w"> </span>-f<span class="w"> </span>PGDump<span class="w"> </span>/dev/stdout<span class="w"> </span>-a_srs<span class="w"> </span><span class="s1">&#39;EPSG:5514&#39;</span><span class="w"> </span><span class="se">\</span>
+-lco<span class="w"> </span><span class="s1">&#39;GEOMETRY_NAME=adresnibod&#39;</span><span class="w"> </span><span class="se">\</span>
+adres_mista.gml.gz<span class="w"> </span><span class="se">\</span>
+-nln<span class="w"> </span>ukol_1.adresy<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+psql<span class="w"> </span>pokusnik<span class="w"> </span><span class="m">2</span>&gt;<span class="w"> </span>err
+</pre></div>
+</div>
+</div>
+</section>
+<section id="vfr">
+<h4>VFR<a class="headerlink" href="#vfr" title="Permalink to this heading">¶</a></h4>
+<div class="notecmd admonition">
+<p class="admonition-title">Nahrání Výměnného formátu RÚIAN (VFR) pomocí ogr2ogr z příkazové řádky</p>
+<p>Nejprve vytvoříme nové schéma</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>psql<span class="w"> </span>gismentors<span class="w"> </span>-h<span class="w"> </span>training.gismentors.eu<span class="w"> </span>-U<span class="w"> </span>skoleni<span class="w"> </span>-W<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;create schema ltm&quot;</span>
+</pre></div>
+</div>
+<p>A poté naimportujeme data vybrané obce (Litoměřice - 564567)</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ogr2ogr<span class="w"> </span>-f<span class="w"> </span>PostgreSQL<span class="w"> </span><span class="se">\</span>
+<span class="s2">&quot;PG:dbname=gismentors host=training.gismentors.eu user=skoleni password=XXX active_schema=ltm&quot;</span><span class="w"> </span><span class="se">\</span>
+/vsicurl/http://vdp.cuzk.cz/vymenny_format/soucasna/20170331_OB_564567_UKSH.xml.gz
+</pre></div>
+</div>
+<p>Bližší informace: <a class="reference external" href="http://freegis.fsv.cvut.cz/gwiki/RUIAN">http://freegis.fsv.cvut.cz/gwiki/RUIAN</a></p>
+</div>
+</section>
+<section id="wfs">
+<h4>WFS<a class="headerlink" href="#wfs" title="Permalink to this heading">¶</a></h4>
+<p>V <strong class="program">ogr2ogr</strong> je možné pracovat i s webovými službami,
+například můžeme načíst katastrální území z <a class="reference external" href="http://services.cuzk.cz/doc/inspire-cp-view.pdf">WFS ČÚZK</a>.</p>
+<div class="notecmd admonition">
+<p class="admonition-title">Nahrání WFS z příkazové řádky</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ogr2ogr<span class="w"> </span>-f<span class="w"> </span><span class="s2">&quot;PostgreSQL&quot;</span><span class="w"> </span>PG:<span class="s2">&quot;dbname=pokusnik&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="s2">&quot;http://services.cuzk.cz/wfs/inspire-cp-wfs.asp?\</span>
+<span class="s2">service=WFS\</span>
+<span class="s2">&amp;request=GetFeature&amp;version=2.0.0\</span>
+<span class="s2">&amp;srsName=urn:ogc:def:crs:EPSG::5514\</span>
+<span class="s2">&amp;typeNames=CP:CadastralZoning\</span>
+<span class="s2">&amp;featureid=CZ.605999&quot;</span><span class="w"> </span><span class="se">\</span>
+-nln<span class="w"> </span>ukol_1.katatest
+</pre></div>
+</div>
+</div>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>Ve WFS bývá nastaven limit na maximální počet
+prvků. V praxi není možné obvykle stáhnout větší
+objem dat. Můžeme však stahovat prvky po jednom. Z
+<a class="reference external" href="http://www.cuzk.cz/CUZK/media/CiselnikyISKN/SC_SEZNAMKUKRA_DOTAZ/SC_SEZNAMKUKRA_DOTAZ.zip?ext=.zip">číselníku katastrálních území</a>
+vybereme katastrální území Prahy.</p>
+<div class="notecmd admonition">
+<p class="admonition-title">Dávkového nahrání dat z WFS z příkazové řádky</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>http://www.cuzk.cz/CUZK/media/CiselnikyISKN/SC_SEZNAMKUKRA_DOTAZ/SC_SEZNAMKUKRA_DOTAZ.zip?ext<span class="o">=</span>.zip
+unzip<span class="w"> </span>SC_SEZNAMKUKRA_DOTAZ.zip?ext<span class="o">=</span>.zip
+psql<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;truncate table ukol_1.katatest&quot;</span><span class="w"> </span>pokusnik<span class="p">;</span>
+
+cut<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;;&#39;</span><span class="w"> </span>-f<span class="w"> </span><span class="m">7</span>,8<span class="w"> </span>SC_SEZNAMKUKRA_DOTAZ.csv<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>tail<span class="w"> </span>-n<span class="w"> </span>+2<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>grep<span class="w"> </span>Praha<span class="w"> </span><span class="p">|</span>
+<span class="w">   </span>cut<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;;&#39;</span><span class="w"> </span>-f<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="p">|</span>
+<span class="w">   </span><span class="k">while</span><span class="w"> </span><span class="nb">read</span><span class="w"> </span>kodku<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">      </span><span class="nb">echo</span><span class="w"> </span><span class="nv">$kodku</span><span class="p">;</span>
+<span class="w">      </span>ogr2ogr<span class="w"> </span>-append<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>-f<span class="w"> </span><span class="s2">&quot;PostgreSQL&quot;</span><span class="w"> </span>PG:<span class="s2">&quot;dbname=pokusnik&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">      </span><span class="s2">&quot;http://services.cuzk.cz/wfs/inspire-cp-wfs.asp?\</span>
+<span class="s2">service=WFS\</span>
+<span class="s2">&amp;request=GetFeature&amp;version=2.0.0\</span>
+<span class="s2">&amp;srsName=urn:ogc:def:crs:EPSG::5514\</span>
+<span class="s2">&amp;typeNames=CP:CadastralZoning&amp;\</span>
+<span class="s2">featureid=CZ.</span><span class="nv">$kodku</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>-nln<span class="w"> </span>ukol_1.katatest
+<span class="w">    </span><span class="k">done</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Varování</p>
+<p>Bagrování WFS ovšem není ideální způsob jak plnit
+databázi daty (limit na bbox a počet prvků tam není
+jen tak pro nic za nic). Tato data je možné získat i
+pohodlněji a šetrněji k infrastruktuře ČÚZK.</p>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="zobrazeni-dat">
+<h2>Zobrazení dat<a class="headerlink" href="#zobrazeni-dat" title="Permalink to this heading">¶</a></h2>
+<p>Data si můžeme zobrazit a dále s nimi pracovat například v QGISu, viz
+<a class="reference external" href="http://training.gismentors.eu/postgis-zacatecnik">školení pro začátečníky</a>. Pokročilejší
+uživatelé mohou výužít funkce PostGISu, viz příklad níže.</p>
+<div class="noteadvanced admonition">
+<p class="admonition-title">Poznámka pro pokročilé</p>
+<p>Na závěr si naše data zobrazíme ve formátu <em>SVG</em>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="n">SEARCH_PATH</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">public</span><span class="p">,</span><span class="w"> </span><span class="n">ukol_1</span><span class="p">;</span>
+<span class="k">SELECT</span>
+<span class="n">XMLELEMENT</span><span class="p">(</span>
+<span class="w">   </span><span class="n">NAME</span><span class="w"> </span><span class="n">svg</span><span class="p">,</span>
+<span class="w">   </span><span class="n">XMLATTRIBUTES</span><span class="p">(</span>
+<span class="w">      </span><span class="n">height</span><span class="p">,</span><span class="w"> </span><span class="n">width</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;viewBox&quot;</span>
+<span class="w">      </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;http://www.w3.org/2000/svg&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">xmlns</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;1.1&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">version</span><span class="p">)</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">linie</span><span class="p">,</span><span class="w"> </span><span class="n">body</span><span class="p">,</span><span class="w"> </span><span class="n">popisky</span>
+<span class="p">)</span>
+<span class="k">FROM</span>
+<span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span>
+<span class="w">   </span><span class="mi">600</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">height</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="mi">800</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">width</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">array_to_string</span><span class="p">(</span><span class="nb">ARRAY</span><span class="p">[</span><span class="k">MIN</span><span class="p">(</span><span class="n">ST_XMIN</span><span class="p">(</span><span class="n">geom</span><span class="p">))</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="k">MAX</span><span class="p">(</span><span class="n">ST_YMAX</span><span class="p">(</span><span class="n">geom</span><span class="p">)))</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">50</span>
+<span class="w">      </span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="o">@</span><span class="p">(</span><span class="k">MAX</span><span class="p">(</span><span class="n">ST_XMAX</span><span class="p">(</span><span class="n">geom</span><span class="p">))</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">MIN</span><span class="p">(</span><span class="n">ST_XMIN</span><span class="p">(</span><span class="n">geom</span><span class="p">))))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">100</span>
+<span class="w">      </span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="o">@</span><span class="p">(</span><span class="k">MAX</span><span class="p">(</span><span class="n">ST_YMAX</span><span class="p">(</span><span class="n">geom</span><span class="p">))</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">MIN</span><span class="p">(</span><span class="n">ST_YMIN</span><span class="p">(</span><span class="n">geom</span><span class="p">))))</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">100</span><span class="p">],</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="ss">&quot;viewBox&quot;</span>
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">XMLAGG</span><span class="p">(</span>
+<span class="w">      </span><span class="n">XMLELEMENT</span><span class="p">(</span><span class="n">NAME</span><span class="w"> </span><span class="n">path</span><span class="p">,</span>
+<span class="w">         </span><span class="n">XMLATTRIBUTES</span><span class="p">(</span><span class="w"> </span><span class="n">ST_AsSVG</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">d</span>
+<span class="w">            </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;rgb(55,230,100)&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">stroke</span>
+<span class="w">            </span><span class="p">,</span><span class="w"> </span><span class="mi">25</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="ss">&quot;stroke-width&quot;</span>
+<span class="w">            </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;none&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">fill</span>
+<span class="w">         </span><span class="p">)</span>
+<span class="w">      </span><span class="p">)</span>
+<span class="w">   </span><span class="p">)</span><span class="w"> </span><span class="n">linie</span>
+<span class="w">   </span><span class="k">FROM</span>
+<span class="w">   </span><span class="p">(</span>
+<span class="w">      </span><span class="k">SELECT</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ulice</span><span class="w"> </span><span class="c1">--LIMIT 1</span>
+<span class="w">   </span><span class="p">)</span><span class="w"> </span><span class="n">ok</span>
+<span class="p">)</span><span class="w"> </span><span class="n">podklad</span><span class="p">,</span>
+<span class="p">(</span>
+<span class="w">   </span><span class="k">SELECT</span>
+<span class="w">   </span><span class="n">XMLAGG</span><span class="p">(</span>
+<span class="w">      </span><span class="n">XMLELEMENT</span><span class="p">(</span><span class="n">NAME</span><span class="w"> </span><span class="n">circle</span><span class="p">,</span>
+<span class="w">         </span><span class="n">XMLATTRIBUTES</span><span class="p">(</span><span class="w"> </span><span class="n">ST_X</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cx</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">ST_Y</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cy</span><span class="p">,</span><span class="w"> </span><span class="mi">150</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">r</span>
+<span class="w">            </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;black&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">stroke</span>
+<span class="w">            </span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="ss">&quot;stroke-width&quot;</span>
+<span class="w">            </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;rgb(255,0,0)&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">fill</span>
+<span class="w">         </span><span class="p">)</span>
+<span class="w">      </span><span class="p">)</span>
+<span class="w">   </span><span class="p">)</span><span class="w"> </span><span class="n">body</span>
+
+<span class="w">   </span><span class="p">,</span><span class="w"> </span><span class="n">XMLAGG</span><span class="p">(</span>
+<span class="w">      </span><span class="n">XMLELEMENT</span><span class="p">(</span><span class="n">NAME</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">         </span><span class="n">XMLATTRIBUTES</span><span class="p">(</span><span class="w"> </span><span class="n">ST_X</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">250</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">ST_Y</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">y</span>
+<span class="w">            </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Verdana&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="ss">&quot;font-family&quot;</span>
+<span class="w">            </span><span class="p">,</span><span class="w"> </span><span class="mi">750</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="ss">&quot;font-size&quot;</span>
+<span class="w">            </span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;rgb(0,0,0)&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">fill</span>
+<span class="w">         </span><span class="p">),</span><span class="w"> </span><span class="n">id</span>
+<span class="w">      </span><span class="p">)</span>
+<span class="w">   </span><span class="p">)</span><span class="w"> </span><span class="n">popisky</span>
+<span class="w">   </span><span class="k">FROM</span>
+<span class="w">   </span><span class="p">(</span>
+<span class="w">      </span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">geom_p</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">geom</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">vesmirne_zrudice</span><span class="w"> </span><span class="c1">--LIMIT 1</span>
+<span class="w">   </span><span class="p">)</span><span class="w"> </span><span class="n">body</span>
+<span class="p">)</span><span class="w"> </span><span class="k">data</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="0_uvod.html">Úvod</a></li>
+<li class="toctree-l1"><a class="reference internal" href="1_vytvarime_prostorovou_db.html">Vytváříme prostorovou databázi</a></li>
+<li class="toctree-l1"><a class="reference internal" href="2_tvorba_jednoduche_prostorove_tabulky.html">Vytváříme prostorovou tabulku</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Dávkové nahrání dat</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#shp2pgsql">shp2pgsql</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ogr2ogr">ogr2ogr</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#driver-postgresql">Driver PostgreSQL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#driver-pgdump">Driver PGDump</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#poznamky-k-dalsim-formatum">Poznámky k dalším formátům</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#zobrazeni-dat">Zobrazení dat</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="4_prostorove_operatory.html">Operátory datového typu geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="5_prostorove_funkce.html">Prostorové funkce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="6_obludy.html">Praktické příklady</a></li>
+<li class="toctree-l1"><a class="reference internal" href="7_finty.html">Efektivní práce</a></li>
+<li class="toctree-l1"><a class="reference internal" href="8_topologie.html">Topologie</a></li>
+<li class="toctree-l1"><a class="reference internal" href="9_rastry.html">Rastrová data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="10_routing.html">Síťové analýzy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="11_zaver.html">A co dál?</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Vyhledávání</h3>
+            <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="OK" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="2_tvorba_jednoduche_prostorove_tabulky.html" title="Vytváříme prostorovou tabulku"
+              >předchozí</a> |
+            <a href="4_prostorove_operatory.html" title="Operátory datového typu geometry"
+              >další</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2014-2023 GISMentors.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>
