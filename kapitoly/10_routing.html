@@ -49,12 +49,21 @@ databázi aktivujeme příkazem:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">pgrouting</span><span class="p">;</span>
 </pre></div>
 </div>
+<p>Vytvoříme si schéma, kde budeme pracovat.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">SCHEMA</span><span class="w"> </span><span class="n">routing</span><span class="p">;</span>
+</pre></div>
+</div>
 <section id="priprava-dat">
 <h2>Příprava dat<a class="headerlink" href="#priprava-dat" title="Permalink to this heading">¶</a></h2>
 <p>Jako podkladová data použijeme data OpenStreetMap pro území Hlavního
 města Prahy. Data stáhneme přes tzv. Overpass API. Území je dáno
 minimálním ohraničujícím obdélníkem (bbox), který můžeme zjistit
 např. ze stránek <a class="reference external" href="http://boundingbox.klokantech.com">http://boundingbox.klokantech.com</a> (formát CSV).</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Pro vyhnutí se zadávání hesla při načítání dat můžeme postupovat podle
+<a class="reference external" href="https://www.postgresql.org/docs/current/libpq-pgpass.html">https://www.postgresql.org/docs/current/libpq-pgpass.html</a></p>
+</div>
 <p>Příklad stažení dat:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>--progress<span class="o">=</span>dot:mega<span class="w"> </span>-O<span class="w"> </span>praha.osm<span class="w"> </span><span class="se">\</span>
 <span class="s2">&quot;http://www.overpass-api.de/api/xapi?*[bbox=14.224435,49.941898,14.706787,50.177433][@meta]&quot;</span>
@@ -132,15 +141,19 @@ adresy.</p>
 <span class="k">AND</span><span class="w"> </span><span class="n">ST_DWithin</span><span class="p">(</span><span class="n">ST_Transform</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">5514</span><span class="p">),</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">);</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="n">osm_id</span>   <span class="o">|</span>   <span class="nb">id</span>   <span class="o">|</span>   <span class="n">gml_id</span>
-<span class="o">------------+--------+-------------</span>
- <span class="mi">3776391915</span> <span class="o">|</span> <span class="mi">152343</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
- <span class="mi">3776391918</span> <span class="o">|</span> <span class="mi">155642</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
- <span class="mi">4173356388</span> <span class="o">|</span> <span class="mi">157417</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
- <span class="mi">4174654161</span> <span class="o">|</span> <span class="mi">158057</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
- <span class="mi">4173437520</span> <span class="o">|</span> <span class="mi">159128</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
- <span class="mi">4173361989</span> <span class="o">|</span> <span class="mi">160879</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
- <span class="mi">4174654158</span> <span class="o">|</span> <span class="mi">162342</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="n">osm_id</span>    <span class="o">|</span>   <span class="nb">id</span>   <span class="o">|</span>   <span class="n">gml_id</span>
+<span class="o">-------------+--------+-------------</span>
+ <span class="mi">4140110599</span>  <span class="o">|</span>  <span class="mi">70968</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">3776391915</span>  <span class="o">|</span> <span class="mi">167139</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">3776391918</span>  <span class="o">|</span> <span class="mi">167141</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">4140110598</span>  <span class="o">|</span> <span class="mi">168842</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">4173356388</span>  <span class="o">|</span> <span class="mi">173367</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">4173361989</span>  <span class="o">|</span> <span class="mi">173368</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">4173437520</span>  <span class="o">|</span> <span class="mi">173405</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">4174654158</span>  <span class="o">|</span> <span class="mi">173408</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">4174654161</span>  <span class="o">|</span> <span class="mi">173409</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">10816377365</span> <span class="o">|</span> <span class="mi">177882</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
+ <span class="mi">10881875992</span> <span class="o">|</span> <span class="mi">177911</span> <span class="o">|</span> <span class="n">AD</span><span class="mf">.22210156</span>
 </pre></div>
 </div>
 <div class="admonition important">
@@ -185,7 +198,7 @@ $func$ LANGUAGE plpgsql;
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">find_node</span>
 <span class="o">-----------</span>
-    <span class="mi">158921</span>
+     <span class="mi">43771</span>
 </pre></div>
 </div>
 <p>Nejkratší trasu nalezneme voláním funkce <a class="reference external" href="http://docs.pgrouting.org/latest/en/src/dijkstra/doc/pgr_dijkstra.html">pgr_dijkstra</a>. Dijkstrův
@@ -209,11 +222,11 @@ algoritmus vyžaduje definovat celkem čtyři atributy:</p>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">seq</span> <span class="o">|</span> <span class="n">path_seq</span> <span class="o">|</span>  <span class="n">node</span>  <span class="o">|</span>  <span class="n">edge</span>  <span class="o">|</span>         <span class="n">cost</span>         <span class="o">|</span>       <span class="n">agg_cost</span>
 <span class="o">-----+----------+--------+--------+----------------------+----------------------</span>
-   <span class="mi">1</span> <span class="o">|</span>        <span class="mi">1</span> <span class="o">|</span> <span class="mi">120249</span> <span class="o">|</span> <span class="mi">110252</span> <span class="o">|</span> <span class="mf">7.57929416242359e-05</span> <span class="o">|</span>                    <span class="mi">0</span>
-   <span class="mi">2</span> <span class="o">|</span>        <span class="mi">2</span> <span class="o">|</span>  <span class="mi">35204</span> <span class="o">|</span>  <span class="mi">34307</span> <span class="o">|</span> <span class="mf">0.000258500986459147</span> <span class="o">|</span> <span class="mf">7.57929416242359e-05</span>
+   <span class="mi">1</span> <span class="o">|</span>        <span class="mi">1</span> <span class="o">|</span>  <span class="mi">70968</span> <span class="o">|</span>  <span class="mi">57123</span> <span class="o">|</span> <span class="mf">0.000246672110300531</span> <span class="o">|</span>                     <span class="mi">0</span>
+   <span class="mi">2</span> <span class="o">|</span>        <span class="mi">2</span> <span class="o">|</span>  <span class="mi">24623</span> <span class="o">|</span> <span class="mi">251742</span> <span class="o">|</span> <span class="mf">9.886116527732606e-05</span><span class="o">|</span> <span class="mf">0.0002466721103005314</span>
    <span class="o">...</span>
-  <span class="mi">59</span> <span class="o">|</span>       <span class="mi">59</span> <span class="o">|</span>  <span class="mi">97513</span> <span class="o">|</span> <span class="mi">142754</span> <span class="o">|</span>   <span class="mf">8.676018672102e-05</span> <span class="o">|</span>   <span class="mf">0.0149044747275315</span>
-  <span class="mi">60</span> <span class="o">|</span>       <span class="mi">60</span> <span class="o">|</span> <span class="mi">128574</span> <span class="o">|</span>     <span class="o">-</span><span class="mi">1</span> <span class="o">|</span>                    <span class="mi">0</span> <span class="o">|</span>   <span class="mf">0.0149912349142525</span>
+  <span class="mi">66</span> <span class="o">|</span>       <span class="mi">66</span> <span class="o">|</span> <span class="mi">226619</span> <span class="o">|</span> <span class="mi">327051</span> <span class="o">|</span> <span class="mf">8.937169574263753e-05</span><span class="o">|</span>  <span class="mf">0.013830874168060458</span>
+  <span class="mi">67</span> <span class="o">|</span>       <span class="mi">67</span> <span class="o">|</span>  <span class="mi">43771</span> <span class="o">|</span>     <span class="o">-</span><span class="mi">1</span> <span class="o">|</span>                    <span class="mi">0</span> <span class="o">|</span>  <span class="mf">0.013920245863803096</span>
 </pre></div>
 </div>
 <p>Náklady jsou počítány v mapových jednotkách souřadnicového systému, v
@@ -232,7 +245,7 @@ tomto případě stupních. Délku v metrech je uložena v atributu
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">sum</span>
 <span class="o">------------------</span>
-<span class="mf">1270.47520134678</span>
+<span class="mf">1205.2407823551814</span>
 </pre></div>
 </div>
 <p>Geometrii trasy získáte spojením výsledku hledání optimální trasy s
@@ -345,12 +358,12 @@ minutách):</p>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">edge</span><span class="o">=-</span><span class="mi">1</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">agg_cost</span><span class="p">;</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">start_vid</span> <span class="o">|</span> <span class="n">end_vid</span> <span class="o">|</span>     <span class="n">agg_cost</span>
-<span class="o">-----------+---------+------------------</span>
-     <span class="mi">42531</span> <span class="o">|</span>  <span class="mi">120249</span> <span class="o">|</span> <span class="mf">5.02036761819399</span>
-    <span class="mi">128574</span> <span class="o">|</span>  <span class="mi">120249</span> <span class="o">|</span> <span class="mf">17.6454889075942</span>
-     <span class="mi">42531</span> <span class="o">|</span>   <span class="mi">22516</span> <span class="o">|</span> <span class="mf">22.9976299203542</span>
-    <span class="mi">128574</span> <span class="o">|</span>   <span class="mi">22516</span> <span class="o">|</span> <span class="mf">36.7067900923121</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">start_vid</span> <span class="o">|</span> <span class="n">end_vid</span> <span class="o">|</span>      <span class="n">agg_cost</span>
+<span class="o">-----------+---------+--------------------</span>
+     <span class="mi">43765</span> <span class="o">|</span>   <span class="mi">43771</span> <span class="o">|</span>  <span class="mf">5.459139825701516</span>
+     <span class="mi">70968</span> <span class="o">|</span>   <span class="mi">43771</span> <span class="o">|</span> <span class="mf">16.739455310488626</span>
+     <span class="mi">43765</span> <span class="o">|</span>  <span class="mi">112121</span> <span class="o">|</span> <span class="mf">22.610288252313232</span>
+     <span class="mi">70968</span> <span class="o">|</span>  <span class="mi">112121</span> <span class="o">|</span>  <span class="mf">36.27111371353636</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -385,7 +398,7 @@ historické budově Hlavní nádraží.</p>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">find_node</span>
 <span class="o">-----------</span>
-    <span class="mi">153103</span>
+    <span class="mi">163267</span>
 </pre></div>
 </div>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Wilsonova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span>
@@ -393,7 +406,7 @@ historické budově Hlavní nádraží.</p>
 </div>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">find_node</span>
 <span class="o">-----------</span>
-    <span class="mi">107098</span>
+    <span class="mi">154272</span>
 </pre></div>
 </div>
 </section>
@@ -433,7 +446,14 @@ sekundách, jde o atribut <span class="dbcolumn">cost_s</span>.</p>
 <span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">edge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">gid</span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">seq</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>Zkusme závést penaltizaci, která povede k realističtějšímu
+<figure class="align-center" id="id4">
+<img alt="../_images/route-auto.png" src="../_images/route-auto.png" />
+<figcaption>
+<p><span class="caption-number">Obr. 15 </span><span class="caption-text">Porovnání nejkratší (červeně) a nejrychlejší (modře) trasy z
+Letiště Václava Havla na Hlavní nádraží.</span><a class="headerlink" href="#id4" title="Permalink k tomuto obrázku">¶</a></p>
+</figcaption>
+</figure>
+<p>Zkusme závést penalizaci, která povede k realističtějšímu
 výsledku.</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">penalty</span><span class="w"> </span><span class="nb">FLOAT</span><span class="p">;</span>
 <span class="k">UPDATE</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">configuration</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">penalty</span><span class="o">=</span><span class="mi">100</span><span class="p">;</span>
@@ -466,13 +486,13 @@ výsledku.</p>
 </div>
 <div class="task admonition">
 <p class="admonition-title">Úkol</p>
-<p>Zkuste zavést penaltizaci také do vyhledání nejkratší cesty.</p>
+<p>Zkuste zavést penalizaci také do vyhledání nejkratší cesty.</p>
 </div>
-<figure class="align-center" id="id4">
-<img alt="../_images/route-auto.png" src="../_images/route-auto.png" />
+<figure class="align-center" id="id5">
+<img alt="../_images/route-auto-penalty.png" src="../_images/route-auto-penalty.png" />
 <figcaption>
-<p><span class="caption-number">Obr. 15 </span><span class="caption-text">Porovnání nejkratší (červeně) a nejrychlejší (modře) trasy z
-Letiště Václava Havla na Hlavní nádraží.</span><a class="headerlink" href="#id4" title="Permalink k tomuto obrázku">¶</a></p>
+<p><span class="caption-number">Obr. 16 </span><span class="caption-text">Porovnání nejrychlejší trasy bez penalizace (mondrá) a s penalizací (červeně) trasy z
+Letiště Václava Havla na Hlavní nádraží.</span><a class="headerlink" href="#id5" title="Permalink k tomuto obrázku">¶</a></p>
 </figcaption>
 </figure>
 </section>
@@ -504,17 +524,17 @@ hlavních silnicích a zásadně zvýhodníme jen dálnice.</p>
 <span class="s1"> reverse_cost_s * penalty AS reverse_cost</span>
 <span class="s1"> FROM routing.ways JOIN routing.configuration</span>
 <span class="s1"> USING (tag_id)&#39;</span><span class="p">,</span>
-<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;routing.ways_vertices_pgr&#39;</span><span class="p">),</span>
+<span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">),</span>
 <span class="w"> </span><span class="mi">300</span><span class="p">,</span>
 <span class="w"> </span><span class="n">directed</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">a</span>
 <span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">routing</span><span class="p">.</span><span class="n">ways</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">b</span>
 <span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">edge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">b</span><span class="p">.</span><span class="n">gid</span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">seq</span><span class="p">;</span>
 </pre></div>
 </div>
-<figure class="align-center" id="id5">
+<figure class="align-center" id="id6">
 <img alt="../_images/route-distance.png" src="../_images/route-distance.png" />
 <figcaption>
-<p><span class="caption-number">Obr. 16 </span><span class="caption-text">Servisní síť z vybraného místa.</span><a class="headerlink" href="#id5" title="Permalink k tomuto obrázku">¶</a></p>
+<p><span class="caption-number">Obr. 17 </span><span class="caption-text">Servisní síť z vybraného místa.</span><a class="headerlink" href="#id6" title="Permalink k tomuto obrázku">¶</a></p>
 </figcaption>
 </figure>
 <div class="admonition note">
@@ -530,18 +550,6 @@ výstavišti v Holešovicích (U Výstaviště, 1286/21), v Europarku
 (Černokostelecká 128/161) a na Andělu (Plzeňská 344/1) a pak dojet zpátky
 do Dejvic. Algoritimus naplánuje cestu tak, abychom navštívili každé
 místo pouze jednou a urazili cestu s nejmenšími náklady.</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Thákurova&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">2077</span><span class="p">,</span><span class="w"> </span><span class="mi">7</span><span class="p">);</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;U Výstaviště&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1286</span><span class="p">,</span><span class="w"> </span><span class="mi">21</span><span class="p">);</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Černokostelecká&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">161</span><span class="p">);</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">find_node</span><span class="p">(</span><span class="s1">&#39;Plzeňská&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">344</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">60880</span>
-<span class="mi">41489</span>
-<span class="mi">109366</span>
-<span class="mi">161370</span>
-</pre></div>
-</div>
 <section id="vyuziti-vzdalenosti-po-siti">
 <h3>Využití vzdálenosti po síti<a class="headerlink" href="#vyuziti-vzdalenosti-po-siti" title="Permalink to this heading">¶</a></h3>
 <p>Navržená cesta je přes zastávky Anděl, Europark, Holešovice.</p>
@@ -549,63 +557,28 @@ místo pouze jednou a urazili cestu s nejmenšími náklady.</p>
     $$
     SELECT * FROM pgr_dijkstraCostMatrix(
         &#39;SELECT gid as id, source, target, cost, reverse_cost FROM routing.ways&#39;,
-        (SELECT array_agg(id) FROM routing.ways_vertices_pgr WHERE id IN
-        (60880, 41489, 109366, 161370)),
+        (SELECT array[find_node(&#39;Thákurova&#39;, 2077, 7), find_node(&#39;U Výstaviště&#39;, 1286, 21), find_node(&#39;Černokostelecká&#39;, 128, 161), find_node(&#39;Plzeňská&#39;, 344, 1)]),
         directed := false
     )
     $$,
-    start_id := 60880,
+    start_id := find_node(&#39;Thákurova&#39;, 2077, 7),
     randomize := false
 );
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">seq</span> <span class="o">|</span>  <span class="n">node</span>  <span class="o">|</span>        <span class="n">cost</span>        <span class="o">|</span>      <span class="n">agg_cost</span>
-<span class="o">-----+--------+--------------------+--------------------</span>
-   <span class="mi">1</span> <span class="o">|</span>  <span class="mi">12333</span> <span class="o">|</span> <span class="mf">0.0484455749225172</span> <span class="o">|</span>                  <span class="mi">0</span>
-   <span class="mi">2</span> <span class="o">|</span> <span class="mi">116748</span> <span class="o">|</span>  <span class="mf">0.148717683986367</span> <span class="o">|</span> <span class="mf">0.0484455749225172</span>
-   <span class="mi">3</span> <span class="o">|</span> <span class="mi">144884</span> <span class="o">|</span>  <span class="mf">0.133988564693275</span> <span class="o">|</span>  <span class="mf">0.197163258908885</span>
-   <span class="mi">4</span> <span class="o">|</span>   <span class="mi">7436</span> <span class="o">|</span> <span class="mf">0.0443240851172554</span> <span class="o">|</span>   <span class="mf">0.33115182360216</span>
-   <span class="mi">5</span> <span class="o">|</span>  <span class="mi">12333</span> <span class="o">|</span>                  <span class="mi">0</span> <span class="o">|</span>  <span class="mf">0.375475908719415</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">seq</span> <span class="o">|</span>  <span class="n">node</span>  <span class="o">|</span>         <span class="n">cost</span>         <span class="o">|</span>      <span class="n">agg_cost</span>
+<span class="o">-----+--------+----------------------+---------------------</span>
+   <span class="mi">1</span> <span class="o">|</span>  <span class="mi">70968</span> <span class="o">|</span>  <span class="mf">0.04640480515133084</span> <span class="o">|</span>                   <span class="mi">0</span>
+   <span class="mi">2</span> <span class="o">|</span> <span class="mi">157622</span> <span class="o">|</span>  <span class="mf">0.12761437347907223</span> <span class="o">|</span> <span class="mf">0.04640480515133084</span>
+   <span class="mi">3</span> <span class="o">|</span> <span class="mi">156604</span> <span class="o">|</span>  <span class="mf">0.13971389693707958</span> <span class="o">|</span> <span class="mf">0.17401917863040306</span>
+   <span class="mi">4</span> <span class="o">|</span> <span class="mi">180378</span> <span class="o">|</span> <span class="mf">0.044233748325529225</span> <span class="o">|</span> <span class="mf">0.31373307556748264</span>
+   <span class="mi">5</span> <span class="o">|</span>  <span class="mi">70968</span> <span class="o">|</span>                    <span class="mi">0</span> <span class="o">|</span>  <span class="mf">0.3579668238930119</span>
 </pre></div>
 </div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>S využitím <span class="dbcolumn">cost_s</span> a <span class="dbcolumn">reverse_cost_s</span>
 spočítejte náklady v sekundách.</p>
-</div>
-</section>
-<section id="vyuziti-euklidovske-vzdalenosti">
-<h3>Využití euklidovské vzdálenosti<a class="headerlink" href="#vyuziti-euklidovske-vzdalenosti" title="Permalink to this heading">¶</a></h3>
-<p>K dispozici je také výpočet cesty obchodního cestujícího, která
-využívá pouze euklidovský prostor. Tento výpočet je sice méně přesný,
-ale měl by být o dost rychlejší, zejména v případě většího počtu míst.
-Rychlost jsme netestovali.</p>
-<p>Navržená cesta je přes Anděla, Holešovice a Europark. Tedy jinak než
-v případě předchozího algoritmu.</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgr_eucledianTSP</span><span class="p">(</span><span class="s1">&#39;SELECT *</span>
-<span class="s1">FROM (</span>
-<span class="s1">  SELECT DISTINCT id AS source_id,</span>
-<span class="s1">                    ST_X(geom) AS x,</span>
-<span class="s1">                    ST_Y(geom) AS y FROM routing.ways_vertices_pgr</span>
-<span class="s1">          WHERE id IN (60880, 41489, 109366, 161370)</span>
-<span class="s1">) t</span>
-<span class="s1">ORDER BY</span>
-<span class="s1">CASE source_id</span>
-<span class="s1">  WHEN 60880 THEN 1</span>
-<span class="s1">  WHEN 41489 THEN 2</span>
-<span class="s1">  WHEN 109366 THEN 3</span>
-<span class="s1">  WHEN 161370 THEN 4</span>
-<span class="s1"> END&#39;</span><span class="p">);</span>
-</pre></div>
-</div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span> <span class="n">seq</span> <span class="o">|</span> <span class="n">node</span> <span class="o">|</span>         <span class="n">cost</span>          <span class="o">|</span>      <span class="n">agg_cost</span>
-<span class="o">-----+------+-----------------------+--------------------</span>
-   <span class="mi">1</span> <span class="o">|</span>    <span class="mi">1</span> <span class="o">|</span>    <span class="mf">0.0382006302085469</span> <span class="o">|</span>                  <span class="mi">0</span>
-   <span class="mi">2</span> <span class="o">|</span>    <span class="mi">4</span> <span class="o">|</span>    <span class="mf">0.0462512161967639</span> <span class="o">|</span> <span class="mf">0.0382006302085469</span>
-   <span class="mi">3</span> <span class="o">|</span>    <span class="mi">2</span> <span class="o">|</span>     <span class="mf">0.117270931512459</span> <span class="o">|</span> <span class="mf">0.0844518464053108</span>
-   <span class="mi">4</span> <span class="o">|</span>    <span class="mi">3</span> <span class="o">|</span> <span class="mf">4.64686056594346e-310</span> <span class="o">|</span>   <span class="mf">0.20172277791777</span>
-   <span class="mi">5</span> <span class="o">|</span>    <span class="mi">1</span> <span class="o">|</span>                     <span class="mi">0</span> <span class="o">|</span>   <span class="mf">0.20172277791777</span>
-</pre></div>
 </div>
 </section>
 </section>
@@ -715,7 +688,6 @@ našem případě jde o 1 metr).</p>
 <li class="toctree-l2"><a class="reference internal" href="#servisni-sit">Servisní síť</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#cesta-obchodniho-cestujiciho">Cesta obchodního cestujícího</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#vyuziti-vzdalenosti-po-siti">Využití vzdálenosti po síti</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#vyuziti-euklidovske-vzdalenosti">Využití euklidovské vzdálenosti</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#vytvoreni-site">Vytvoření sítě</a><ul>
